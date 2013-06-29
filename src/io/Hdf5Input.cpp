@@ -30,7 +30,7 @@ namespace io {
 			const int genotypeDim = h5sDims( genotypeSpace, genotypeMatrixPath );
 			if( 2 != genotypeDim ) {
 				throw Exception(
-					"HDF5 input file \"%s\" dataset \"%s\" expected 2 dimensions but got %d.",
+					"HDF5 input file \"%s\" dataset \"%s\" expected 2 dimensions, but got %d.",
 					filename,
 					genotypeMatrixPath,
 					genotypeDim
@@ -59,7 +59,7 @@ namespace io {
 			const int phenotypeDim = h5sDims( phenotypeSpace, phenotypeVectorPath );
 			if( 1 != phenotypeDim ) {
 				throw Exception(
-					"HDF5 input file \"%s\" dataset \"%s\" expected 1 dimension but got %d.",
+					"HDF5 input file \"%s\" dataset \"%s\" expected 1 dimension, but got %d.",
 					filename,
 					phenotypeVectorPath,
 					phenotypeDim
@@ -114,7 +114,7 @@ namespace io {
 		const int dimensions = h5sDims( dataspaceId, objectPath );
 		if( 1 != dimensions ) {
 			throw Exception(
-				"HDF5 input file \"%s\" dataset \"%s\" expected 1 dimension but got %d.",
+				"HDF5 input file \"%s\" dataset \"%s\" expected 1 dimension, but got %d.",
 				hdf5filename.c_str(),
 				objectPath,
 				dimensions
@@ -148,7 +148,7 @@ namespace io {
 		const int dimensions = h5sDims( dataspaceId, objectPath );
 		if( 1 != dimensions ) {
 			throw Exception(
-				"HDF5 input file \"%s\" dataset \"%s\" expected 1 dimension but got %d.",
+				"HDF5 input file \"%s\" dataset \"%s\" expected 1 dimension, but got %d.",
 				hdf5filename.c_str(),
 				objectPath,
 				dimensions
@@ -185,7 +185,7 @@ namespace io {
 			value = string( buffer[0] );
 			if ( 0 > H5Dvlen_reclaim( memType, memSpace, H5P_DEFAULT, buffer ) ) {
 				throw Exception(
-					"HDF5 input file \"%s\" dataset \"%s\" read variable length string[%l] failed.",
+					"HDF5 input file \"%s\" dataset \"%s\" reclaim buffer for variable length string[%l] failed.",
 					hdf5filename.c_str(),
 					objectPath,
 					index
@@ -203,8 +203,6 @@ namespace io {
 			}
 			value = string( buffer.data(), 0, datatypeSize );
 		}
-		// TODO: handle erddror return values
-		// TODO: make sure a trailing \000 is written in all cases.
 
 		h5sClose( memSpace, "[memory]" );
 		h5tClose( memType, "[memory]" );
@@ -305,9 +303,29 @@ namespace io {
 		const hid_t datasetId = H5Dopen2( hdf5file, objectPath, H5P_DEFAULT );
 		if ( 0 > datasetId ) {
 			throw Exception(
-				"HDF5 input file \"%s\" does not contain dataset \"%s\".",
+				"HDF5 input file \"%s\" does not contain dataset \"%s\" (use command \"h5ls %s\" to list the data sets).",
+				hdf5filename.c_str(),
+				objectPath,
+				hdf5filename.c_str()
+			);
+		}
+		const hid_t creationProperties = H5Dget_create_plist( datasetId );
+		const htri_t filtersAvailable = H5Pall_filters_avail( creationProperties );
+		H5Pclose( creationProperties );
+		if ( 0 > filtersAvailable ) {
+			H5Dclose( datasetId );	// close unusable dataset and throw up
+			throw Exception(
+				"HDF5 input file \"%s\" dataset \"%s\" use of filters cannot be determined.",
 				hdf5filename.c_str(),
 				objectPath
+			);
+		} else if ( ! filtersAvailable ) {
+			H5Dclose( datasetId );	// close unusable dataset and throw up
+			throw Exception(
+				"HDF5 input file \"%s\" dataset \"%s\" uses filters which are not available on your platform (use command \"h5ls -v %s\" to find out which filters are used).",
+				hdf5filename.c_str(),
+				objectPath,
+				hdf5filename.c_str()
 			);
 		}
 		return datasetId;
