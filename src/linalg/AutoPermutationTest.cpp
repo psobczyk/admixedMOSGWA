@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "AutoPermutation.hpp"
 #include "../TestSuite.hpp"
 #include <math.h>
@@ -14,7 +29,7 @@ namespace test {
 		void testCopyConstructor ();
 		void testAssignment ();
 		void testOperators ();
-		void testFillGet ();
+		void testFillGetSwap ();
 		void testResize ();
 		void testUpSize ();
 
@@ -24,7 +39,7 @@ namespace test {
 			addTestMethod( "AutoPermutationTest::testCopyConstructor", this, &AutoPermutationTest::testCopyConstructor );
 			addTestMethod( "AutoPermutationTest::testAssignment", this, &AutoPermutationTest::testAssignment );
 			addTestMethod( "AutoPermutationTest::testOperators", this, &AutoPermutationTest::testOperators );
-			addTestMethod( "AutoPermutationTest::testFillGet", this, &AutoPermutationTest::testFillGet );
+			addTestMethod( "AutoPermutationTest::testFillGetSwap", this, &AutoPermutationTest::testFillGetSwap );
 			addTestMethod( "AutoPermutationTest::testResize", this, &AutoPermutationTest::testResize );
 			addTestMethod( "AutoPermutationTest::testUpSize", this, &AutoPermutationTest::testUpSize );
 		}
@@ -95,7 +110,7 @@ namespace test {
 	}
 
 	/** Test {@link Permutation::get( size_t )}. */
-	void AutoPermutationTest::testFillGet () {
+	void AutoPermutationTest::testFillGetSwap () {
 		const size_t data[] = { 4, 2, 3, 1, 0 };
 
 		AutoPermutation p( 5 );
@@ -115,6 +130,14 @@ namespace test {
 		assert_eq( "q[2]", 3, q.get( 2 ) );
 		assert_eq( "q[3]", 1, q.get( 3 ) );
 		assert_eq( "q[4]", 0, q.get( 4 ) );
+
+		p.swap( 0, 1 );
+		p.swap( 2, 3 );
+		assert_eq( "swap p[0]", 2, p.get( 0 ) );
+		assert_eq( "swap p[1]", 4, p.get( 1 ) );
+		assert_eq( "swap p[2]", 1, p.get( 2 ) );
+		assert_eq( "swap p[3]", 3, p.get( 3 ) );
+		assert_eq( "swap p[4]", 0, p.get( 4 ) );
 	}
 
 	/** Test {@link AutoPermutation::exactSize( size_t )}. */

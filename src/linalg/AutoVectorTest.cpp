@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "AutoVector.hpp"
 #include "AutoMatrix.hpp"
 #include "../TestSuite.hpp"
@@ -17,6 +32,7 @@ namespace test {
 		void testOperators ();
 		void testGetSet ();
 		void testFill ();
+		void testIsNull ();
 		void testResizePacked ();
 		void testResizeNonPacked ();
 		void testUpSize ();
@@ -40,6 +56,7 @@ namespace test {
 			addTestMethod( "AutoVectorTest::testOperators", this, &AutoVectorTest::testOperators );
 			addTestMethod( "AutoVectorTest::testGetSet", this, &AutoVectorTest::testGetSet );
 			addTestMethod( "AutoVectorTest::testFill", this, &AutoVectorTest::testFill );
+			addTestMethod( "AutoVectorTest::testIsNull", this, &AutoVectorTest::testIsNull );
 			addTestMethod( "AutoVectorTest::testResizePacked", this, &AutoVectorTest::testResizePacked );
 			addTestMethod( "AutoVectorTest::testResizeNonPacked", this, &AutoVectorTest::testResizeNonPacked );
 			addTestMethod( "AutoVectorTest::testUpSize", this, &AutoVectorTest::testUpSize );
@@ -148,6 +165,27 @@ namespace test {
 		assert_eq( "v'[1]", -2, v.get( 1 ) );
 		assert_eq( "v'[2]", -3, v.get( 2 ) );
 		assert_eq( "v'[3]", -4, v.get( 3 ) );
+	}
+
+	/** Test {@link Vector::isNull()}. */
+	void AutoVectorTest::testIsNull () {
+		const AutoVector o( 0 );
+		assert_true( "0-dim vector is always null", o.isNull() );
+
+		const double data[] = { 1, 2, 3 };
+		AutoVector v( 3 );
+		v.fill( data );
+		assert_false( "123 not null", v.isNull() );
+		v.fill( 0.0 );
+		assert_true( "000 is null", v.isNull() );
+		v.set( 0, 1.0 );
+		assert_false( "100 not null", v.isNull() );
+		v.set( 0, 0.0 );
+		v.set( 1, 1.0 );
+		assert_false( "010 not null", v.isNull() );
+		v.set( 1, 0.0 );
+		v.set( 2, 1.0 );
+		assert_false( "001 not null", v.isNull() );
 	}
 
 	/** Test {@link AutoVector::exactSize( size_t )}. */
@@ -353,11 +391,14 @@ namespace test {
 	* and {@link Vector::householderTransform( double, Vector )}.
 	*/
 	void AutoVectorTest::testHouseholder () {
-		const double data1[] = { 3, 4 };
-
-		AutoVector v( 2 );
-		v.fill( data1 );
+		AutoVector v( 0 );
+		// the value of tau is undefined this just asserts that the method does not fail
 		double tau = v.householderize();
+
+		const double data1[] = { 3, 4 };
+		v.upSize( 2 );
+		v.fill( data1 );
+		tau = v.householderize();
 
 		AutoVector w( 2 );
 		w.fill( data1 );
@@ -366,7 +407,7 @@ namespace test {
 		assert_eq( "w1[0]", 5, fabs( w.get( 0 ) ) );
 		assert_eq( "w1[1]", 0, w.get( 1 ) );
 
-		const double data2[] = { -12, 15, 16 };	// Vector of length 25
+		const double data2[] = { -12, 15, 16 };		// Vector of length 25
 		v.upSize( 3 );
 		v.fill( data2 );
 		tau = v.householderize();
@@ -379,7 +420,7 @@ namespace test {
 		assert_close( "w2[1]", 0, w.get( 1 ) );
 		assert_close( "w2[2]", 0, w.get( 2 ) );
 
-		const double data3[] = { 9, -13, 16, -17, 19 };	// Vector of length 34
+		const double data3[] = { 9, -13, 16, -17, 19 };		// Vector of length 34
 		v.upSize( 5 );
 		v.fill( data3 );
 		tau = v.householderize();
@@ -614,7 +655,7 @@ namespace test {
 		v.multQ( tau, qr, false );
 		assert_eq( "Qv[0]", 13.0, fabs( v.get( 0 ) ) );
 		assert_eq( "Qv[1]", 7.0, fabs( v.get( 1 ) ) );
-		assert_eq( "Qv[2]", 29.0, v.get( 2 ) );	// unchanged due to 3rd column of Q = (0,0,1)^T
+		assert_eq( "Qv[2]", 29.0, v.get( 2 ) );		// unchanged due to 3rd column of Q = (0,0,1)^T
 
 		AutoVector w( 3 );
 		w.set( 0, 17 );
@@ -623,7 +664,7 @@ namespace test {
 		w.multQ( tau, qr, true );
 		assert_eq( "Qw[0]", 19.0, fabs( w.get( 0 ) ) );
 		assert_eq( "Qw[1]", 17.0, fabs( w.get( 1 ) ) );
-		assert_eq( "Qw[2]", 23.0, w.get( 2 ) );	// unchanged due to 3rd column of Q = (0,0,1)^T
+		assert_eq( "Qw[2]", 23.0, w.get( 2 ) );		// unchanged due to 3rd column of Q = (0,0,1)^T
 	}
 
 }

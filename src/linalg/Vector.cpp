@@ -1,7 +1,23 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "Vector.hpp"
 #include <iostream>
 #include <sstream>
 #include <string.h>
+#include <math.h>
 #include <assert.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
@@ -68,6 +84,10 @@ namespace linalg {
 		return vector.size;
 	}
 
+	bool Vector::isNull () const {
+		return gsl_vector_isnull( &vector );
+	}
+
 	double Vector::get ( const size_t dim ) const {
 		return gsl_vector_get( &vector, dim );
 	}
@@ -108,7 +128,8 @@ namespace linalg {
 	}
 
 	double Vector::householderize () {
-		return gsl_linalg_householder_transform( &vector );
+		const size_t dims = countDimensions();
+		return 0 < dims ? gsl_linalg_householder_transform( &vector ) : nan( "unspecified" );
 	}
 
 	void Vector::householderTransform ( const double tau, const Vector& householder ) {

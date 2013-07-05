@@ -1671,8 +1671,7 @@ bool MData::selectModel ( Model *currentModel, size_t PValueBorder, int Expected
 	     startIndex=&dummy;
        // int PValueBorder =calculatePValueBorder();
 	//or take the setting from the conf file
-//	 int PValueBorder=parameter.PValueBorder;
-PValueBorder=min(getSnpNo()-1,PValueBorder);
+	PValueBorder = min( getSnpNo() - 1, PValueBorder );	// REMARK<BB>: how about 0 SNPs?
 	cerr<<"PValueBorder"<< PValueBorder<<endl;
 	// compute the log-likelihood of the 0 Model
 	Model model0( *this );

@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "Permutation.hpp"
 #include <iostream>
 #include <sstream>
@@ -53,6 +68,10 @@ namespace linalg {
 
 	size_t Permutation::get ( const size_t dim ) const {
 		return gsl_permutation_get( this, dim );
+	}
+
+	void Permutation::swap ( const size_t dim1, const size_t dim2 ) {
+		gsl_permutation_swap( this, dim1, dim2 );
 	}
 
 	string Permutation::toString () const {
