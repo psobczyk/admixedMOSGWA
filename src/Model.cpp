@@ -1,10 +1,27 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "Model.hpp"
 #include "GenotypeFreq.hpp"
 #include "QRuncher.hpp"
 #include "lookup/package.hpp"
-#include <float.h>	// for maximal double
-#include <math.h>	// for isinf
-#include <assert.h>
+#include <cfloat>	// for maximal double
+#include <cmath>	// for isinf
+#include <cstdio>	//getpid rand number init
+#include <cassert>
+
 //for random number generator
 #include <gsl/gsl_rng.h>
 
@@ -19,7 +36,6 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
 #include <algorithm> //min und max
-#include <stdio.h>  //getpid rand number init
 #include <sys/time.h> //time
 
 #include <hdf5.h> //for hdf5
@@ -1698,7 +1714,7 @@ int newSNP=0;
   }
 
 	oldBIC = computeMSC(selectionCriterium);
-	if ( isinf( oldBIC ) && oldBIC < 0.0 ) {
+	if ( ::isinf( oldBIC ) && oldBIC < 0.0 ) {
    		printLOG( "model fully explains observations" );
 		return false;
 	}
@@ -1822,7 +1838,7 @@ int newSNP=0;
           exclusivedSNP->insert(orderedSnpIndex);   // for GA        
         }  
         oldBIC = newBIC;
-	if ( isinf( oldBIC ) && oldBIC < 0.0 ) {
+	if ( ::isinf( oldBIC ) && oldBIC < 0.0 ) {
    		printLOG( "model fully explains observations" );
 		break;
 	}
