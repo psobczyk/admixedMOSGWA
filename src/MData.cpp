@@ -14,8 +14,8 @@
  ********************************************************************************/
 
 #include "MData.hpp"
-#include <math.h>	// for nan(...)
-#include <float.h>
+#include <cmath>	// for nan(...)
+#include <cfloat>	// for maximal double
 #include "Model.hpp"
 #include "GenotypeFreq.hpp"
 #include "io/Hdf5Input.hpp"
@@ -1325,7 +1325,7 @@ double MData::computeCorrelation ( const size_t locus1, const size_t locus2 ) co
 		const double
 			x1 = v1.get( idv ),
 			x2 = v2.get( idv );
-		if ( !isnan( x1 ) && !isnan( x2 ) ) {
+		if ( !::isnan( x1 ) && !::isnan( x2 ) ) {
 			n++; // count for average;
 			sum1 += x1;
 			sum2 += x2;
@@ -1354,7 +1354,7 @@ double MData::computeCorrelation ( const size_t locus1, const size_t locus2 ) co
 		const double
 			x1 = v1.get( idv ),
 			x2 = v2.get( idv );
-		if ( !isnan( x1 ) && !isnan( x2 ) ) {
+		if ( !::isnan( x1 ) && !::isnan( x2 ) ) {
 			const double
 				diff1 = x1 - avg1,
 				diff2 = x2 - avg2;
