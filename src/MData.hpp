@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #ifndef MDATA_HPP
 #define MDATA_HPP
 
@@ -16,6 +31,7 @@
 #include "OneSnpAllInd.hpp"
 #include "linalg/AutoVector.hpp"
 #include "linalg/AutoMatrix.hpp"
+#include "io/Input.hpp"
 #include "deprecate.h"
 
 #include "Model.hpp" // ag
@@ -124,8 +140,12 @@ private:
 
 public:
 
-	/** Default Constructor: reads the input-files in, sets parameters, deals with missing phenotypes */
-	MData();
+	/** Default Constructor: reads the input-files in, sets parameters, deals with missing phenotypes.
+	* @param input provides access to input data for the transition of the MOSGWA architecture.
+	* Otherwise, input is read according to the preference settings in {@link Parameter}.
+	* @see Parameter
+	*/
+	MData ( io::Input *input = NULL );
 
 	/** Destructor: clean up */
 	~MData();

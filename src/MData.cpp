@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "MData.hpp"
 #include <math.h>	// for nan(...)
 #include <float.h>
@@ -104,9 +119,9 @@ void MData::setY ( const size_t index, const int value) {
 }	
 
 /** Default Constructor: reads the input-files, sets parameters, deallambda.hpps with missing phenotypes */
-MData::MData () : xMat( 0, 0 ), covMat( 0, 0 ), dummyCovMat( 0, 0 ), yVec( 0 ) {
+MData::MData ( io::Input *input ) : xMat( 0, 0 ), covMat( 0, 0 ), dummyCovMat( 0, 0 ), yVec( 0 ) {
 
-	if ( parameter.in_file_hdf5.empty() ) {
+	if ( NULL == input && parameter.in_file_hdf5.empty() ) {
 	////////////////////////////////////////////////////////////////////
 	// Read SNP-Data (bim-File)
 	ifstream 	BIM;
@@ -287,27 +302,34 @@ MData::MData () : xMat( 0, 0 ), covMat( 0, 0 ), dummyCovMat( 0, 0 ), yVec( 0 ) {
 		yVec.set( idv, getYvalue( idv ) );
 	}
 	} else {
-		Hdf5Input input( parameter.in_file_hdf5.c_str() );
+		const bool hdf5Input = NULL == input;
+		if ( hdf5Input ) {
+			input = new Hdf5Input( parameter.in_file_hdf5.c_str() );
+		}
 		const size_t
-			snps = input.countSnps(),
-			idvs = input.countIndividuals();
+			snps = input->countSnps(),
+			idvs = input->countIndividuals();
 		xMat.exactSize( idvs, snps );
 		yVec.exactSize( idvs );
 		for ( size_t i = 0; i < snps; ++i ) {
-			SNP *snp = new SNP( input.getSnp( i ) );
+			SNP *snp = new SNP( input->getSnp( i ) );
 			snps_.push_back( snp );
 		}
 		for ( size_t j = 0; j < idvs; ++j ) {
-			Individual *idv = new Individual( input.getIndividual( j ) );
+			Individual *idv = new Individual( input->getIndividual( j ) );
 			individuals_.push_back( idv );
 		}
 		for ( size_t i = 0; i < snps; ++i ) {
-			const Vector genotypes = input.getGenotypeVector( i );
+			const Vector genotypes = input->getGenotypeVector( i );
 			Vector xVec = xMat.columnVector( i );
 			xVec.copy( genotypes );
 		}
-		const Vector phenotypes = input.getPhenotypeVector();
+		const Vector phenotypes = input->getPhenotypeVector();
 		yVec.copy( phenotypes );
+		if ( hdf5Input ) {
+			delete input;
+			input = NULL;
+		}
 	}
 }
 
