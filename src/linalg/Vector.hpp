@@ -21,6 +21,7 @@
 #include <gsl/gsl_vector.h>
 
 #include "Matrix.hpp"
+#include "Permutation.hpp"
 
 // for friend declaration
 namespace minimization {
@@ -111,9 +112,6 @@ namespace linalg {
 		*/
 		Vector subVector ( const size_t dim, const size_t dims );
 
-		/** Const version of {@link subVector( size_t, size_t )}. */
-		const Vector subVector ( const size_t dim, const size_t dims ) const;
-
 		/** Calculate the sum of squares. */
 		double sumSquares () const;
 
@@ -152,6 +150,13 @@ namespace linalg {
 		* The result goes to <code>this</code> Vector.
 		*/
 		void solveR ( const Matrix& r, const Vector& b );
+
+		/** Permute elements according to given permutation or its inverse.
+		* The result goes to <code>this</code> Vector.
+		* @param inverse specifies whether the inverse of <code>p</code> should be applied,
+		* otherwise <code>p</code>.
+		*/
+		void permute ( const Permutation& p, const bool inverse );
 
 		/** For a QR-decomposed matrix, applies Q or Q^T from the left to <code>this</code> vector.
 		* Be aware that the full square matrix Q is used even when QR is not square.

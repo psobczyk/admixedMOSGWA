@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_permute_vector.h>
 
 using namespace std;
 
@@ -105,10 +106,6 @@ namespace linalg {
 		}
 	}
 
-	const Vector Vector::subVector ( const size_t dim, const size_t dims ) const {
-		return const_cast<Vector*>( this )->subVector( dim, dims );
-	}
-
 	double Vector::sumSquares () const {
 		return innerProduct( *this );
 	}
@@ -161,15 +158,24 @@ namespace linalg {
 	}
 
 	void Vector::solveR ( const Matrix& r, const Vector& b ) {
-		const size_t cols = r.countColumns();
-		assert( cols <= r.countRows() );
+		const size_t
+			rows = r.countRows(),
+			cols = r.countColumns();
+		assert( cols == rows );
 		if ( 0 == cols ) {
 			assert( 0 == countDimensions() );
 			// no operation in 0-dimensional space
 		} else {
-			Matrix ru = r.subMatrix( 0, 0, cols, cols );
-			gsl_linalg_QR_Rsolve( &ru.matrix, &b.vector, &vector );
-			// TODO<BB>: what is the difference to gsl_linalg_R_solve? Which should be used?
+			gsl_linalg_QR_Rsolve( &r.matrix, &b.vector, &vector );
+			// synonym of gsl_linalg_R_solve, as the code seems
+		}
+	}
+
+	void Vector::permute ( const Permutation& p, const bool inverse ) {
+		if ( inverse ) {
+			gsl_permute_vector_inverse( &p, &this->vector );
+		} else {
+			gsl_permute_vector( &p, &this->vector );
 		}
 	}
 

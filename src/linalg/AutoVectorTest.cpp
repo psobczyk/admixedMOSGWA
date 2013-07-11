@@ -15,6 +15,7 @@
 
 #include "AutoVector.hpp"
 #include "AutoMatrix.hpp"
+#include "AutoPermutation.hpp"
 #include "../TestSuite.hpp"
 #include <math.h>
 
@@ -45,7 +46,8 @@ namespace test {
 		void testHouseholder ();
 		void testGemvStraight ();
 		void testGemvTransposed ();
-		void testSolveRU ();
+		void testSolveR ();
+		void testPermute ();
 		void testMultQ ();
 
 		public:
@@ -69,7 +71,8 @@ namespace test {
 			addTestMethod( "AutoVectorTest::testHouseholder", this, &AutoVectorTest::testHouseholder );
 			addTestMethod( "AutoVectorTest::testGemvStraight", this, &AutoVectorTest::testGemvStraight );
 			addTestMethod( "AutoVectorTest::testGemvTransposed", this, &AutoVectorTest::testGemvTransposed );
-			addTestMethod( "AutoVectorTest::testSolveRU", this, &AutoVectorTest::testSolveRU );
+			addTestMethod( "AutoVectorTest::testSolveR", this, &AutoVectorTest::testSolveR );
+			addTestMethod( "AutoVectorTest::testPermute", this, &AutoVectorTest::testPermute );
 			addTestMethod( "AutoVectorTest::testMultQ", this, &AutoVectorTest::testMultQ );
 		}
 	} * vectorTest = new AutoVectorTest();	// automatically freed by unit++
@@ -395,19 +398,28 @@ namespace test {
 		// the value of tau is undefined this just asserts that the method does not fail
 		double tau = v.householderize();
 
-		const double data1[] = { 3, 4 };
+		v.upSize( 1 );
+		v.set( 0, 1.0 );
+		tau = v.householderize();
+		assert_eq( "tau1", 0.0, tau );
+		AutoVector w( 1 );
+		w.set( 0, 17.0 );
+		w.householderTransform( tau, v );
+		assert_eq( "w1[0]", 17.0, fabs( w.get( 0 ) ) );
+
+		const double data1[] = { 3.0, 4.0 };
 		v.upSize( 2 );
 		v.fill( data1 );
 		tau = v.householderize();
 
-		AutoVector w( 2 );
+		w.upSize( 2 );
 		w.fill( data1 );
 		w.householderTransform( tau, v );
 
-		assert_eq( "w1[0]", 5, fabs( w.get( 0 ) ) );
-		assert_eq( "w1[1]", 0, w.get( 1 ) );
+		assert_eq( "w2[0]", 5.0, fabs( w.get( 0 ) ) );
+		assert_eq( "w2[1]", 0.0, w.get( 1 ) );
 
-		const double data2[] = { -12, 15, 16 };		// Vector of length 25
+		const double data2[] = { -12.0, 15.0, 16.0 };		// Vector of length 25
 		v.upSize( 3 );
 		v.fill( data2 );
 		tau = v.householderize();
@@ -416,24 +428,24 @@ namespace test {
 		w.fill( data2 );
 		w.householderTransform( tau, v );
 
-		assert_eq( "w2[0]", 25, fabs( w.get( 0 ) ) );
-		assert_close( "w2[1]", 0, w.get( 1 ) );
-		assert_close( "w2[2]", 0, w.get( 2 ) );
+		assert_eq( "w3[0]", 25.0, fabs( w.get( 0 ) ) );
+		assert_close( "w3[1]", 0.0, w.get( 1 ) );
+		assert_close( "w3[2]", 0.0, w.get( 2 ) );
 
-		const double data3[] = { 9, -13, 16, -17, 19 };		// Vector of length 34
+		const double data5[] = { 9.0, -13.0, 16.0, -17.0, 19.0 };		// Vector of length 34
 		v.upSize( 5 );
-		v.fill( data3 );
+		v.fill( data5 );
 		tau = v.householderize();
 
 		w.upSize( 5 );
-		w.fill( data3 );
+		w.fill( data5 );
 		w.householderTransform( tau, v );
 
-		assert_eq( "w3[0]", 34, fabs( w.get( 0 ) ) );
-		assert_close( "w3[1]", 0, w.get( 1 ) );
-		assert_close( "w3[2]", 0, w.get( 2 ) );
-		assert_close( "w3[3]", 0, w.get( 3 ) );
-		assert_close( "w3[4]", 0, w.get( 4 ) );
+		assert_eq( "w5[0]", 34.0, fabs( w.get( 0 ) ) );
+		assert_close( "w5[1]", 0.0, w.get( 1 ) );
+		assert_close( "w5[2]", 0.0, w.get( 2 ) );
+		assert_close( "w5[3]", 0.0, w.get( 3 ) );
+		assert_close( "w5[4]", 0.0, w.get( 4 ) );
 	}
 
 	/** Test {@link Vector::gemv} for non-transposed matrices. */
@@ -553,7 +565,7 @@ namespace test {
 	}
 
 	/** Test {@link Vector::solveR}. */
-	void AutoVectorTest::testSolveRU () {
+	void AutoVectorTest::testSolveR () {
 		const AutoMatrix om( 0, 0 );
 		const AutoVector ov( 0 );
 		AutoVector zv( 0 );
@@ -561,39 +573,117 @@ namespace test {
 		assert_eq( "Zero dim system", 0, zv.countDimensions() );
 
 		const double data[] = {
-			1, 0,
-			5.8, 1,
-			7.3, 6.6	// ignored
+			1.0, 0.0,
+			5.8, 1.0	// 5.8 is ignored, not part of right upper triangle
 		};
 
-		AutoMatrix m( 3, 2 );
+		AutoMatrix m( 2, 2 );
 		m.fill( data );
 
 		AutoVector b( 2 );
-		b.set( 0, 5 );
-		b.set( 1, -4);
+		b.set( 0, 5.0 );
+		b.set( 1, -4.0 );
 
 		AutoVector x( 2 );
 
 		{
 			x.solveR( m, b );
-			assert_eq( "x[0]", 5, x.get( 0 ) );
-			assert_eq( "x[1]", -4, x.get( 1 ) );
+			assert_eq( "x2[0]", 5.0, x.get( 0 ) );
+			assert_eq( "x2[1]", -4.0, x.get( 1 ) );
 		}
 
 		m.set( 0, 1, -1 );
 		{
 			x.solveR( m, b );
-			assert_eq( "x[0]", 1, x.get( 0 ) );
-			assert_eq( "x[1]", -4, x.get( 1 ) );
+			assert_eq( "x2'[0]", 1.0, x.get( 0 ) );
+			assert_eq( "x2'[1]", -4.0, x.get( 1 ) );
 		}
 
 		m.set( 1, 1, 2 );
 		{
 			x.solveR( m, b );
-			assert_eq( "x[0]", 3, x.get( 0 ) );
-			assert_eq( "x[1]", -2, x.get( 1 ) );
+			assert_eq( "x2''[0]", 3.0, x.get( 0 ) );
+			assert_eq( "x2''[1]", -2.0, x.get( 1 ) );
 		}
+
+		const double data3[] = {
+			1.0, 2.0, 5.0,
+			1.1, 1.0, 4.0,
+			1.4, 1.3, 1.0
+		};
+
+		m.upSize( 3, 3 );
+		m.fill( data3 );
+
+		b.upSize( 3 );
+		b.set( 0, 5.0 );
+		b.set( 1, -4.0 );
+		b.set( 2, 3.0 );
+
+		x.upSize( 3 );
+
+		x.solveR( m, b );
+		assert_eq( "x3[0]", 22.0, x.get( 0 ) );
+		assert_eq( "x3[1]", -16.0, x.get( 1 ) );
+		assert_eq( "x3[2]", 3.0, x.get( 2 ) );
+	}
+
+	/** Test {@link Vector::permute}. */
+	void AutoVectorTest::testPermute () {
+		{
+			const AutoPermutation p( 0 );
+			AutoVector x( 0 );
+			// assert that this does not fail
+			x.permute( p, false );
+			assert_eq( "post P", 0, x.countDimensions() );
+			x.permute( p, true );
+			assert_eq( "post Pinv", 0, x.countDimensions() );
+		}
+
+		AutoPermutation p( 1 );
+		p.init();
+		AutoVector
+			x( 1 ),
+			y( 1 );
+
+		x.set( 0, 10.0 );
+		y.copy( x );
+		y.permute( p, false );
+		assert_eq( "1-dim id", x, y );
+		y.permute( p, true );
+		assert_eq( "1-dim idinv", x, y );
+
+		p.upSize( 2 );
+		p.init();
+		x.upSize( 2 );
+		x.set( 1, 20.0 );
+		y.upSize( 2 );
+		y.copy( x );
+		y.permute( p, false );
+		assert_eq( "2-dim id", x, y );
+		y.permute( p, true );
+		assert_eq( "2-dim idinv", x, y );
+
+		p.swap( 0, 1 );
+		y.permute( p, false );
+		assert_eq( "2-dim swap [0]", 20.0, y.get( 0 ) );
+		assert_eq( "2-dim swap [1]", 10.0, y.get( 1 ) );
+		y.permute( p, true );
+		assert_eq( "2-dim swap back", x, y );
+
+		p.upSize( 3 );
+		x.upSize( 3 );
+		p.init();
+		x.set( 2, 30.0 );
+		y.upSize( 3 );
+		y.copy( x );
+		p.swap( 0, 1 ); p.swap( 1, 2);	// p = ( 2, 3, 1 )
+		y.permute( p, false );
+		assert_eq( "3-dim rotate [0]", 20.0, y.get( 0 ) );
+		assert_eq( "3-dim rotate [1]", 30.0, y.get( 1 ) );
+		assert_eq( "3-dim rotate [2]", 10.0, y.get( 2 ) );
+		y.permute( p, true );
+		assert_eq( "3-dim rotate back", x, y );
 	}
 
 	/** Test {@link Vector::multQ}. */
