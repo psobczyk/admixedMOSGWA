@@ -35,7 +35,7 @@ namespace test {
 		char buffer[1024];
 		sprintf(
 			buffer,
-			" expected close to %f and got %f, difference was %f, tolerance %f",
+			" expected close to %f and got %f, difference was %e, tolerance %e",
 			expected,
 			actual,
 			actual-expected,
