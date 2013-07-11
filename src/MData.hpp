@@ -161,18 +161,15 @@ public:
 	size_t getIdvNo () const;
         std::string getFID ( const size_t index ) const;
         std::string getID ( const size_t index ) const;
-	/** Access the regression matrix.
+	/** Access a column of the regression matrix.
 	* It has {@link MData::getIdvNo()} rows and {@link MData::getSnpNo()} columns.
 	* The entries are -1 (negative homozygote), 0 (heterozygote), +1 (positive homozygote)
 	* for the respective individual and SNP, or <code>NaN</code> for missing data.
-	* The returned Matrix provides a snapshot of currently stored data.
+	* The returned matrix column provides a snapshot of currently stored data.
 	* Its behaviour becomes undefined if the content of MData is changed after the call of getX().
 	* WARNING: Modifying the X matrix will most likely invalidate already calculated model selection criteria.
 	*/
-	linalg::Matrix getX ();
-
-	/** Const version of {@link MData::getX}. */
-	const linalg::Matrix getX () const;
+	const linalg::Vector getXcolumn ( const size_t dim );
 
 	/** returns the genotype of the idv-th individual for the snp-th SNP.
 	* @deprecated Use {@link MData::getX()} instead to access the regression matrix.
@@ -184,10 +181,7 @@ public:
 	* Its behaviour becomes undefined if the content of MData is changed after the call of getY().
 	* WARNING: Modifying the Y vector will most likely invalidate already calculated model selection criteria.
 	*/
-	linalg::Vector getY ();
-
-	/** Const version of {@link MData::getY}. */
-	const linalg::Vector getY () const;
+	const linalg::Vector getY ();
 
 	/** returns the target value for the i-th individual
 	* @deprecated Use {@link MData::getY()} instead.

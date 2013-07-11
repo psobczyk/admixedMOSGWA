@@ -26,6 +26,11 @@ namespace test {
 		/** Tests {@link QRuncher::calculateSkipColumnRSS}. */
 		void testSkipColumn ();
 
+		/** Tests {@link QRuncher::calculateSkipColumnRSS}
+		* in the case of skipping the last added linearly independent column.
+		*/
+		void testSkipLastLinearlyIndependentColumn ();
+
 		public:
 
 		QRuncherTest () : TestSuite( "QRuncherTest" ) {
@@ -34,6 +39,7 @@ namespace test {
 			addTestMethod( "QRuncherTest::testCopyConstructor", this, &QRuncherTest::testCopyConstructor );
 			addTestMethod( "QRuncherTest::testAssignment", this, &QRuncherTest::testAssignment );
 			addTestMethod( "QRuncherTest::testSkipColumn", this, &QRuncherTest::testSkipColumn );
+			addTestMethod( "QRuncherTest::testSkipLastLinearlyIndependentColumn", this, &QRuncherTest::testSkipLastLinearlyIndependentColumn );
 		}
 	} * qrUncherTest = new QRuncherTest();	// automatically freed by unit++
 
@@ -308,4 +314,36 @@ namespace test {
 		assert_eq( "Model 5: Back to one variable, from y-stack", rss3, qr.calculateSkipColumnRSS( 3 ) );
 		assert_eq( "Model 5: RSS unchanged", rss5, qr.calculateRSS() );
 	}
+
+	void QRuncherTest::testSkipLastLinearlyIndependentColumn () {
+		const double
+			xData[] = {
+				1,	0,
+				0,	1
+			},
+			yData[] = { 3, 4 };
+
+		AutoMatrix x( 2, 2 );
+		x.fill( xData );
+		AutoVector y( 2 );
+		y.fill( yData );
+
+		QRuncher qr( y );
+		assert_eq( "rss", 25.0, qr.calculateRSS() );
+		assert_eq( "l.u.[0]", 1.0, fabs( qr.pushColumn( x.columnVector( 0 ) ) ) );
+		assert_eq( "rss0", 16.0, qr.calculateRSS() );
+		assert_eq( "rss0-0", 25.0, qr.calculateSkipColumnRSS( 0 ) );
+		assert_eq( "l.u.[1]", 1.0, fabs( qr.pushColumn( x.columnVector( 1 ) ) ) );
+		assert_eq( "rss01", 0.0, qr.calculateRSS() );
+		assert_eq( "rss01-0", 9.0, qr.calculateSkipColumnRSS( 0 ) );
+		assert_eq( "rss01-1", 16.0, qr.calculateSkipColumnRSS( 1 ) );
+		assert_true( "pop 1", qr.popColumn() );
+		assert_eq( "postpop rss0", 16.0, qr.calculateRSS() );
+		assert_eq( "postpop rss0-0", 25.0, qr.calculateSkipColumnRSS( 0 ) );
+		assert_true( "pop 0", qr.popColumn() );
+		assert_eq( "postpop rss", 25.0, qr.calculateRSS() );
+		assert_false( "pop too many", qr.popColumn() );
+		assert_eq( "postpoptoomany rss", 25.0, qr.calculateRSS() );
+	}
+
 }

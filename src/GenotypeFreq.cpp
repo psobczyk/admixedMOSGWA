@@ -20,8 +20,8 @@ GenotypeFreq::GenotypeFreq( const MData & mData, const int snp ) {
         if(0==r_){ cerr<<"Warning CaseNo()==0\n";exit (1);}
         if(0==s_){ cerr<<"Warning ContNo()==0\n"; exit(1);}
 	// every individual is checked whether it is case or control, and the genotype is counted
-	const Vector genotypes = mData.getX().columnVector( snp );
-	const Vector phenotypes = mData.getY();
+	const Vector genotypes = const_cast<MData&>( mData ).getXcolumn( snp );
+	const Vector phenotypes = const_cast<MData&>( mData ).getY();
 	for ( int idv = 0; idv < n_; ++idv ) {
 		if ( 1.0 == phenotypes.get( idv ) ) {	// case
 			switch( static_cast<int>( genotypes.get( idv ) ) ) {

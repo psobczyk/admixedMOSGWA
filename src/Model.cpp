@@ -174,7 +174,7 @@ void Model::addSNPtoModel ( const snp_index_t snp ) {
 		}
 	
 		// add the new column at the end
-		const Vector xVec = data_->getX().columnVector( snp );
+		const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( snp );
 		for ( int i = 0; i < data_->getIdvNo(); ++i ) {
 			gsl_matrix_set( NewXMat, i, getNoOfVariables() - 1, xVec.get( i ) );
 		}
@@ -235,7 +235,7 @@ cerr<<endl;
 // cerr<<"reset="<<reset;
 	// add the new column at the end
        // gsl_matrix_set_col(XMat_,position,data_->xMat.columnVector(snp));
-		const Vector xVec = data_->getX().columnVector( snp );
+		const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( snp );
 		for ( int i = 0; i < data_->getIdvNo(); ++i )//statt position reset 
 			gsl_matrix_set( XMat_, i, reset, xVec.get( i ) );
 			gsl_vector_set(betas_,reset,0); //0 is relativ good for an unknow variable.
@@ -356,13 +356,14 @@ void Model::initializeModel () {
 		}
 		
 		// genotype-data
-		const Vector genotypes = data_->getX().rowVector( i );
 		for ( int j = 0; j < getModelSize(); ++j ) {
+			// TODO: resolve suboptimal loop nesting
+			const Vector genotypes = const_cast<MData*>( data_ )->getXcolumn( modelSnps_.at( j ) );
 			gsl_matrix_set(
 				XMat_,
 				i,
 				j + parameter.dummy_covariables + parameter.covariables + 1,
-				genotypes.get( modelSnps_.at(j) )
+				genotypes.get( i )
 			);
 		}
 	}
@@ -1218,7 +1219,7 @@ double Model::oraculateOptimalLinearForwardStep( snp_index_t *snp, size_t bound 
 	// Import the coefficient matrix into the QRuncher
 	for ( size_t col = 0; col < xMat.countColumns(); ++col ) {
 		// TODO: Take care of return value against adding linearly dependent columns
-		qruncher.pushColumn( xMat.columnVector( col ) );
+		qruncher.pushColumn( const_cast<Matrix&>( xMat ).columnVector( col ) );
 	}
 
 	// To quickly search whether SNP is already "in"
@@ -1232,7 +1233,7 @@ double Model::oraculateOptimalLinearForwardStep( snp_index_t *snp, size_t bound 
 		if ( modelIndex.contains( orderedSnpIndex ) ) continue;
 
 		// Prepare new column
-		const Vector xVec = data_->getX().columnVector( orderedSnpIndex );
+		const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( orderedSnpIndex );
 		qruncher.pushColumn( xVec );
 
 		const double rss = qruncher.calculateRSS();
@@ -1265,7 +1266,7 @@ double Model::oraculateOptimalLinearBackwardStep( snp_index_t *snp ) const {
 	// Import the coefficient matrix into the QRuncher
 	for ( size_t col = 0; col < xMat.countColumns(); ++col ) {
 		// TODO: Take care of return value against adding linearly dependent columns
-		qruncher.pushColumn( xMat.columnVector( col ) );
+		qruncher.pushColumn( const_cast<Matrix&>( xMat ).columnVector( col ) );
 	}
 
 	// To quickly search whether SNP is already "in"
@@ -1792,8 +1793,7 @@ int newSNP=0;
      
      // Import the coefficient matrix into the QRuncher
      for ( size_t col = 0; col < xMat.countColumns(); ++col ) {
-       // TODO: Take care of return value against adding linearly dependent columns
-       qruncher.pushColumn( xMat.columnVector( col ) );
+	qruncher.pushColumn( const_cast<Matrix&>( xMat ).columnVector( col ) );
     }
     
     // To quickly search whether SNP is already "in"
@@ -1823,7 +1823,7 @@ int newSNP=0;
       if ( modelIndex.contains( orderedSnpIndex ) ) continue;
       
       // Prepare new column
-	const Vector xVec = data_->getX().columnVector( orderedSnpIndex );
+	const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( orderedSnpIndex );
       qruncher.pushColumn( xVec );
       
       newBIC = computeMSC( selectionCriterium, qruncher.calculateRSS() ); //1 instead of selection criterion
@@ -2403,7 +2403,7 @@ double Model::computeSingleRegressorTest ( const snp_index_t snp ) {
 	else // replace in 1-SNP model the old SNP with new SNP snp
 	{
 		modelSnps_.at(0) = snp;
-		const Vector xVec = data_->getX().columnVector( snp );
+		const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( snp );
 		// TODO<BB>: Use vectorial replacement instead of loop
 		for ( int i = 0; i < data_->getIdvNo(); ++i ) {
 			// the SNP is in the last column noOfVariables - 1		

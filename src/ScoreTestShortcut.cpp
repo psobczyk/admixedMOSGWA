@@ -21,13 +21,14 @@ using namespace linalg;
 using namespace lookup;
 using namespace std;
 
-ScoreTestShortcut::ScoreTestShortcut ( const MData& mData ) : Firthimizer( mData.getY() ), mData( mData ) {}
+ScoreTestShortcut::ScoreTestShortcut (
+	const MData& mData
+) : Firthimizer( const_cast<MData&>( mData ).getY() ), mData( mData ) {}
 
 void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	const ModelIndex index = model.getIndex();
-	const Matrix dataMat = mData.getX();
 	const size_t
-		rows = dataMat.countRows(),
+		rows = mData.getIdvNo(),
 		cols = 1 + index.size();	// 1 for leftmost column of ones
 
 	// track current number of columns
@@ -51,7 +52,7 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	) {
 		const snp_index_t i = *iterator;
 		// insertion at the end is fastest
-		insertColumn( currentCols++, dataMat.columnVector( i ) );
+		insertColumn( currentCols++, const_cast<MData&>( mData ).getXcolumn( i ) );
 	}
 
 	// now all columns are there
@@ -75,7 +76,7 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	for ( int i = 0, j = 0; i < dataSize; ++i ) {
 		if ( ! index.contains( i ) ) {
 			snps[j] = i;
-			scores[j] = scoreTest( dataMat.columnVector( i ) );
+			scores[j] = scoreTest( const_cast<MData&>( mData ).getXcolumn( i ) );
 			++j;
 		}
 	}
@@ -85,9 +86,8 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 }
 int ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec,int  start, int stop ) {
 	const ModelIndex index = model.getIndex();
-	const Matrix dataMat = mData.getX();
 	const size_t
-		rows = dataMat.countRows(),
+		rows = mData.getIdvNo(),
 		cols = 1 + index.size();	// 1 for leftmost column of ones
 
 	// track current number of columns
@@ -111,7 +111,7 @@ int ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec,int  st
 	) {
 		const snp_index_t i = *iterator;
 		// insertion at the end is fastest
-		insertColumn( currentCols++, dataMat.columnVector( i ) );
+		insertColumn( currentCols++, const_cast<MData&>( mData ).getXcolumn( i ) );
 	}
 
 	// now all columns are there
@@ -138,7 +138,7 @@ int ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec,int  st
 	//DEBUG	cerr<<"SCORE:SNP="<<i<<endl;
 		if ( ! index.contains( i ) ) {
 			snps[j] = i;
-			scores[j] = scoreTest( dataMat.columnVector( i ) );
+			scores[j] = scoreTest( const_cast<MData&>( mData ).getXcolumn( i ) );
 			J=j;++j;
 		}
 	}

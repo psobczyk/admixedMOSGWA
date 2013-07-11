@@ -30,12 +30,10 @@ using namespace io;
 //  class MData
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Matrix MData::getX () { return xMat; }
-const Matrix MData::getX () const { return xMat; }
+const Vector MData::getXcolumn ( const size_t dim ) { return xMat.columnVector( dim ); }
 Matrix MData::getCovariableMatrix () { return covMat; }
 Matrix MData::getDummyCovariableMatrix () { return dummyCovMat; }
-Vector MData::getY () { return yVec; }
-const Vector MData::getY () const { return yVec; }
+const Vector MData::getY () { return yVec; }
 
 int MData::data2Geno ( const bool one, const bool two ) const {
 	if ( one ) { 
@@ -809,7 +807,7 @@ void MData::printGenoData (ofstream &Hyper, vector <bool> sel,bool caco) const {
 	{
 	for ( int i= 0; i < getSnpNo(); ++i ) {
 		Hyper <<(snps_[i])->getSnpId()<<' ';
-		const Vector xVec = getX().columnVector( i );
+		const Vector xVec = const_cast<MData*>( this )->getXcolumn( i );
 		for ( int j = 0; j < getIdvNo(); ++j ) {
 			if(sel[j]==caco)
 			Hyper << xVec.get( j ) << " ";
@@ -820,7 +818,7 @@ void MData::printGenoData (ofstream &Hyper, vector <bool> sel,bool caco) const {
 }
 void MData::printGenoData () const {
 	for ( int i= 0; i < getSnpNo(); ++i ) {
-		const Vector xVec = getX().columnVector( i );
+		const Vector xVec = const_cast<MData*>( this )->getXcolumn( i );
 		for ( int j = 0; j < getIdvNo(); ++j )  {
 			cout << xVec.get( j ) << " ";
 		}
@@ -835,9 +833,9 @@ Example: see  printHyper
 void MData::printGenoData (ofstream &Hyper) const {
 	for ( int i= 0; i < getIdvNo() ; ++i ) //transponiert
 	{
-		const Vector genome = getX().rowVector( i );
 		for ( int j = 0; j <getSnpNo() ; ++j ) {
-			Hyper << genome.get( j ) << " ";
+			const Vector genome = const_cast<MData*>( this )->getXcolumn( j );
+			Hyper << genome.get( i ) << " ";
 		}
 		Hyper << endl;
 	}
@@ -988,7 +986,7 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 			if (i < getSnpNo() )
 			{
 				SNPL << *it_SNPList <<" <- c(";
-				const Vector xVec = getX().columnVector( i );
+				const Vector xVec = const_cast<MData*>( this )->getXcolumn( i );
 				for ( int j = 0; j < getIdvNo(); ++j ) {
 					SNPL << ( 0 == j ? "" : "," );
 					SNPL << xVec.get( j );
@@ -1091,7 +1089,8 @@ vector<unsigned int> index;
 findSNPIndex(SNPList, index);
 unsigned int ii=0;
 	for (jj=0; jj < index.size(); ++jj)
-	{Vector tmp=xMat.columnVector(index[jj]);
+	{
+		const Vector tmp = const_cast<MData*>( this )->getXcolumn( index[jj] );
 	//	cerr<<index[jj]<<endl;
 /*DEBUG*/	if (false)	cerr<<"neues SNP"<<jj<<"index"<<index[jj]<<endl;
 		for(ii=0;ii<getIdvNo();++ii)
@@ -1157,7 +1156,7 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 			if (i < getSnpNo() )
 			{
 				//SNPL << *it_SNPList <<" = [";
-				const Vector xVec = getX().columnVector( i );
+				const Vector xVec = const_cast<MData*>( this )->getXcolumn( i );
 				for ( int j = 0; j < getIdvNo(); ++j ) {
 					SNPL << ( 0 == j ? "" : " " );
 					SNPL << xVec.get( j );
@@ -1313,8 +1312,8 @@ void MData::writeBEDfilePlink()
 /** computes correlation between two snps, utilise the structur of the data */
 double MData::computeCorrelation ( const size_t locus1, const size_t locus2 ) const {
 	const Vector
-		v1 = xMat.columnVector( locus1 ),
-		v2 = xMat.columnVector( locus2 );
+		v1 = const_cast<MData*>( this )->getXcolumn( locus1 ),
+		v2 = const_cast<MData*>( this )->getXcolumn( locus2 );
 	double
 		sum1 = 0.0,
 		sum2 = 0.0;
