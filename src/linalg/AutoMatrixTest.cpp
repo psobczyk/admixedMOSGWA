@@ -190,20 +190,39 @@ namespace test {
 
 	/** Test {@link Matrix::fill( double )} and {@link Matrix::fill( double* )}. */
 	void AutoMatrixTest::testFill () {
-		const double data[] = { -1, -2, -3, -4 };
+		const double data[] = { -1.0, -2.0, -3.0, -4.0, -5.0, -6.0, -7.0, -8.0, -9.0 };
 		AutoMatrix m( 2, 2 );
 
 		m.fill( 4 );
-		assert_eq( "m[0]", 4, m.get( 0, 0 ) );
-		assert_eq( "m[1]", 4, m.get( 0, 1 ) );
-		assert_eq( "m[2]", 4, m.get( 1, 0 ) );
-		assert_eq( "m[3]", 4, m.get( 1, 1 ) );
+		assert_eq( "m[0,0]", 4.0, m.get( 0, 0 ) );
+		assert_eq( "m[0,1]", 4.0, m.get( 0, 1 ) );
+		assert_eq( "m[1,0]", 4.0, m.get( 1, 0 ) );
+		assert_eq( "m[1,1]", 4.0, m.get( 1, 1 ) );
 
+		// below also documents: C-style: row major
 		m.fill( data );
-		assert_eq( "m'[0]", -1, m.get( 0, 0 ) );
-		assert_eq( "m'[1]", -2, m.get( 0, 1 ) );
-		assert_eq( "m'[2]", -3, m.get( 1, 0 ) );
-		assert_eq( "m'[3]", -4, m.get( 1, 1 ) );
+		assert_eq( "m22[0,0]", -1.0, m.get( 0, 0 ) );
+		assert_eq( "m22[0,1]", -2.0, m.get( 0, 1 ) );
+		assert_eq( "m22[1,0]", -3.0, m.get( 1, 0 ) );
+		assert_eq( "m22[1,1]", -4.0, m.get( 1, 1 ) );
+
+		AutoMatrix m23( 2, 3 );
+		m23.fill( data );
+		assert_eq( "m23[0,0]", -1.0, m23.get( 0, 0 ) );
+		assert_eq( "m23[0,1]", -2.0, m23.get( 0, 1 ) );
+		assert_eq( "m23[0,2]", -3.0, m23.get( 0, 2 ) );
+		assert_eq( "m23[1,0]", -4.0, m23.get( 1, 0 ) );
+		assert_eq( "m23[1,1]", -5.0, m23.get( 1, 1 ) );
+		assert_eq( "m23[1,2]", -6.0, m23.get( 1, 2 ) );
+
+		AutoMatrix m32( 3, 2 );
+		m32.fill( data );
+		assert_eq( "m32[0,0]", -1.0, m32.get( 0, 0 ) );
+		assert_eq( "m32[0,1]", -2.0, m32.get( 0, 1 ) );
+		assert_eq( "m32[1,0]", -3.0, m32.get( 1, 0 ) );
+		assert_eq( "m32[1,1]", -4.0, m32.get( 1, 1 ) );
+		assert_eq( "m32[2,0]", -5.0, m32.get( 2, 0 ) );
+		assert_eq( "m32[2,1]", -6.0, m32.get( 2, 1 ) );
 	}
 
 	/** Test resizing a matrix with rows == tda. */
@@ -476,7 +495,7 @@ namespace test {
 
 		{
 			// Test that no exception occurs for allowed values
-			const AutoMatrix oo( 1, 0 );
+			AutoMatrix oo( 1, 0 );
 			const Vector db = oo.diagonalVector();
 			assert_eq( "db dim", 0, db.countDimensions() );
 			const Vector b0 = oo.subdiagonalVector( 1 );
@@ -487,7 +506,7 @@ namespace test {
 
 		{
 			// Test that no exception occurs for allowed values
-			const AutoMatrix o( 0, 1 );
+			AutoMatrix o( 0, 1 );
 			const Vector dp = o.diagonalVector();
 			assert_eq( "dp dim", 0, dp.countDimensions() );
 			const Vector p0 = o.superdiagonalVector( 0 );

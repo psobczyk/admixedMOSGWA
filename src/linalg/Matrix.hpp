@@ -107,9 +107,6 @@ namespace linalg {
 		*/
 		Matrix subMatrix ( const size_t row, const size_t col, const size_t rows, const size_t cols );
 
-		/** Const version of {@link subMatrix( size_t, size_t, size_t, size_t )}. */
-		const Matrix subMatrix ( const size_t row, const size_t col, const size_t rows, const size_t cols ) const;
-
 		/** Obtain access to a row as a vector view.
 		* Warning: since the view directly accesses the matrix data,
 		* it must not be used if the matrix has significantly changed
@@ -121,9 +118,6 @@ namespace linalg {
 		*/
 		Vector rowVector ( const size_t row );
 
-		/** Const version of {@link rowVector( size_t )}. */
-		const Vector rowVector ( const size_t row ) const;
-
 		/** Obtain access to a column as a vector view.
 		* Warning: since the view directly accesses the matrix data,
 		* it must not be used if the matrix has significantly changed
@@ -134,9 +128,6 @@ namespace linalg {
 		* @see AutoMatrix::upSize( size_t, size_t )
 		*/
 		Vector columnVector ( const size_t col );
-
-		/** Const version of {@link columnVector( size_t )}. */
-		const Vector columnVector ( const size_t col ) const;
 
 		/** Obtain access to subdiagonal as a vector view.
 		* Warning: since the view directly accesses the matrix data,
@@ -150,9 +141,6 @@ namespace linalg {
 		*/
 		Vector subdiagonalVector ( const size_t offset );
 
-		/** Const version of {@link subdiagonalVector( size_t )}. */
-		const Vector subdiagonalVector ( const size_t offset ) const;
-
 		/** Obtain access to diagonal as a vector view.
 		* Warning: since the view directly accesses the matrix data,
 		* it must not be used if the matrix has significantly changed
@@ -163,9 +151,6 @@ namespace linalg {
 		* @see AutoMatrix::upSize( size_t, size_t )
 		*/
 		Vector diagonalVector ();
-
-		/** Const version of {@link diagonalVector()}. */
-		const Vector diagonalVector () const;
 
 		/** Obtain access to superdiagonal as a vector view.
 		* Warning: since the view directly accesses the matrix data,
@@ -178,9 +163,6 @@ namespace linalg {
 		* @see AutoMatrix::upSize( size_t, size_t )
 		*/
 		Vector superdiagonalVector ( const size_t offset );
-
-		/** Const version of {@link superdiagonalVector( size_t )}. */
-		const Vector superdiagonalVector ( const size_t offset ) const;
 
 		/** Apply a householder transform from the left side to <code>this</code> matrix. */
 		void householderTransform ( const double tau, const Vector& householder );

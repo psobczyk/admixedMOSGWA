@@ -106,24 +106,12 @@ namespace linalg {
 		}
 	}
 
-	const Matrix Matrix::subMatrix ( const size_t row, const size_t col, const size_t rows, const size_t cols ) const {
-		return const_cast<Matrix*>( this )->subMatrix( row, col, rows, cols );
-	}
-
 	Vector Matrix::rowVector ( const size_t row ) {
 		return Vector( gsl_matrix_row( &matrix, row ) );
 	}
 
-	const Vector Matrix::rowVector ( const size_t row ) const {
-		return const_cast<Matrix*>( this )->rowVector( row );
-	}
-
 	Vector Matrix::columnVector ( const size_t column ) {
 		return Vector( gsl_matrix_column( &matrix, column ) );
-	}
-
-	const Vector Matrix::columnVector ( const size_t column ) const {
-		return const_cast<Matrix*>( this )->columnVector( column );
 	}
 
 	Vector Matrix::subdiagonalVector ( const size_t offset ) {
@@ -134,16 +122,8 @@ namespace linalg {
 		return Vector( gsl_matrix_subdiagonal( &matrix, offset ) );
 	}
 
-	const Vector Matrix::subdiagonalVector ( const size_t offset ) const {
-		return const_cast<Matrix*>( this )->subdiagonalVector( offset );
-	}
-
 	Vector Matrix::diagonalVector () {
 		return Vector( gsl_matrix_diagonal( &matrix ) );
-	}
-
-	const Vector Matrix::diagonalVector () const {
-		return const_cast<Matrix*>( this )->diagonalVector();
 	}
 
 	Vector Matrix::superdiagonalVector ( const size_t offset ) {
@@ -152,10 +132,6 @@ namespace linalg {
 		static Vector nullDimVector( 0, NULL, 0 );
 		if ( 0 == countRows() ) return nullDimVector;
 		return Vector( gsl_matrix_superdiagonal( &matrix, offset ) );
-	}
-
-	const Vector Matrix::superdiagonalVector ( const size_t offset ) const {
-		return const_cast<Matrix*>( this )->superdiagonalVector( offset );
 	}
 
 	void Matrix::householderTransform ( const double tau, const Vector& householder ) {
@@ -204,7 +180,7 @@ namespace linalg {
 			Matrix affected = subMatrix( col, col, rows - col, cols - col );
 			affected.householderTransform(
 				tau.get( col ),
-				qr.columnVector( col ).subVector( col, rows - col )
+				const_cast<Matrix&>( qr ).columnVector( col ).subVector( col, rows - col )
 			);
 		}
 	}
