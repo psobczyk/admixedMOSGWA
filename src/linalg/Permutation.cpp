@@ -52,6 +52,10 @@ namespace linalg {
 		return true;
 	}
 
+	void Permutation::init () {
+		gsl_permutation_init( this );
+	}
+
 	void Permutation::fill ( const size_t *array ) {
 		// A harmless snappy const_cast circumvents a complete class "ConstPermutation"
 		Permutation that( countDimensions(), const_cast<size_t*>( array ) );
@@ -68,6 +72,12 @@ namespace linalg {
 
 	size_t Permutation::get ( const size_t dim ) const {
 		return gsl_permutation_get( this, dim );
+	}
+
+	void Permutation::set ( const size_t dim, const size_t mappedDim ) {
+		const size_t dimensions = countDimensions();
+		assert( dim < dimensions );
+		data[dim] = mappedDim;	// GSL has no set method for good reason.
 	}
 
 	void Permutation::swap ( const size_t dim1, const size_t dim2 ) {

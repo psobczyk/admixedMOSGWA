@@ -26,24 +26,47 @@ namespace test {
 	/** Tests the class {@link linalg::AutoPermutation} and thereby {@link linalg::Permutation}. */
 	class AutoPermutationTest : public TestSuite {
 
+		void testInit ();
 		void testCopyConstructor ();
 		void testAssignment ();
 		void testOperators ();
-		void testFillGetSwap ();
+		void testFillGetSetSwap ();
 		void testResize ();
 		void testUpSize ();
 
 		public:
 
 		AutoPermutationTest () : TestSuite( "linalg::AutoPermutationTest" ) {
+			addTestMethod( "AutoPermutationTest::testInit", this, &AutoPermutationTest::testInit );
 			addTestMethod( "AutoPermutationTest::testCopyConstructor", this, &AutoPermutationTest::testCopyConstructor );
 			addTestMethod( "AutoPermutationTest::testAssignment", this, &AutoPermutationTest::testAssignment );
 			addTestMethod( "AutoPermutationTest::testOperators", this, &AutoPermutationTest::testOperators );
-			addTestMethod( "AutoPermutationTest::testFillGetSwap", this, &AutoPermutationTest::testFillGetSwap );
+			addTestMethod( "AutoPermutationTest::testFillGetSetSwap", this, &AutoPermutationTest::testFillGetSetSwap );
 			addTestMethod( "AutoPermutationTest::testResize", this, &AutoPermutationTest::testResize );
 			addTestMethod( "AutoPermutationTest::testUpSize", this, &AutoPermutationTest::testUpSize );
 		}
 	} * permutationTest = new AutoPermutationTest();	// automatically freed by unit++
+
+	/** Test {@link AutoPermutation::init()}. */
+	void AutoPermutationTest::testInit () {
+		const size_t
+			data[] = { 1, 0 };
+		AutoPermutation p( 0 );
+		p.init();
+		assert_eq( "0 dim", 0, p.countDimensions() );
+
+		p.upSize( 1 );
+		p.init();
+		assert_eq( "1 dim", 1, p.countDimensions() );
+		assert_eq( "1 dim [0]", 0, p.get( 0 ) );
+
+		p.upSize( 2 );
+		p.fill( data );
+		p.init();
+		assert_eq( "2 dim", 2, p.countDimensions() );
+		assert_eq( "2 dim [0]", 0, p.get( 0 ) );
+		assert_eq( "2 dim [1]", 1, p.get( 1 ) );
+	}
 
 	/** Test {@link AutoPermutation::AutoPermutation( AutoPermutation& )}. */
 	void AutoPermutationTest::testCopyConstructor () {
@@ -110,7 +133,7 @@ namespace test {
 	}
 
 	/** Test {@link Permutation::get( size_t )}. */
-	void AutoPermutationTest::testFillGetSwap () {
+	void AutoPermutationTest::testFillGetSetSwap () {
 		const size_t data[] = { 4, 2, 3, 1, 0 };
 
 		AutoPermutation p( 5 );
@@ -138,6 +161,23 @@ namespace test {
 		assert_eq( "swap p[2]", 1, p.get( 2 ) );
 		assert_eq( "swap p[3]", 3, p.get( 3 ) );
 		assert_eq( "swap p[4]", 0, p.get( 4 ) );
+
+		p.swap( 1, 1 );
+		p.swap( 3, 3 );
+		assert_eq( "sameswap p[0]", 2, p.get( 0 ) );
+		assert_eq( "sameswap p[1]", 4, p.get( 1 ) );
+		assert_eq( "sameswap p[2]", 1, p.get( 2 ) );
+		assert_eq( "sameswap p[3]", 3, p.get( 3 ) );
+		assert_eq( "sameswap p[4]", 0, p.get( 4 ) );
+
+		p.set( 0, 4 );
+		p.set( 1, 0 );
+		p.set( 4, 1 );
+		assert_eq( "sameswap p[0]", 4, p.get( 0 ) );
+		assert_eq( "sameswap p[1]", 0, p.get( 1 ) );
+		assert_eq( "sameswap p[2]", 1, p.get( 2 ) );
+		assert_eq( "sameswap p[3]", 3, p.get( 3 ) );
+		assert_eq( "sameswap p[4]", 1, p.get( 4 ) );
 	}
 
 	/** Test {@link AutoPermutation::exactSize( size_t )}. */

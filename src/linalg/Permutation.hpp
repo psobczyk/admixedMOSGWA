@@ -68,6 +68,9 @@ namespace linalg {
 		/** Compare whether this equals that. */
 		bool operator== ( const Permutation& that ) const;
 
+		/** Initialise the permutation as identity. */
+		void init ();
+
 		/** Fill the permutation with values from an array.
 		* The fill affects the logical portion of the permutation,
 		* i.e. the array must be at least of size {@link countDimensions()}.
@@ -84,6 +87,11 @@ namespace linalg {
 
 		/** Get the element for a given dimension. */
 		size_t get ( const size_t dim ) const;
+
+		/** Set the element for a given dimension.
+		* Note that this method allows to change a permutation into a more general integer mapping.
+		*/
+		void set ( const size_t dim, const size_t mappedDim );
 
 		/** Swap the two elements for the given dimensions. */
 		void swap ( const size_t dim1, const size_t dim2 );
