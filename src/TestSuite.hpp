@@ -16,7 +16,6 @@
 #ifndef _TEST_SUITE_HPP_
 #define _TEST_SUITE_HPP_
 
-#include "TestSuite.hpp"
 #include <string>
 #include <unit++.h>
 
