@@ -7,6 +7,7 @@ OBJ = $(PARSER_OBS) $(LINALG_OBS) $(IO_OBS) $(MINIMIZATION_OBS) $(LOOKUP_OBS)
 OBJSL =Helpfull.o SortVec.o Parameter.o Log.o SNP.o Individual.o MData.o Model.o GenotypeFreq.o QRuncher.o Firthimizer.o ScoreTestShortcut.o GA.o Pool.o Exception.o $(OBJ)
 
 #SortVec.o Helpfull.o Parameter.o Log.o SNP.o MData.o  Model.o  GenotypeFreq.o $(OBJ)
+MOBJ = main.o $(OBJSL)
 FOBJ = main_fregene.o $(OBJSL)
 EOBJ = main_erich.o $(OBJSL)
 AOBJ = main_artur_problem.o $(OBJSL)
@@ -36,27 +37,36 @@ date = $(shell date "+%x")
 
 all: MOSGWA
 
-mosgwa_src.zip:	*.*pp */*.*pp *.h makefile_erich
+mosgwa_src.zip:	*.*pp */*.*pp *.h *.tpl makefile
 	printf 'string TIP("MOSGWA/HDF5 %s");' `date +%Y-%m-%dT%H-%M-%S` > TIP
-	zip -DJX $@ *.*pp */*.*pp *.h makefile_erich TIP -x search/* imputation/* Test* *Test.*pp */Test* */*Test.*pp *test.*pp firthAlgorithmCompare.cpp main.cpp main_artur_problem.cpp main_fregene.cpp main_ga.cpp main_hubbart.cpp GslMinimizerAutopointer.*pp
+	zip -DJX $@ *.*pp */*.*pp *.h *.tpl makefile TIP -x search/* imputation/* Test* *Test.*pp */Test* */*Test.*pp *test.*pp firthAlgorithmCompare.cpp main.cpp main_artur_problem.cpp main_fregene.cpp main_ga.cpp main_hubbart.cpp GslMinimizerAutopointer.*pp
 
-MOSGWA : $(EOBJ)
+MOSGWA : $(MOBJ)
+	$(CC) -static $(LFLAGS) $(MOBJ) -o MOSGWA -lgsl $(BLAS) -lpthread -lm -lhdf5 -lgomp
+
+MOSGWA_erich : $(EOBJ)
 	#$(CC)   $(LFLAGS) $(EOBJ) -o MOSGWA -lgsl -lgslcblas  -lm
 	$(CC) -static   $(LFLAGS) $(EOBJ)   -o MOSGWA -lgsl $(BLAS) -lpthread -lm -lhdf5 -lgomp
+
 MOSGWA_fregene : $(FOBJ)
 	$(CC)   $(LFLAGS) $(FOBJ) -o MOSGWA_fregene  -lgsl -lgslcblas -lm #-lgfortran
 A:$(AOBJ)
 	$(CC)   $(LFLAGS) $(AOBJ)   -o A -lgsl $(BLAS) -lpthread -lm -lhdf5 -lgfortran  
-GA_MOSGWA :  $(GAOBJ)
+
+MOSGWA_GA : $(GAOBJ)
 	$(CC) $(LFLAGS) $(GAOBJ) -o GA_MOSGWA -lgsl -lgslcblas -lm
 
 %.o :	%.cpp %.hpp
 	$(CC) $(CFLAGS) -o $@ $<
 
+main.o : main.cpp  MData.cpp MData.hpp Model.cpp Model.hpp $(SLIB)
+	$(CC) $(CFLAGS) main.cpp
+
 main_ga.o : main_ga.cpp MData.hpp Model.hpp GA.hpp
 
 main_erich.o : main_erich.cpp  MData.cpp MData.hpp  Model.cpp Model.hpp   $(SLIB)
 	$(CC) $(CFLAGS) main_erich.cpp
+
 main_fregene.o : main_fregene.cpp MData.hpp  Model.hpp $(SLIB)
 	$(CC) $(CFLAGS)  main_fregene.cpp 
 
@@ -74,5 +84,5 @@ GenotypeFreq.o : GenotypeFreq.cpp GenotypeFreq.hpp MData.hpp
 	$(CC) $(CFLAGS) GenotypeFreq.cpp
 
 clean:
-	\rm *.o  MOSGWA
+	rm *.o */*.o  MOSGWA
 
