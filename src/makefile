@@ -77,7 +77,7 @@ main_artur_problem.o: main_artur_problem.cpp MData.hpp  Model.hpp $(SLIB)
 MData.o : MData.cpp MData.hpp OneSnpAllInd.hpp Individual.hpp GenotypeFreq.hpp PermSort.hpp  $(SLIB) 
 	$(CC) $(CFLAGS) MData.cpp
 
-Model.o : Model.cpp Model.hpp GenotypeFreq.hpp $(SLIB)
+Model.o : Model.cpp Model.hpp GenotypeFreq.hpp QRuncher.hpp $(SLIB)
 	$(CC) $(CFLAGS) Model.cpp
 
 GenotypeFreq.o : GenotypeFreq.cpp GenotypeFreq.hpp MData.hpp
