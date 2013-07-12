@@ -1,8 +1,24 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #ifndef QRUNCHER_HPP
 #define QRUNCHER_HPP
 
 #include "linalg/AutoMatrix.hpp"
 #include "linalg/AutoVector.hpp"
+#include <vector>
 
 /** Incremental QR solver for least squares regression.
 * @author Bernhard Bodenstorfer
@@ -33,7 +49,27 @@ class QRuncher {
 	*/
 	linalg::AutoVector tauVec;
 
-	/** Retrieve a householder vector from below the diagonal of {@link QRuncher::hrMat}. */
+	/** Tracks the rank for the columns as they have been added to {@link QRuncher::hrMat}.
+	* Element <code>m</code> specifies the dimension of the linear hull of
+	* the <code>m+1</code> pushed vectors from <code>0</code> up to <code>m</code>.
+	*/
+	std::vector<size_t> ranks;
+
+	/** Return whether the given column was linearly independent from its predecessors.
+	*/
+	bool isLinearlyIndependent ( const size_t col ) const;
+
+	/** Get the rank of the current regression matrix.
+	* That is the number of linearly independent vectors pushed.
+	*/
+	size_t getRank () const;
+
+	/** Retrieve the householder vector for the given column.
+	* It is assumed that the pushed vector for the column was not linearly dependent
+	* from its predecessors.
+	* Then the sought householder vector is the column in {@link QRuncher::hrMat},
+	* all elements downward from the rank-element to the number of rows of the matrix.
+	*/
 	linalg::Vector getHouseholderVector ( const size_t col );
 
 	public:
@@ -50,11 +86,10 @@ class QRuncher {
 	* with which the <code>QRuncher</code> has been constructed.
 	* @param xVec must have the same number of dimensions as the <code>yVec</code>
 	* with which the <code>QRuncher</code> has been constructed.
-	* @returns a measure of linear independence,
-	* (close to) zero if the added column was (almost) a linear combination of the previous columns.
+	* @returns whether the added column was linearly independent from the previous columns.
 	* @see {@link QRuncher::QRuncher( const Vector& )}
 	*/
-	double pushColumn ( const linalg::Vector& xVec );
+	bool pushColumn ( const linalg::Vector& xVec );
 
 	/** Diminish the regression matrix at its right end by one column.
 	* @returns whether there was still a column left to chop away.
@@ -62,16 +97,15 @@ class QRuncher {
 	bool popColumn ();
 
 	/** Calculate the residual sum of squares. */
-	double calculateRSS ();
+	double calculateRSS () const;
 
 	/** Calculate the regression coefficients.
-	* Aborts execution in case of error,
-	* i.e. linear dependence of regression matrix columns,
-	* in particular, if there are more columns than rows,
-	* i.e. more regression-variables than equations (individuals).
-	* @returns a coefficient vector for the currently pushed variables
+	* In case of linearly dependent column vectors,
+	* one particular solution is found,
+	* where the coefficients for linearly dependent columns are set 0.
+	* @returns a coefficient vector for the currently pushed column vectors
 	*/
-	linalg::AutoVector calculateCoefficients ();
+	linalg::AutoVector calculateCoefficients () const;
 
 	/** Quickly calculate the residual sum of squares (RSS)
 	* if the given column in the push hierarchy (0 being the oldest push) had been skipped.
@@ -80,7 +114,7 @@ class QRuncher {
 	* @returns the RSS of the current model minus the specified pushed column,
 	* enumerated by age of the push.
 	*/
-	double calculateSkipColumnRSS ( const size_t col );
+	double calculateSkipColumnRSS ( const size_t col ) const;
 };
 
 #endif	/* QRUNCHER_HPP */
