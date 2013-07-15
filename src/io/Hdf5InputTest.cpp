@@ -18,6 +18,7 @@
 #include <unistd.h>	// for unlink(char[]), close()
 #include <cstdlib>	// for mkstemp(char[])
 #include <cstring>
+#include <cmath>	// for NaN
 #include <vector>
 
 using namespace std;
@@ -79,7 +80,7 @@ namespace test {
 			const double genomeData[4][3] = {
 				{ 0.0, 0.1, 0.2 },
 				{ 1.0, 1.1, 1.2 },
-				{ 2.0, 2.1, 2.2 },
+				{ 2.0, ::nan("test"), 2.2 },
 				{ 3.0, 3.1, 3.2 }
 			};
 			const hid_t genomeSpace = H5Screate( H5S_SIMPLE );
@@ -148,7 +149,7 @@ namespace test {
 				H5P_DEFAULT
 			);
 			const float phenotypeData[3] = {
-				-0.0, -0.1, -0.2
+				-0.0, ::nan("test"), -0.2
 			};
 			H5Dwrite( phenotypeDataset, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, phenotypeData );
 			H5Dclose( phenotypeDataset );
@@ -188,7 +189,7 @@ namespace test {
 		{
 			const Vector gv2 = hdf5Input.getGenotypeVector( 2 );
 			assert_eq( "genotypeMatrixNontransposed[0,2]", 2.0, gv2.get( 0 ) );
-			assert_eq( "genotypeMatrixNontransposed[1,2]", 2.1, gv2.get( 1 ) );
+			assert_true( "genotypeMatrixNontransposed[1,2] is NaN", ::isnan( gv2.get( 1 ) ) );
 			assert_eq( "genotypeMatrixNontransposed[2,2]", 2.2, gv2.get( 2 ) );
 		}
 
@@ -203,7 +204,7 @@ namespace test {
 			const Vector pv = hdf5Input.getPhenotypeVector();
 			// Mind that in the test data, phenotype has been stored from a float array.
 			assert_eq( "phenotypeVector[0]", -0.0f, pv.get( 0 ) );
-			assert_eq( "phenotypeVector[1]", -0.1f, pv.get( 1 ) );
+			assert_true( "phenotypeVector[1] is NaN", ::isnan( pv.get( 1 ) ) );
 			assert_eq( "phenotypeVector[2]", -0.2f, pv.get( 2 ) );
 		}
 
@@ -244,7 +245,7 @@ namespace test {
 		{
 			const Individual idv1 = hdf5Input.getIndividual( 1 );
 			assert_eq( "Individual[1].id", string( "Benhao" ), idv1.getIndividualID() );
-			assert_eq( "Individual[1].phenotype", -0.1f, idv1.getPhenotype() );
+			assert_true( "Individual[1].phenotype is NaN", ::isnan( idv1.getPhenotype() ) );
 		}
 
 		{
