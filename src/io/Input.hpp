@@ -40,11 +40,11 @@ namespace io {
 		/** Retrieve the data for the given individual. */
 		virtual Individual getIndividual ( const size_t individualIndex ) = 0;
 
-		/** Retrieve the {@link countIndividuals} sized vector of genotype information for the given SNP. */
-		virtual linalg::Vector getGenotypeVector ( const size_t snpIndex ) = 0;
+		/** Copy the {@link countIndividuals} sized vector of genotype information for the given SNP into the given vector. */
+		virtual void retrieveGenotypesIntoVector ( const size_t snpIndex, linalg::Vector& vector ) = 0;
 
-		/** Retrieve the {@link countIndividuals} sized vector of phenotype information. */
-		virtual linalg::Vector getPhenotypeVector () = 0;
+		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
+		virtual void retrievePhenotypesIntoVector ( linalg::Vector& vector ) = 0;
 
 		/** Declare access to be finished, release all resources. */
 		virtual ~Input ();

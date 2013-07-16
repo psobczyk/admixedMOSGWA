@@ -288,12 +288,12 @@ namespace io {
 		return individualList.at( individualIndex );
 	}
 
-	Vector PlinkInput::getGenotypeVector ( const size_t snpIndex ) {
-		return genotypeMatrixTransposed.rowVector( snpIndex );
+	void PlinkInput::retrieveGenotypesIntoVector ( const size_t snpIndex, Vector& vector ) {
+		vector.copy( genotypeMatrixTransposed.rowVector( snpIndex ) );
 	}
 
-	Vector PlinkInput::getPhenotypeVector () {
-		return phenotypeVector;
+	void PlinkInput::retrievePhenotypesIntoVector ( Vector& vector ) {
+		vector.copy( phenotypeVector );
 	}
 
 	PlinkInput::~PlinkInput () {

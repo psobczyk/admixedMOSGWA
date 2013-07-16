@@ -276,18 +276,18 @@ namespace io {
 			"",
 			"",
 			Individual::MISSING,
-			getPhenotypeVector().get( individualIndex )
+			phenotypeVector.get( individualIndex )
 		);
 
 		return individual;
 	}
 
-	Vector Hdf5Input::getGenotypeVector ( const size_t snpIndex ) {
-		return genotypeMatrixTransposed.rowVector( snpIndex );
+	void Hdf5Input::retrieveGenotypesIntoVector ( const size_t snpIndex, Vector& vector ) {
+		vector.copy( genotypeMatrixTransposed.rowVector( snpIndex ) );
 	}
 
-	Vector Hdf5Input::getPhenotypeVector () {
-		return phenotypeVector;
+	void Hdf5Input::retrievePhenotypesIntoVector ( Vector& vector ) {
+		vector.copy( phenotypeVector );
 	}
 
 	Hdf5Input::~Hdf5Input () {
