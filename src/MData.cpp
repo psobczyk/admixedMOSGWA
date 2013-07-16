@@ -133,7 +133,6 @@ MData::MData ( io::Input *input ) : xMat( 0, 0 ), covMat( 0, 0 ), dummyCovMat( 0
 			double geneticDistance;
 			int basePairPosition;
 			char allele1, allele2;
-			// TODO<BB>: Eh? Where does file reading take place?
 			BIM >> chromosomeId;
 			BIM >> snpId;
 			BIM >> geneticDistance;
