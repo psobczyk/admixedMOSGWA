@@ -317,12 +317,10 @@ MData::MData ( io::Input *input ) : xMat( 0, 0 ), covMat( 0, 0 ), dummyCovMat( 0
 			individuals_.push_back( idv );
 		}
 		for ( size_t i = 0; i < snps; ++i ) {
-			const Vector genotypes = input->getGenotypeVector( i );
 			Vector xVec = xMat.columnVector( i );
-			xVec.copy( genotypes );
+			input->retrieveGenotypesIntoVector( i, xVec );
 		}
-		const Vector phenotypes = input->getPhenotypeVector();
-		yVec.copy( phenotypes );
+		input->retrievePhenotypesIntoVector( yVec );
 		if ( hdf5Input ) {
 			delete input;
 			input = NULL;
