@@ -171,42 +171,7 @@ namespace test {
 	void Hdf5InputTest::testRead () {
 		const string testFilename( setUp() );
 		Hdf5Input hdf5Input( testFilename.c_str() );
-
-		{
-			const Vector gv0 = hdf5Input.getGenotypeVector( 0 );
-			assert_eq( "genotypeMatrixNontransposed[0,0]", 0.0, gv0.get( 0 ) );
-			assert_eq( "genotypeMatrixNontransposed[1,0]", 0.1, gv0.get( 1 ) );
-			assert_eq( "genotypeMatrixNontransposed[2,0]", 0.2, gv0.get( 2 ) );
-		}
-
-		{
-			const Vector gv1 = hdf5Input.getGenotypeVector( 1 );
-			assert_eq( "genotypeMatrixNontransposed[0,1]", 1.0, gv1.get( 0 ) );
-			assert_eq( "genotypeMatrixNontransposed[1,1]", 1.1, gv1.get( 1 ) );
-			assert_eq( "genotypeMatrixNontransposed[2,1]", 1.2, gv1.get( 2 ) );
-		}
-
-		{
-			const Vector gv2 = hdf5Input.getGenotypeVector( 2 );
-			assert_eq( "genotypeMatrixNontransposed[0,2]", 2.0, gv2.get( 0 ) );
-			assert_true( "genotypeMatrixNontransposed[1,2] is NaN", ::isnan( gv2.get( 1 ) ) );
-			assert_eq( "genotypeMatrixNontransposed[2,2]", 2.2, gv2.get( 2 ) );
-		}
-
-		{
-			const Vector gv3 = hdf5Input.getGenotypeVector( 3 );
-			assert_eq( "genotypeMatrixNontransposed[0,3]", 3.0, gv3.get( 0 ) );
-			assert_eq( "genotypeMatrixNontransposed[1,3]", 3.1, gv3.get( 1 ) );
-			assert_eq( "genotypeMatrixNontransposed[2,3]", 3.2, gv3.get( 2 ) );
-		}
-
-		{
-			const Vector pv = hdf5Input.getPhenotypeVector();
-			// Mind that in the test data, phenotype has been stored from a float array.
-			assert_eq( "phenotypeVector[0]", -0.0f, pv.get( 0 ) );
-			assert_true( "phenotypeVector[1] is NaN", ::isnan( pv.get( 1 ) ) );
-			assert_eq( "phenotypeVector[2]", -0.2f, pv.get( 2 ) );
-		}
+		AutoVector vector( hdf5Input.countIndividuals() );
 
 		{
 			const SNP snp0 = hdf5Input.getSnp( 0 );
@@ -252,6 +217,42 @@ namespace test {
 			const Individual idv2 = hdf5Input.getIndividual( 2 );
 			assert_eq( "Individual[2].id", string( "Flo" ), idv2.getIndividualID() );
 			assert_eq( "Individual[2].phenotype", -0.2f, idv2.getPhenotype() );
+		}
+
+		{
+			hdf5Input.retrieveGenotypesIntoVector( 0, vector );
+			assert_eq( "genotypeMatrixNontransposed[0,0]", 0.0, vector.get( 0 ) );
+			assert_eq( "genotypeMatrixNontransposed[1,0]", 0.1, vector.get( 1 ) );
+			assert_eq( "genotypeMatrixNontransposed[2,0]", 0.2, vector.get( 2 ) );
+		}
+
+		{
+			hdf5Input.retrieveGenotypesIntoVector( 1, vector );
+			assert_eq( "genotypeMatrixNontransposed[0,1]", 1.0, vector.get( 0 ) );
+			assert_eq( "genotypeMatrixNontransposed[1,1]", 1.1, vector.get( 1 ) );
+			assert_eq( "genotypeMatrixNontransposed[2,1]", 1.2, vector.get( 2 ) );
+		}
+
+		{
+			hdf5Input.retrieveGenotypesIntoVector( 2, vector );
+			assert_eq( "genotypeMatrixNontransposed[0,2]", 2.0, vector.get( 0 ) );
+			assert_true( "genotypeMatrixNontransposed[1,2] is NaN", ::isnan( vector.get( 1 ) ) );
+			assert_eq( "genotypeMatrixNontransposed[2,2]", 2.2, vector.get( 2 ) );
+		}
+
+		{
+			hdf5Input.retrieveGenotypesIntoVector( 3, vector );
+			assert_eq( "genotypeMatrixNontransposed[0,3]", 3.0, vector.get( 0 ) );
+			assert_eq( "genotypeMatrixNontransposed[1,3]", 3.1, vector.get( 1 ) );
+			assert_eq( "genotypeMatrixNontransposed[2,3]", 3.2, vector.get( 2 ) );
+		}
+
+		{
+			hdf5Input.retrievePhenotypesIntoVector( vector );
+			// Mind that in the test data, phenotype has been stored from a float array.
+			assert_eq( "phenotypeVector[0]", -0.0f, vector.get( 0 ) );
+			assert_true( "phenotypeVector[1] is NaN", ::isnan( vector.get( 1 ) ) );
+			assert_eq( "phenotypeVector[2]", -0.2f, vector.get( 2 ) );
 		}
 
 		tearDown( testFilename );

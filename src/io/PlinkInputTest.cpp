@@ -34,7 +34,7 @@ namespace test {
 	/** Tests the class {@link PlinkInput}. */
 	class PlinkInputTest : public TestSuite {
 
-		/** Name template for temporary test data directpry and files. */
+		/** Name template for temporary test data directory and files. */
 		static const char
 			* const tmpDirnameTemplate,
 			* const filenameTrunc,
@@ -153,7 +153,9 @@ namespace test {
 		for ( int snpMajour = 0; snpMajour < 2; ++snpMajour ) {
 			const string testDirname( setUp( 0 < snpMajour ) );
 			const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
-			PlinkInput plinkInput( testFilenameTrunc.c_str() );
+			const char * const tft = testFilenameTrunc.c_str();
+			PlinkInput plinkInput( tft );
+			AutoVector vector( plinkInput.countIndividuals() );
 
 			{
 				const SNP snp0 = plinkInput.getSnp( 0 );
@@ -226,39 +228,38 @@ namespace test {
 			}
 
 			{
-				const Vector gv0 = plinkInput.getGenotypeVector( 0 );
-				assert_eq( "genotypeMatrixNontransposed[0,0]", 1.0, gv0.get( 0 ) );
-				assert_eq( "genotypeMatrixNontransposed[1,0]", 1.0, gv0.get( 1 ) );
-				assert_eq( "genotypeMatrixNontransposed[2,0]", -1.0, gv0.get( 2 ) );
+				plinkInput.retrieveGenotypesIntoVector( 0, vector );
+				assert_eq( "genotypeMatrixNontransposed[0,0]", 1.0, vector.get( 0 ) );
+				assert_eq( "genotypeMatrixNontransposed[1,0]", 1.0, vector.get( 1 ) );
+				assert_eq( "genotypeMatrixNontransposed[2,0]", -1.0, vector.get( 2 ) );
 			}
 
 			{
-				const Vector gv1 = plinkInput.getGenotypeVector( 1 );
-				assert_true( "genotypeMatrixNontransposed[0,1]", isnan( gv1.get( 0 ) ) );
-				assert_eq( "genotypeMatrixNontransposed[1,1]", 1.0, gv1.get( 1 ) );
-				assert_eq( "genotypeMatrixNontransposed[2,1]", -1.0, gv1.get( 2 ) );
+				plinkInput.retrieveGenotypesIntoVector( 1, vector );
+				assert_true( "genotypeMatrixNontransposed[0,1]", isnan( vector.get( 0 ) ) );
+				assert_eq( "genotypeMatrixNontransposed[1,1]", 1.0, vector.get( 1 ) );
+				assert_eq( "genotypeMatrixNontransposed[2,1]", -1.0, vector.get( 2 ) );
 			}
 
 			{
-				const Vector gv2 = plinkInput.getGenotypeVector( 2 );
-				assert_eq( "genotypeMatrixNontransposed[0,2]", 0.0, gv2.get( 0 ) );
-				assert_eq( "genotypeMatrixNontransposed[1,2]", 1.0, gv2.get( 1 ) );
-				assert_eq( "genotypeMatrixNontransposed[2,2]", -1.0, gv2.get( 2 ) );
+				plinkInput.retrieveGenotypesIntoVector( 2, vector );
+				assert_eq( "genotypeMatrixNontransposed[0,2]", 0.0, vector.get( 0 ) );
+				assert_eq( "genotypeMatrixNontransposed[1,2]", 1.0, vector.get( 1 ) );
+				assert_eq( "genotypeMatrixNontransposed[2,2]", -1.0, vector.get( 2 ) );
 			}
 
 			{
-				const Vector gv3 = plinkInput.getGenotypeVector( 3 );
-				assert_eq( "genotypeMatrixNontransposed[0,3]", -1.0, gv3.get( 0 ) );
-				assert_eq( "genotypeMatrixNontransposed[1,3]", 1.0, gv3.get( 1 ) );
-				assert_eq( "genotypeMatrixNontransposed[2,3]", -1.0, gv3.get( 2 ) );
+				plinkInput.retrieveGenotypesIntoVector( 3, vector );
+				assert_eq( "genotypeMatrixNontransposed[0,3]", -1.0, vector.get( 0 ) );
+				assert_eq( "genotypeMatrixNontransposed[1,3]", 1.0, vector.get( 1 ) );
+				assert_eq( "genotypeMatrixNontransposed[2,3]", -1.0, vector.get( 2 ) );
 			}
 
 			{
-				const Vector pv = plinkInput.getPhenotypeVector();
-				// Mind that in the test data, phenotype has been stored from a float array.
-				assert_eq( "phenotypeVector[0]", -0.1, pv.get( 0 ) );
-				assert_eq( "phenotypeVector[1]", 200.0, pv.get( 1 ) );
-				assert_eq( "phenotypeVector[2]", 7.0, pv.get( 2 ) );
+				plinkInput.retrievePhenotypesIntoVector( vector );
+				assert_eq( "phenotypeVector[0]", -0.1, vector.get( 0 ) );
+				assert_eq( "phenotypeVector[1]", 200.0, vector.get( 1 ) );
+				assert_eq( "phenotypeVector[2]", 7.0, vector.get( 2 ) );
 			}
 
 			tearDown( testDirname );
