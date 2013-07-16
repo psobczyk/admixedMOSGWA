@@ -33,9 +33,10 @@ namespace test {
 		const double tolerance
 	) {
 		char buffer[1024];
-		sprintf(
+		snprintf(
 			buffer,
-			" expected close to %f and got %f, difference was %e, tolerance %e",
+			sizeof( buffer ),
+			" expected close to %e and got %e, difference was %e, tolerance %e",
 			expected,
 			actual,
 			actual-expected,
