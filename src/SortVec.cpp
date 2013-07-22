@@ -10,22 +10,22 @@ bool order_function ( const SortVec::SortItem* i, const SortVec::SortItem* j ) {
 bool order_function2 ( const SortVec::SortItem* i, const SortVec::SortItem* j ){
 	return ( i->value > j->value );
 };
-SortVec::SortItem::SortItem ( const int id, const double value ) : id( id ), value( value ) {}
+SortVec::SortItem::SortItem ( const size_t id, const double value ) : id( id ), value( value ) {}
 
 SortVec::SortVec () {}
 
-SortVec::SortVec ( const int n ) {
+SortVec::SortVec ( const size_t n ) {
 	list_.reserve( n );
 }
 
-SortVec::SortVec ( const int n, const int ids[], const double values[], bool bigger) {
+SortVec::SortVec ( const size_t n, const size_t ids[], const double values[], bool bigger ) {
 	fillVec( n, ids, values, bigger );
 }
 
-void SortVec::fillVec ( const int n, const int ids[], const double values[], bool bigger ) {
+void SortVec::fillVec ( const size_t n, const size_t ids[], const double values[], bool bigger ) {
 	clear();
 	list_.reserve( n );
-	for ( int i = 0; i < n; ++i ) {
+	for ( size_t i = 0; i < n; ++i ) {
 		SortItem * entry = new SortItem( ids[i], values[i] );
 		list_.push_back(entry);
 	}
@@ -35,11 +35,11 @@ void SortVec::fillVec ( const int n, const int ids[], const double values[], boo
         sort( list_.begin(), list_.end(), order_function2 );
 }
 
-int SortVec::getId ( const int k ) const {
+size_t SortVec::getId ( const size_t k ) const {
 	return list_.at(k)->id;
 }
 
-double SortVec::getValue ( const int k ) const {
+double SortVec::getValue ( const size_t k ) const {
 	return list_.at(k)->value;
 }
 

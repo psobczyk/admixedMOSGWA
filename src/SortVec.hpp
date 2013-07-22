@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #ifndef SORT_VEC_HPP
 #define SORT_VEC_HPP
 
@@ -6,7 +21,7 @@
 
 using namespace std;
 
-/** A sorted list of (int id, double value) pairs.
+/** A sorted list of (size_t id, double value) pairs.
 * Access by index, not by iterators.
 */
 class SortVec {
@@ -17,13 +32,13 @@ class SortVec {
 	struct SortItem {
 
 		/** Used for SNP id */
-		const int id;
+		const size_t id;
 
 		/** Used for P-value */
 		const double value;
 
 		/** Construct a pair */
-		SortItem ( const int id, const double value );
+		SortItem ( const size_t id, const double value );
 	};
 
 	friend bool order_function ( const SortVec::SortItem* i, const SortVec::SortItem* j );
@@ -49,22 +64,22 @@ friend bool order_function2 ( const SortVec::SortItem* i, const SortVec::SortIte
 	SortVec ();
 
 	/** Constructor with a given size */
-	SortVec ( const int n );
+	SortVec ( const size_t n );
 
 	/** Constructor with arrays containing position and values, so that  ids[i], values[i] are a pair */
-	SortVec ( const int n, const int ids[], const double values[],bool bigger=true );
+	SortVec ( const size_t n, const size_t ids[], const double values[], bool bigger = true );
 
 	/** Destructor */
 	~SortVec ();
 
 	/** Clear and overwrite SortVec with arrays */
-	void fillVec ( const int n, const int ids[], const double values[], bool bigger=true);
+	void fillVec ( const size_t n, const size_t ids[], const double values[], bool bigger = true );
 
 	/** Get position (or id_) for the k-th smallest value */
-	int getId ( const int k ) const;
+	size_t getId ( const size_t k ) const;
 
 	/** Get the k-th smallest value */
-	double getValue ( const int k ) const;
+	double getValue ( const size_t k ) const;
 };
 
 #endif	/* SORT_VEC_HPP */
