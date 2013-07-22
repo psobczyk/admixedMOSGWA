@@ -22,8 +22,7 @@ Parameter::Parameter () {
 	declare( "data", "trait_name", y_value_name );
 	declare( "data", "trait_position_in_yvm", in_values_int );
 	declare( "data", "trait_name_in_yvm", in_values_name );
-	declare( "data", "quantitative_covariables", covariables );
-	declare( "data", "qualitative_covariables", dummy_covariables );
+	declare( "data", "covariables", covariables );
 	{
 		map< const string, int > choice;
 		choice[ "recessive" ] = 1;

@@ -115,7 +115,7 @@ int Model::getModelSize () const {
 }
 
 int Model::getNoOfVariables () const {
-	return getModelSize() + 1 + parameter.covariables + parameter.dummy_covariables;
+	return 1 + parameter.covariables + getModelSize();
 }
 
 double Model::getMJC () const {
@@ -221,14 +221,14 @@ if(DEBUG2)
         <<"XMat_->size2="<<XMat_->size2<<endl<<"getNoOfVariables="<<getNoOfVariables()<<endl;
 	for (int j=0;j<100;j++)
 {cerr<<"XMat"<<j<<" ";
-for ( int i = 1+ parameter.covariables + parameter.dummy_covariables; i < getNoOfVariables() /*data_->getIdvNo()*/; ++i ) {
+	for ( int i = 1 + parameter.covariables; i < getNoOfVariables(); ++i ) {
 	cerr<<gsl_matrix_get(XMat_,j,i)<<" ";
 	}
 cerr<<endl;
 }
 }
 
- const snp_index_t reset=1+ parameter.covariables + parameter.dummy_covariables +position;//position 0 is the first 
+	const snp_index_t reset = 1 + parameter.covariables + position;		//position 0 is the first 
  //cout<<"reset="<<reset<<endl;
  upToDateXMat_= false;
  modelSnps_[reset-1]= snp;//
@@ -246,7 +246,7 @@ if(DEBUG2)
 
 for (int j=0;j<100;j++)
 {cerr<<"XMat"<<j<<" ";
-for ( int i = 1+ parameter.covariables + parameter.dummy_covariables; i < getNoOfVariables()  /*data_->getIdvNo()*/; ++i ) {
+	for ( int i = 1 + parameter.covariables; i < getNoOfVariables(); ++i ) {
 	cerr<<gsl_matrix_get(XMat_,j,i)<<" ";
 	
 }	cerr<<endl;
@@ -280,13 +280,13 @@ bool Model::removeSNPfromModel ( const snp_index_t snp ) {
                         gsl_vector * NEWbetas_ = gsl_vector_alloc ( getNoOfVariables() );
 
 			// Copy columns of the old Matrix
-			// except snp + parameter.dummy_covariables + parameter.covariables + 1 == i
+			// except 1 + parameter.covariables + snp == i
 			for ( int i = 0; i <= getNoOfVariables(); ++i ) {	// compare <= because noOfVariables has been decremented
-				if ( i < snp + parameter.dummy_covariables + parameter.covariables + 1 ) {
+				if ( i < 1 + parameter.covariables + snp ) {
 					gsl_matrix_get_col( CopyV, XMat_, i );
 					gsl_matrix_set_col( NewXMat, i, CopyV );
 					gsl_vector_set(NEWbetas_,i,gsl_vector_get(betas_,i));
-				} else if ( i > snp + parameter.dummy_covariables + parameter.covariables + 1 ) {
+				} else if ( i > 1 + parameter.covariables + snp ) {
 					gsl_matrix_get_col( CopyV, XMat_, i );
 					gsl_matrix_set_col( NewXMat, i-1, CopyV );
 					gsl_vector_set(NEWbetas_,i-1,gsl_vector_get(betas_,i));//NEWbetas_(i)=betas(i+1)
@@ -337,7 +337,7 @@ void Model::initializeModel () {
 	 gsl_vector_set_zero (betas_);
 
 	// Set XMat_
-	// Rows of XMat_: Intercept covariables dummy_covariables SNP-Data
+	// Rows of XMat_: Intercept, covariables, SNP-Data
 	for ( int i = 0; i < data_->getIdvNo(); ++i ) { //this is the row loop	
 		// Intercept
 		gsl_matrix_set(XMat_, i, 0, 1);
@@ -348,13 +348,6 @@ void Model::initializeModel () {
 			// getCovMatElement will be transposed
 		}
 		
-		// dummy-covariables
-		for ( int j = 0; j < parameter.dummy_covariables; ++j ) {
-			//~ gsl_matrix_set(XMat_, i, j, PopulationVector(j, i));
-			// + parameter.covariables + 1  for quantitative covariables and intercept
-			gsl_matrix_set( XMat_, i, j + parameter.covariables + 1, data_->getDummyCovMatElement( j, i ) );
-		}
-		
 		// genotype-data
 		for ( int j = 0; j < getModelSize(); ++j ) {
 			// TODO: resolve suboptimal loop nesting
@@ -362,7 +355,7 @@ void Model::initializeModel () {
 			gsl_matrix_set(
 				XMat_,
 				i,
-				j + parameter.dummy_covariables + parameter.covariables + 1,
+				1 + parameter.covariables + j,
 				genotypes.get( i )
 			);
 		}
@@ -697,7 +690,7 @@ void Model::printModel ( const string& out, const string& filemodifier ) {
 				<< getSNPId(i) << "\t"
 				<< (data_->getSNP(modelSnps_.at(i)))->getChromosome()<<"\t"
 				<< setw(10)<<(data_->getSNP(modelSnps_.at(i)))->getBasePairPosition()<<"\t"   //the setw for formating 
-				<< getBeta( parameter.covariables + parameter.dummy_covariables + 1 + i ) << "\t"
+				<< getBeta( 1 + parameter.covariables + i ) << "\t"
 				<< (data_->getSNP(modelSnps_.at(i)))->getSingleMarkerTest()
 				<< endl;
 	}
@@ -708,10 +701,6 @@ void Model::printModel ( const string& out, const string& filemodifier ) {
 
 	for ( int i = 0; i < parameter.covariables ; ++i ) {
 		ss << "\t" << data_->getCovMatElementName(i) << "\t\t\t"<< getBeta( i + 1 ) << endl;
-	}
-
-	for ( int i = 0; i < parameter.dummy_covariables ; ++i ) {
-		ss << "\t" << data_->getDummyCovMatElementName(i) << "\t\t\t" << getBeta( parameter.covariables + i + 1 ) << endl;
 	}
 
 	// output to screen
@@ -1274,7 +1263,7 @@ double Model::oraculateOptimalLinearBackwardStep( snp_index_t *snp ) const {
 
 	// Ignore first (fixed) columns not corresponding to SNPs
 	// TODO<BB>: Handle this differently once xMat will be pre-transformed by the fixed columns' Householder vectors
-	const size_t colOffset = getNoOfVariables() - getModelSize();	// = 1 + covariables + dummy_covariables
+	const size_t colOffset = getNoOfVariables() - getModelSize();	// = 1 + covariables
 
 	// Search best to remove
 	double bestRSS = DBL_MAX;
@@ -2640,18 +2629,6 @@ void Model::printModelNew() const {
 			SNPL<< ")"<< endl;	
 		
 		}
-		
-		for ( int i = 0; i < parameter.dummy_covariables; ++i ) {
-			SNPL << data_->getDummyCovMatElementName(i)<<" <- c(";
-			SNPL<<  data_->getDummyCovMatElement(i, 0);
-			for (int j= 1; j < data_->getIdvNo(); j++)
-			{
-				SNPL <<"," <<   data_->getDummyCovMatElement(i, j);
-			}
-			SNPL<< ")"<< endl;	
-		
-		}
-	
 
 			SNPL << "Y" <<" <- c(";
 			SNPL<< gsl_vector_get(YVec_,0);

@@ -32,7 +32,6 @@ using namespace io;
 
 const Vector MData::getXcolumn ( const size_t dim ) { return xMat.columnVector( dim ); }
 Matrix MData::getCovariableMatrix () { return covMat; }
-Matrix MData::getDummyCovariableMatrix () { return dummyCovMat; }
 const Vector MData::getY () { return yVec; }
 
 int MData::data2Geno ( const bool one, const bool two ) const {
@@ -117,7 +116,7 @@ void MData::setY ( const size_t index, const int value) {
 }	
 
 /** Default Constructor: reads the input-files, sets parameters, deallambda.hpps with missing phenotypes */
-MData::MData ( io::Input *input ) : xMat( 0, 0 ), covMat( 0, 0 ), dummyCovMat( 0, 0 ), yVec( 0 ) {
+MData::MData ( io::Input *input ) : xMat( 0, 0 ), covMat( 0, 0 ), yVec( 0 ) {
 
 	if ( NULL == input && parameter.in_file_hdf5.empty() ) {
 	////////////////////////////////////////////////////////////////////
@@ -274,7 +273,7 @@ MData::MData ( io::Input *input ) : xMat( 0, 0 ), covMat( 0, 0 ), dummyCovMat( 0
 
 	// Migrate data to modern Matrix/Vector API data
 	// TODO<BB>: Known BUG:
-	// Covariable and dummy covariable matrix should not be read
+	// Covariable matrix should not be read
 	// before checkYValues has determined the final number of individuals.
 	// So far, their sizes do not match the requirements, which should yield a GSL error!
 	if (parameter.cov_extra_file)
@@ -1004,16 +1003,6 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 			}
 			SNPL<< ")"<< endl;	
 		}
-		
-		for ( int i = 0; i < parameter.dummy_covariables; ++i ) {
-			SNPL << getDummyCovMatElementName(i)<<" <- c(";
-			SNPL<<  getDummyCovMatElement(i, 0);
-			for ( int j = 1; j < getIdvNo(); ++j ) {	// TODO<BB>: Why not start with j=0?
-				SNPL <<"," <<   getDummyCovMatElement(i, j);
-			}
-			SNPL<< ")"<< endl;	
-		}
-	
 
 			SNPL << "Y" <<" <- c(";
 			SNPL<< individuals_.at(0)->getPhenotype();
@@ -1176,16 +1165,6 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 			SNPL<< "]'"<< endl;	
 		
 		}
-		
-		for ( int i = 0; i < parameter.dummy_covariables; ++i ) {
-			SNPL << getDummyCovMatElementName(i)<<" = [";
-			SNPL<<  getDummyCovMatElement(i, 0);
-			for ( int j = 1; j < getIdvNo(); ++j ) {	// TODO<BB>: Why not start with j=0?
-				SNPL <<";" <<   getDummyCovMatElement(i, j);
-			}
-			SNPL<< "]"<< endl;	
-		}
-	
 
 			SNPL << "Y" <<" = [";
 			SNPL<< individuals_.at(0)->getPhenotype();
@@ -1986,7 +1965,6 @@ void MData::readCovariablesFile()
 	COV.open( parameter.cov_file_name.c_str(), ios::in );
 	
 	parameter.covariables = 0; 				// the number of quantitive covariables
-   	parameter.dummy_covariables = 0; 			// the number of qualitativ covariables
 	int headersize;
 	int lines=0;								// the number of lines with covarialbles read in 
 		//printLOG("Covariables 1");

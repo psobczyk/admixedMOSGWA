@@ -68,18 +68,10 @@ private:
 	/** the name of the Covariables */
 	vector <string> Cov_Names_;
 
-	/** the name of the Dummy-Covariables */
-	vector <string> D_Cov_Names_;
-
 	/** Matrix where the covariables are stored.
 	* It has parameter.covariables columns and getIdvNo() rows.
 	*/
 	linalg::AutoMatrix covMat;
-
-	/** Matrix where the dummy covariables are stored.
-	* It has parameter.dummy_covariables columns and getIdvNo() rows.
-	*/
-	linalg::AutoMatrix dummyCovMat;
 
 	/** the number of cases (for affection phenotype) */
 	int caseNo_;
@@ -201,28 +193,13 @@ public:
 	*/
 	linalg::Matrix getCovariableMatrix ();
 
-	/** Get the cov-th quantitative covaribale for the idv-th individum.
+	/** Get the cov-th covaribale for the idv-th individum.
 	* @deprecated Use {@link MData::getCovariableMatrix()} instead.
 	*/
 	DEPRECATED( double getCovMatElement ( const int cov, const int idv ) const ) { return covMat.get( idv, cov ); }
 
-	/** return the name of the cov-th quantitative covaribale */
+	/** return the name of the cov-th covaribale */
 	string getCovMatElementName( const int cov ) const { return Cov_Names_.at( cov ); }
-
-	/** Get the dummy covariable matrix.
-	* The returned Matrix provides a snapshot.
-	* Its behaviour becomes undefined if the content of MData is changed after the call of getDummyCovariableMatrix().
-	* WARNING: Modifying the matrix will most likely invalidate already calculated model selection criteria.
-	*/
-	linalg::Matrix getDummyCovariableMatrix ();
-
-	/** Get the dcov-th quantitative covaribale for the idv-th individum.
-	* @deprecated Use {@link MData::getDummyCovariableMatrix()} instead.
-	*/
-	DEPRECATED( double getDummyCovMatElement ( const int dcov, const int idv ) const ) { return dummyCovMat.get( idv, dcov ); }
-
-	/** return the name of the cov-th dummy covaribale */
-	string getDummyCovMatElementName ( const int cov ) const { return D_Cov_Names_.at( cov ); }
 
 	// for affection-type targets
 	/** # of cases in for affection-type target (should not be used for quantitive traits, intialised with 0) */
