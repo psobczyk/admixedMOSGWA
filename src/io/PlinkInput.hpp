@@ -16,7 +16,7 @@
 #ifndef IO_PLINKINPUT_HPP
 #define IO_PLINKINPUT_HPP
 
-#include "Input.hpp"
+#include "InputCo.hpp"
 #include <vector>
 #include "../linalg/AutoVector.hpp"
 #include "../linalg/AutoMatrix.hpp"
@@ -24,13 +24,14 @@
 namespace io {
 
 	/** Reads input data from PLink BIM, FAM and BED formatted files. */
-	class PlinkInput : public Input {
+	class PlinkInput : public InputCo {
 
 		/** File extensions for the Plink files for SNPs, Individuals and genome. */
 		static const char
 			* const snpListExtension,
 			* const individualListExtension,
-			* const genotypeMatrixExtension;
+			* const genotypeMatrixExtension,
+			* const covariateMatrixExtension;
 
 		/** Translation table from two genome bits to the number for the regression matrix entry. */
 		static const double genotypeTranslation[];
@@ -40,6 +41,9 @@ namespace io {
 
 		/** Stores all Individual characteristics in memory. */
 		std::vector<Individual> individualList;
+
+		/** Stores all covariate names in memory. */
+		std::vector<std::string> covariateList;
 
 		/** Genome data matrix.
 		* It is stored as transposed matrix in order to optimise memory access.
@@ -51,6 +55,12 @@ namespace io {
 
 		/** Phenotype data vector. */
 		linalg::AutoVector phenotypeVector;
+
+		/** Covariate matrix.
+		* Similar to {@link #genomeMatrixTransposed},
+		* it is stored as transposed matrix in order to optimise memory access.
+		*/
+		linalg::AutoMatrix covariateMatrixTransposed;
 
 		public:
 
@@ -74,6 +84,15 @@ namespace io {
 
 		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
 		virtual void retrievePhenotypesIntoVector ( linalg::Vector& vector );
+
+		/** Return the number of covariate vectors in the data. */
+		virtual size_t countCovariateVectors () const;
+
+		/** Get the name of the given covariate. */
+		virtual const char * getCovariateName ( const size_t covIndex ) const;
+
+		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
+		virtual void retrieveCovariatesIntoVector ( const size_t covIndex, linalg::Vector& vector );
 
 		/** Declare access to be finished, release all resources. */
 		virtual ~PlinkInput ();

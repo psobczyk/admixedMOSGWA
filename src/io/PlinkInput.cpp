@@ -14,12 +14,14 @@
  ********************************************************************************/
 
 #include "PlinkInput.hpp"
+#include "../Exception.hpp"
 #include <string>
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
 #include <cassert>
 #include <cmath>	// for nan(...)
+#include <map>
 
 using namespace std;
 using namespace linalg;
@@ -29,7 +31,8 @@ namespace io {
 	const char
 		* const PlinkInput::snpListExtension = ".bim",
 		* const PlinkInput::individualListExtension = ".fam",
-		* const PlinkInput::genotypeMatrixExtension = ".bed";
+		* const PlinkInput::genotypeMatrixExtension = ".bed",
+		* const PlinkInput::covariateMatrixExtension = ".cov";
 
 	/** Mind http://pngu.mgh.harvard.edu/~purcell/plink/binary.shtml specifies in the long translation example that the bits are swapped.
 	* E.g. 10 is stored with LSB 1! Therefore <code>genotypeTranslation[1]</code> yields <code>NaN</code>, not <code>genotypeTranslation[2]</code>!
@@ -45,8 +48,10 @@ namespace io {
 	PlinkInput::PlinkInput ( const char* const filenameTrunc )
 		:
 		genotypeMatrixTransposed( 0, 0 ),
+		covariateMatrixTransposed( 0, 0 ),
 		phenotypeVector( 0 )
 	{
+		map<const string,size_t> idvIndex;
 		string line;
 		{
 			// Read SNP-list file
@@ -140,10 +145,10 @@ namespace io {
 			bim.close();
 		}
 
+		// Read Individual-list file
+		string idvFilename( filenameTrunc );
+		idvFilename += individualListExtension;
 		{
-			// Read Individual-list file
-			string idvFilename( filenameTrunc );
-			idvFilename += individualListExtension;
 			ifstream fam( idvFilename.c_str() );
 			while ( !fam.eof() )  {
 				getline( fam, line );
@@ -203,6 +208,7 @@ namespace io {
 					sex,
 					phenotype
 				);
+				idvIndex[ familyId + '\t' + individualId ] = individualList.size();
 				individualList.push_back( individual );
 			}
 			fam.close();
@@ -260,15 +266,185 @@ namespace io {
 		}
 
 		{
-			const size_t idvs = countIndividuals();
-
 			// Cache phenotype vector
+
+			const size_t idvs = countIndividuals();
 			phenotypeVector.exactSize( countIndividuals() );
 			for ( size_t idv = 0; idv < idvs; ++idv ) {
 				const Individual individual( individualList.at( idv ) );
 				const double phenotype = individual.getPhenotype();
 				phenotypeVector.set( idv, phenotype );
 			}
+		}
+
+		{
+			// Read covariate file
+			string covFilename( filenameTrunc );
+			covFilename += covariateMatrixExtension;
+			// Note: C++ has no standard way to distinguish non-existence from other failures
+			// http://bytes.com/topic/c/answers/129448-file-stream-open-failure-reason
+			ifstream covStream( covFilename.c_str() );
+			// First line: FID IID cov1 cov2 …
+			getline( covStream, line );
+			if ( covStream ) {
+				const char
+					* text = line.c_str(),	// refers to start of text portion
+					* cursor = text;	// refers to current position in text portion
+				// Parse "FID"
+				bool firstLineOk
+				=
+					'F' == *cursor++
+					&&
+					'I' == *cursor++
+					&&
+					'D' == *cursor++
+					&& (
+						' ' == *cursor
+						||
+						'\t' == *cursor
+					);
+				while ( ' ' == *cursor || '\t' == *cursor ) ++cursor;
+				firstLineOk &=
+					'I' == *cursor++
+					&&
+					'I' == *cursor++
+					&&
+					'D' == *cursor++
+					&& (
+						0 == *cursor	// possibly 0 covariates
+						||
+						' ' == *cursor
+						||
+						'\t' == *cursor
+					);
+				if ( !firstLineOk ) {
+					throw Exception(
+						"First line of covariate file %s"
+						" should start with \"FID\tIID\","
+						" but starts with \"%s\".\n",
+						covFilename.c_str(),
+						text
+					);
+				}
+				do {
+					while ( ' ' == *cursor || '\t' == *cursor ) ++cursor;	// slurp whitespace
+					if ( *( text = cursor ) ) {
+						while ( *cursor && ' ' != *cursor && '\t' != *cursor ) ++cursor;
+						const string covId( text, cursor - text );
+						covariateList.push_back( covId );
+					}
+				} while ( *( text = cursor ) );
+
+				// Lines after the first
+				const size_t
+					idvs = countIndividuals(),
+					covs = countCovariateVectors();
+				covariateMatrixTransposed.exactSize( covs, idvs );
+				covariateMatrixTransposed.fill( ::nan( "missing" ) );
+				vector<bool> idvEncountered( idvs );
+				for (
+					vector<bool>::iterator i = idvEncountered.begin();
+					idvEncountered.end() != i;
+					++i
+				) {
+					*i = false;	// initialise all flags to false
+				}
+				while ( ! covStream.eof() ) {
+					getline( covStream, line );
+					if ( covStream.eof() ) {
+						break;
+					}
+					const char
+						* text = line.c_str(),	// refers to start of text portion
+						* cursor = text;	// refers to current position in text portion
+
+					// Parse family id
+					while ( *cursor && ' ' != *cursor && '\t' != *cursor ) ++cursor;
+					const string familyId( text, cursor - text );
+					assert( ' ' == *cursor || '\t' == *cursor );
+					// TODO: Use Exception instead of assert and permit more than one whitespace. Like in the first line: FID IID
+					++cursor;
+
+					// Parse individual id
+					text = cursor;
+					while ( *cursor && ' ' != *cursor && '\t' != *cursor ) ++cursor;
+					const string individualId( text, cursor - text );
+					assert( ' ' == *cursor || '\t' == *cursor );
+					++cursor;
+
+					const map<string,size_t>::const_iterator idvIndexIterator = idvIndex.find( familyId + '\t' + individualId );
+					if ( idvIndex.end() == idvIndexIterator ) {
+						throw Exception(
+							"Covariate file \"%s\" contains row for \"%s %s\","
+							" who is not a known individual from \"%s\".",
+							covFilename.c_str(),
+							familyId.c_str(),
+							individualId.c_str(),
+							idvFilename.c_str()
+						);
+					}
+					const size_t idv = idvIndexIterator->second;
+					if ( idvEncountered.at( idv ) ) {
+						throw Exception(
+							"Covariate file \"%s\" contains more than one row for \"%s %s\".",
+							covFilename.c_str(),
+							familyId.c_str(),
+							individualId.c_str()
+						);
+					} else {
+						idvEncountered.at( idv ) = true;
+					}
+
+					// Parse covariate values
+					Vector covariatesForIdv = covariateMatrixTransposed.columnVector( idv );
+					for ( size_t cov = 0; cov < covs; ++cov ) {
+						while ( ' ' == *cursor || '\t' == *cursor ) ++cursor;
+						text = cursor;
+						if ( ! (
+							'-' == *cursor
+							||
+							'.' == *cursor
+							||
+							'0' <= *cursor && *cursor <= '9'
+						) ) {
+							throw Exception(
+								"Expecting number"
+								" in covariate file \"%s\""
+								" for individual \"%s %s\""
+								" and covariate \"%s\","
+								" but encountered \"%s\".",
+								covFilename.c_str(),
+								familyId.c_str(),
+								individualId.c_str(),
+								covariateList.at( cov ).c_str(),
+								cursor
+							);
+						}
+						const double covValue = strtod( text, const_cast<char**>( &cursor ) );
+						covariatesForIdv.set( cov, covValue );
+					}
+					while ( ' ' == *cursor || '\t' == *cursor ) ++cursor;
+					if ( *( text = cursor ) ) {
+						throw Exception(
+							"Covariate file \"%s\" contains more than %u"
+							" covariate values for \"%s %s\".",
+							covFilename.c_str(),
+							covs,
+							familyId.c_str(),
+							individualId.c_str()
+						);
+					}
+				}
+
+				// Remaining individuals have covariate values all missing
+				for ( size_t idv = 0; idv < idvs; ++idv ) {
+					if ( ! idvEncountered.at( idv ) ) {
+						Vector covariatesForIdv = covariateMatrixTransposed.columnVector( idv );
+						covariatesForIdv.fill( ::nan( "missing" ) );
+					}
+				}
+			}
+			covStream.close();
 		}
 	}
 
@@ -294,6 +470,18 @@ namespace io {
 
 	void PlinkInput::retrievePhenotypesIntoVector ( Vector& vector ) {
 		vector.copy( phenotypeVector );
+	}
+
+	size_t PlinkInput::countCovariateVectors () const {
+		return covariateList.size();
+	}
+
+	const char * PlinkInput::getCovariateName ( const size_t covIndex ) const {
+		return covariateList.at( covIndex ).c_str();
+	}
+
+	void PlinkInput::retrieveCovariatesIntoVector ( const size_t covIndex, linalg::Vector& vector ) {
+		vector.copy( covariateMatrixTransposed.rowVector( covIndex ) );
 	}
 
 	PlinkInput::~PlinkInput () {

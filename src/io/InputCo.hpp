@@ -26,6 +26,9 @@ namespace io {
 		/** Return the number of covariate vectors in the data. */
 		virtual size_t countCovariateVectors () const = 0;
 
+		/** Get the name of the given covariate. */
+		virtual const char * getCovariateName ( const size_t covIndex ) const = 0;
+
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
 		virtual void retrieveCovariatesIntoVector ( const size_t covIndex, linalg::Vector& vector ) = 0;
 
