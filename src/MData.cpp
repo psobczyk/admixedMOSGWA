@@ -2101,6 +2101,8 @@ void MData::readCovariablesFile()
 			//~ cout << PosList[i]<< endl;
 		//~ }
 	covMat.upSize(lines,0);	
+		// TODO<BB>: Known Bug: if .cov-file has less than getIdvNo() individual entries,
+		// PosList map will map to lines in covMat beyond the last one.
 		for ( i=2; i< headersize; i++ ) // start with 2, since 0, 1 is fid, iid
 		{
 			if ( selectedVar.at(i))
