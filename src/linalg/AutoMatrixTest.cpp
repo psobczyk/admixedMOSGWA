@@ -40,6 +40,7 @@ namespace test {
 		void testRowColumnVector ();
 		void testDiagonalVector ();
 		void testNewRowColumn ();
+		void testRemoveRowColumn ();
 		void testHouseholder ();
 		void testGemmStraight ();
 		void testGemmTransposed ();
@@ -61,6 +62,7 @@ namespace test {
 			addTestMethod( "AutoMatrixTest::testRowColumnVector", this, &AutoMatrixTest::testRowColumnVector );
 			addTestMethod( "AutoMatrixTest::testDiagonalVector", this, &AutoMatrixTest::testDiagonalVector );
 			addTestMethod( "AutoMatrixTest::testNewRowColumn", this, &AutoMatrixTest::testNewRowColumn );
+			addTestMethod( "AutoMatrixTest::testRemoveRowColumn", this, &AutoMatrixTest::testRemoveRowColumn );
 			addTestMethod( "AutoMatrixTest::testHouseholder", this, &AutoMatrixTest::testHouseholder );
 			addTestMethod( "AutoMatrixTest::testGemmStraight", this, &AutoMatrixTest::testGemmStraight );
 			addTestMethod( "AutoMatrixTest::testGemmTransposed", this, &AutoMatrixTest::testGemmTransposed );
@@ -552,6 +554,64 @@ namespace test {
 		m.fill( data );
 		assert_eq( "w[0]", 5, w.get( 0 ) );
 		assert_eq( "w[1]", 6, w.get( 1 ) );
+	}
+
+	/** Test {@link AutoMatrix::removeRow()} and {@link AutoMatrix::removeColumn()}. */
+	void AutoMatrixTest::testRemoveRowColumn () {
+		const double data[] = {
+			0.0, 0.1, 0.2, 0.3, 0.4,
+			1.0, 1.1, 1.2, 1.3, 1.4,
+			2.0, 2.1, 2.2, 2.3, 2.4,
+			3.0, 3.1, 3.2, 3.3, 3.4,
+			4.0, 4.1, 4.2, 4.3, 4.4
+		};
+
+		AutoMatrix m( 5, 5 );
+		m.fill( data );
+
+		m.removeRow( 4 );
+		assert_eq( "First row-count", 4, m.countRows() );
+		assert_eq( "First col-count", 5, m.countColumns() );
+		assert_eq( "m1[0,0]", 0.0, m.get( 0, 0 ) );
+		assert_eq( "m1[1,4]", 1.4, m.get( 1, 4 ) );
+		assert_eq( "m1[2,0]", 2.0, m.get( 2, 0 ) );
+		assert_eq( "m1[3,4]", 3.4, m.get( 3, 4 ) );
+
+		m.removeColumn( 0 );
+		assert_eq( "Second row-count", 4, m.countRows() );
+		assert_eq( "Second col-count", 4, m.countColumns() );
+		assert_eq( "m2[0,0]", 0.1, m.get( 0, 0 ) );
+		assert_eq( "m2[1,3]", 1.4, m.get( 1, 3 ) );
+		assert_eq( "m2[2,0]", 2.1, m.get( 2, 0 ) );
+		assert_eq( "m2[3,3]", 3.4, m.get( 3, 3 ) );
+
+		m.removeRow( 0 );
+		assert_eq( "Third row-count", 3, m.countRows() );
+		assert_eq( "Third col-count", 4, m.countColumns() );
+		assert_eq( "m3[0,0]", 1.1, m.get( 0, 0 ) );
+		assert_eq( "m3[1,3]", 2.4, m.get( 1, 3 ) );
+		assert_eq( "m3[2,0]", 3.1, m.get( 2, 0 ) );
+
+		m.removeColumn( 3 );
+		assert_eq( "Fourth row-count", 3, m.countRows() );
+		assert_eq( "Fourth col-count", 3, m.countColumns() );
+		assert_eq( "m4[0,0]", 1.1, m.get( 0, 0 ) );
+		assert_eq( "m4[1,2]", 2.3, m.get( 1, 2 ) );
+		assert_eq( "m4[2,2]", 3.3, m.get( 2, 2 ) );
+
+		m.removeRow( 1 );
+		assert_eq( "Fifth row-count", 2, m.countRows() );
+		assert_eq( "Fifth col-count", 3, m.countColumns() );
+		assert_eq( "m5[0,0]", 1.1, m.get( 0, 0 ) );
+		assert_eq( "m5[1,2]", 3.3, m.get( 1, 2 ) );
+
+		m.removeColumn( 1 );
+		assert_eq( "Sixth row-count", 2, m.countRows() );
+		assert_eq( "Sixth col-count", 2, m.countColumns() );
+		assert_eq( "m6[0,0]", 1.1, m.get( 0, 0 ) );
+		assert_eq( "m6[0,1]", 1.3, m.get( 0, 1 ) );
+		assert_eq( "m6[1,0]", 3.1, m.get( 1, 0 ) );
+		assert_eq( "m6[1,1]", 3.3, m.get( 1, 1 ) );
 	}
 
 	/** Test {@link Matrix::householderTransform( double, Vector )}. */

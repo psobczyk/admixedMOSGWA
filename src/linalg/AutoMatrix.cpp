@@ -23,7 +23,7 @@ using namespace std;
 namespace linalg {
 
 	size_t AutoMatrix::calculateSize ( const size_t rows, const size_t cols ) {
-		if ( 0 == rows || 0 == cols ) return 0;	// guard against division by zero in assert below
+		if ( 0 == rows || 0 == cols ) return 0; // guard against division by zero in assert below
 		const size_t required = rows * cols * sizeof( double );
 		assert( required / rows / cols == sizeof( double ) );	// Guard against integer overflow
 		return required;
@@ -183,6 +183,30 @@ namespace linalg {
 		const size_t col = countColumns();
 		upSize( countRows(), col + 1 );
 		return columnVector( col );
+	}
+
+	void AutoMatrix::removeRow ( const size_t row ) {
+		const size_t
+			rows = countRows(),
+			cols = countColumns();
+		for ( size_t i = row + 1; i < rows; ++i ) {
+			const Vector rowSource = rowVector( i );
+			Vector rowTarget = rowVector( i - 1 );
+			rowTarget.copy( rowSource );
+		}
+		upSize( rows - 1, cols );
+	}
+
+	void AutoMatrix::removeColumn ( const size_t col ) {
+		const size_t
+			rows = countRows(),
+			cols = countColumns();
+		for ( size_t i = col + 1; i < cols; ++i ) {
+			const Vector colSource = columnVector( i );
+			Vector colTarget = columnVector( i - 1 );
+			colTarget.copy( colSource );
+		}
+		upSize( rows, cols - 1 );
 	}
 
 	AutoMatrix::~AutoMatrix () {

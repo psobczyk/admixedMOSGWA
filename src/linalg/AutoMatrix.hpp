@@ -74,6 +74,22 @@ namespace linalg {
 		*/
 		Vector newColumn ();
 
+		/** Delete the given row.
+		* Rows are shifted from below, if necessary.
+		* If you only want to decrement the number of rows,
+		* use {@link #upSize} or {@link #exactSize}.
+		* @see #countRows
+		*/
+		void removeRow ( const size_t row );
+
+		/** Delete the given column.
+		* Columns are shifted from the right, if necessary.
+		* If you only want to decrement the number of rows,
+		* use {@link #upSize} or {@link #exactSize}.
+		* @see #countColumns
+		*/
+		void removeColumn ( const size_t col );
+
 		/** Destruct, particularly free the internal <code>double</code> array. */
 		virtual ~AutoMatrix ();
 	};
