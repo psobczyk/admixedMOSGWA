@@ -113,6 +113,15 @@ namespace linalg {
 		gslInit( dims, vector.data );
 	}
 
+	void AutoVector::removeDimension ( const size_t dim ) {
+		const size_t dims = countDimensions();
+		for ( size_t i = dim + 1; i < dims; ++i ) {
+			const double x = get( i );
+			set( i - 1, x );
+		}
+		upSize( dims - 1 );
+	}
+
 	AutoVector::~AutoVector () {
 		free( vector.data );
 		vector.data = NULL;

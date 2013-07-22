@@ -37,6 +37,7 @@ namespace test {
 		void testResizePacked ();
 		void testResizeNonPacked ();
 		void testUpSize ();
+		void testRemoveDimension ();
 		void testPackedSubVector ();
 		void testStriddenSubVector ();
 		void testSumSquares ();
@@ -62,6 +63,7 @@ namespace test {
 			addTestMethod( "AutoVectorTest::testResizePacked", this, &AutoVectorTest::testResizePacked );
 			addTestMethod( "AutoVectorTest::testResizeNonPacked", this, &AutoVectorTest::testResizeNonPacked );
 			addTestMethod( "AutoVectorTest::testUpSize", this, &AutoVectorTest::testUpSize );
+			addTestMethod( "AutoVectorTest::testRemoveDimension", this, &AutoVectorTest::testRemoveDimension );
 			addTestMethod( "AutoVectorTest::testPackedSubVector", this, &AutoVectorTest::testPackedSubVector );
 			addTestMethod( "AutoVectorTest::testStriddenSubVector", this, &AutoVectorTest::testStriddenSubVector );
 			addTestMethod( "AutoVectorTest::testSumSquares", this, &AutoVectorTest::testSumSquares );
@@ -265,7 +267,36 @@ namespace test {
 		}
 	}
 
-	/** Test {@link AutoVector::upSize( size_t, size_t )}. */
+	/** Test {@link AutoVector::removeDimension( size_t )}. */
+	void AutoVectorTest::testRemoveDimension () {
+		const double data[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+		AutoVector v( 8 );
+		v.fill( data );
+
+		v.removeDimension( 7 );
+		assert_eq( "First dim-count", 7, v.countDimensions() );
+		assert_eq( "v1[0]", 1.0, v.get( 0 ) );
+		assert_eq( "v1[1]", 2.0, v.get( 1 ) );
+		assert_eq( "v1[5]", 6.0, v.get( 5 ) );
+		assert_eq( "v1[6]", 7.0, v.get( 6 ) );
+
+		v.removeDimension( 0 );
+		assert_eq( "Second dim-count", 6, v.countDimensions() );
+		assert_eq( "v2[0]", 2.0, v.get( 0 ) );
+		assert_eq( "v2[1]", 3.0, v.get( 1 ) );
+		assert_eq( "v2[4]", 6.0, v.get( 4 ) );
+		assert_eq( "v2[5]", 7.0, v.get( 5 ) );
+
+		v.removeDimension( 3 );
+		assert_eq( "Third dim-count", 5, v.countDimensions() );
+		assert_eq( "v3[0]", 2.0, v.get( 0 ) );
+		assert_eq( "v3[1]", 3.0, v.get( 1 ) );
+		assert_eq( "v3[2]", 4.0, v.get( 2 ) );
+		assert_eq( "v3[3]", 6.0, v.get( 3 ) );
+		assert_eq( "v3[4]", 7.0, v.get( 4 ) );
+	}
+
+	/** Test {@link AutoVector::upSize( size_t )}. */
 	void AutoVectorTest::testUpSize () {
 		const double data[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
 

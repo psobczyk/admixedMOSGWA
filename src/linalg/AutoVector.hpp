@@ -61,6 +61,14 @@ namespace linalg {
 		*/
 		void upSize ( const size_t dims );
 
+		/** Delete the given coordinate.
+		* Elements after that are shifted, if necessary.
+		* If you only want to decrement the number of dimensions,
+		* use {@link #upSize} or {@link #exactSize}.
+		* @see #countDimensions
+		*/
+		void removeDimension ( const size_t dim );
+
 		/** Destruct, particularly free the internal <code>double</code> array. */
 		virtual ~AutoVector ();
 	};
