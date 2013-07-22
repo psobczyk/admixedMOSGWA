@@ -193,7 +193,7 @@ namespace linalg {
 
 	Matrix::~Matrix () {}
 
-	std::ostream& operator<< ( std::ostream& s, const Matrix& m ) {
+	ostream& operator<< ( ostream& s, const Matrix& m ) {
 		const size_t
 			rows = m.countRows(),
 			cols = m.countColumns();

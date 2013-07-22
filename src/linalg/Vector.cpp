@@ -202,7 +202,7 @@ namespace linalg {
 
 	Vector::~Vector () {}
 
-	std::ostream& operator<< ( std::ostream& s, const Vector& v ) {
+	ostream& operator<< ( ostream& s, const Vector& v ) {
 		for ( size_t dim = 0; dim < v.countDimensions(); ++dim ) {
 			if ( 0 < dim ) s << '\t';
 			s << v.get( dim );

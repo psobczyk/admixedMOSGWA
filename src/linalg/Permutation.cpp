@@ -96,7 +96,7 @@ namespace linalg {
 
 	Permutation::~Permutation () {}
 
-	std::ostream& operator<< ( std::ostream& s, const Permutation& p ) {
+	ostream& operator<< ( ostream& s, const Permutation& p ) {
 		for ( size_t dim = 0; dim < p.countDimensions(); ++dim ) {
 			if ( 0 < dim ) s << '\t';
 			s << p.get( dim );
