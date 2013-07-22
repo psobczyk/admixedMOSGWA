@@ -66,4 +66,8 @@ public:
 	char getAllele2 () const;
 	double getSingleMarkerTest () const;
 };
+
+/** Output a {@link SNP}. */
+std::ostream& operator<< ( std::ostream& s, const SNP& snp );
+
 #endif

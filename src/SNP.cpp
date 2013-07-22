@@ -1,5 +1,6 @@
 #include "SNP.hpp"
 #include "Exception.hpp"
+#include <ostream>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -99,4 +100,23 @@ char SNP::getAllele2 () const {
 
 double SNP::getSingleMarkerTest () const {
 	return singleMarkerTest;
+}
+
+ostream& operator<< ( ostream& s, const SNP& snp ) {
+	return s
+		<< "SNP( \""
+		<< snp.getChromosome()
+		<< "\",\""
+		<< snp.getSnpId()
+		<< "\",\""
+		<< snp.getGeneticDistance()
+		<< "\",\""
+		<< snp.getBasePairPosition()
+		<< "\",\""
+		<< snp.getAllele1()
+		<< "\",\""
+		<< snp.getAllele2()
+		<< "\",\""
+		<< snp.getSingleMarkerTest()
+		<< ")";
 }
