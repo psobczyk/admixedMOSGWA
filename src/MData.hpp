@@ -158,13 +158,14 @@ public:
 	* The entries are -1 (negative homozygote), 0 (heterozygote), +1 (positive homozygote)
 	* for the respective individual and SNP, or <code>NaN</code> for missing data.
 	* The returned matrix column provides a snapshot of currently stored data.
-	* Its behaviour becomes undefined if the content of MData is changed after the call of getX().
+	* Its behaviour becomes undefined
+	* if the content of MData is changed after the call of <code>getXcolumn()</code>.
 	* WARNING: Modifying the X matrix will most likely invalidate already calculated model selection criteria.
 	*/
-	const linalg::Vector getXcolumn ( const size_t dim );
+	const linalg::Vector getXcolumn ( const size_t snp );
 
 	/** returns the genotype of the idv-th individual for the snp-th SNP.
-	* @deprecated Use {@link MData::getX()} instead to access the regression matrix.
+	* @deprecated Use {@link MData::getXcolumn()} instead to access the regression matrix.
 	*/
 	DEPRECATED( int getGenoMatElement ( const int snp, const int idv ) const );
 
@@ -186,17 +187,12 @@ public:
 	/** For an integer i, return the (absolute) postition of the SNP with the i-th lowest p-value. */
 	size_t getOrderedSNP ( const size_t snp ) const;
 
-	/** Get the covariable matrix.
-	* The returned Matrix provides a snapshot.
-	* Its behaviour becomes undefined if the content of MData is changed after the call of getCovariableMatrix().
+	/** Access a column of the covariate matrix.
+	* The returned <code>Vector</code> provides a snapshot.
+	* Its behaviour becomes undefined if the content of MData is changed after the call.
 	* WARNING: Modifying the matrix will most likely invalidate already calculated model selection criteria.
 	*/
-	linalg::Matrix getCovariableMatrix ();
-
-	/** Get the cov-th covaribale for the idv-th individum.
-	* @deprecated Use {@link MData::getCovariableMatrix()} instead.
-	*/
-	DEPRECATED( double getCovMatElement ( const int cov, const int idv ) const ) { return covMat.get( idv, cov ); }
+	const linalg::Vector getCovariateColumn ( const size_t cov );
 
 	/** return the name of the cov-th covaribale */
 	string getCovMatElementName( const int cov ) const { return Cov_Names_.at( cov ); }
