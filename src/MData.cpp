@@ -30,8 +30,8 @@ using namespace io;
 //  class MData
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-const Vector MData::getXcolumn ( const size_t dim ) { return xMat.columnVector( dim ); }
-Matrix MData::getCovariableMatrix () { return covMat; }
+const Vector MData::getXcolumn ( const size_t snp ) { return xMat.columnVector( snp ); }
+const Vector MData::getCovariateColumn ( const size_t cov ) { return covMat.columnVector( cov ); }
 const Vector MData::getY () { return yVec; }
 
 int MData::data2Geno ( const bool one, const bool two ) const {
@@ -997,23 +997,24 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 		
 		for ( int i = 0; i < parameter.covariables; ++i ) {
 			SNPL << getCovMatElementName(i)<<" <- c(";
-			SNPL<<  getCovMatElement(i, 0);
-			for ( int j = 1; j < getIdvNo(); ++j ) {	// TODO<BB>: Why not start with j=0?
-				SNPL <<"," <<   getCovMatElement(i, j);
+			const Vector covVec = const_cast<MData*>( this )->getCovariateColumn( i );
+			SNPL << covVec.get( 0 );
+			for ( size_t j = 1; j < getIdvNo(); ++j ) {
+				SNPL << "," << covVec.get( j );
 			}
 			SNPL<< ")"<< endl;	
 		}
 
 			SNPL << "Y" <<" <- c(";
 			SNPL<< individuals_.at(0)->getPhenotype();
-			for ( int j = 1; j < getIdvNo(); ++j ) {	// TODO<BB>: Why not start with j=0?
+			for ( size_t j = 1; j < getIdvNo(); ++j ) {
 				SNPL <<","<< individuals_.at(j)->getPhenotype();
 			}
 			SNPL<< ")"<< endl;
 		SNPL <<endl;
 		
 			SNPL << "Intercept" <<" <- c(1";
-			for ( int j = 1; j < getIdvNo(); ++j ) {	// TODO<BB>: Why not start with j=0?
+			for ( size_t j = 1; j < getIdvNo(); ++j ) {
 				SNPL <<","<<1;
 			}
 			SNPL<< ")"<< endl;
@@ -1158,9 +1159,10 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 		
 		for ( int i = 0; i < parameter.covariables; ++i ) {
 			SNPL << getCovMatElementName(i)<<" = [";
-			SNPL<<  getCovMatElement(i, 0);
-			for ( int j = 1; j < getIdvNo(); ++j ) {	// TODO<BB>: Why not start with j=0?
-				SNPL <<";" <<   getCovMatElement(i, j);
+			const Vector covVec = const_cast<MData*>( this )->getCovariateColumn( i );
+			SNPL << covVec.get( 0 );
+			for ( int j = 1; j < getIdvNo(); ++j ) {
+				SNPL << ";" << covVec.get( j );
 			}
 			SNPL<< "]'"<< endl;	
 		
@@ -1168,7 +1170,7 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 
 			SNPL << "Y" <<" = [";
 			SNPL<< individuals_.at(0)->getPhenotype();
-			for ( int j = 1; j < getIdvNo(); ++j ) {	// TODO<BB>: Why not start with j=0?
+			for ( size_t j = 1; j < getIdvNo(); ++j ) {
 				SNPL <<";"<< individuals_.at(j)->getPhenotype();
 			}
 			SNPL<< "]"<< endl; //here the ; remain 
@@ -2140,11 +2142,6 @@ void MData::readCovariablesFile()
 		
 	
 	delete[] PosList;
-	
-	//~ for (j=0; j < getIdvNo(); j++)
-	//~ {
-		//~ cout << getCovMatElement(0, j)<<" ";
-	//~ }
 }
 
 
