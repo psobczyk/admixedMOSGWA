@@ -1,6 +1,6 @@
 PARSER_OBS = parser/Parslet.o parser/ParsletTemplate.o parser/NameParslet.o parser/SectionParslet.o parser/VariableParslet.o parser/BoolParslet.o parser/IntParslet.o parser/DoubleParslet.o parser/StringParslet.o parser/VectorStringParslet.o parser/ChoiceParslet.o parser/ConfigParser.o
 LINALG_OBS = linalg/package.o linalg/Vector.o linalg/AutoVector.o linalg/Matrix.o linalg/AutoMatrix.o linalg/Permutation.o linalg/AutoPermutation.o
-IO_OBS = io/Input.o io/PlinkInput.o io/Hdf5Input.o
+IO_OBS = io/Input.o io/InputCo.o io/PlinkInput.o io/Hdf5Input.o
 MINIMIZATION_OBS = minimization/GslMinimizerHolder.o minimization/GslMinimizerRetriever.o minimization/Minimizable.o minimization/Minimizer.o
 LOOKUP_OBS = lookup/package.o lookup/ModelIndex.o lookup/MutableModelIndex.o
 OBJ = $(PARSER_OBS) $(LINALG_OBS) $(IO_OBS) $(MINIMIZATION_OBS) $(LOOKUP_OBS)
