@@ -337,29 +337,22 @@ void Model::initializeModel () {
 	 gsl_vector_set_zero (betas_);
 
 	// Set XMat_
-	// Rows of XMat_: Intercept, covariables, SNP-Data
-	for ( int i = 0; i < data_->getIdvNo(); ++i ) { //this is the row loop	
-		// Intercept
-		gsl_matrix_set(XMat_, i, 0, 1);
-		
-		// covariables	
-		for ( int j = 0; j < parameter.covariables; ++j ) {
-			gsl_matrix_set(XMat_, i, j+1, data_->getCovMatElement(j, i)); // + 1 for intercept 
-			// getCovMatElement will be transposed
-		}
-		
-		// genotype-data
-		for ( int j = 0; j < getModelSize(); ++j ) {
-			// TODO: resolve suboptimal loop nesting
-			const Vector genotypes = const_cast<MData*>( data_ )->getXcolumn( modelSnps_.at( j ) );
-			gsl_matrix_set(
-				XMat_,
-				i,
-				1 + parameter.covariables + j,
-				genotypes.get( i )
-			);
-		}
+	// Columns of XMat_: intercept, covariables, SNP-Data
+	Matrix xMat( *XMat_ );
+	size_t col = 0;
+	xMat.columnVector( col++ ).fill( 1.0 );		// intercept
+	for ( size_t cov = 0; cov < parameter.covariables; ++cov ) {
+		const Vector covVec = const_cast<MData*>( data_ )->getCovariateColumn( cov );
+		Vector xVec = xMat.columnVector( col++ );
+		xVec.copy( covVec );
 	}
+	for ( size_t modelSnp = 0; modelSnp < getModelSize(); ++modelSnp ) {
+		const size_t snp = modelSnps_.at( modelSnp );
+		const Vector genotypeVec = const_cast<MData*>( data_ )->getXcolumn( snp );
+		Vector xVec = xMat.columnVector( col++ );
+		xVec.copy( genotypeVec );
+	}
+	assert( getNoOfVariables() == col );
 
 	// Set YVec_
 	for ( int i = 0; i < data_->getIdvNo(); ++i ) {
@@ -2621,10 +2614,11 @@ void Model::printModelNew() const {
 		
 		for ( int i = 0; i < parameter.covariables; ++i ) {
 			SNPL << data_->getCovMatElementName(i)<<" <- c(";
-			SNPL<<  data_->getCovMatElement(i, 0);
+			const Vector covVec = const_cast<MData*>( data_ )->getCovariateColumn( i );
+			SNPL <<  covVec.get( 0 );
 			for (int j= 1; j < data_->getIdvNo(); j++)
 			{
-				SNPL <<"," <<   data_->getCovMatElement(i, j);
+				SNPL << "," << covVec.get( j );
 			}
 			SNPL<< ")"<< endl;	
 		
