@@ -106,7 +106,7 @@ namespace linalg {
 		virtual ~Permutation ();
 	};
 
-	/** Ouput a {@link Permutation}. */
+	/** Output a {@link Permutation}. */
 	std::ostream& operator<< ( std::ostream& s, const Permutation& p );
 
 }

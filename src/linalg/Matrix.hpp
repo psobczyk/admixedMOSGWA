@@ -216,7 +216,7 @@ namespace linalg {
 		virtual ~Matrix ();
 	};
 
-	/** Ouput an {@link AutoMatrix}. */
+	/** Output an {@link AutoMatrix}. */
 	std::ostream& operator<< ( std::ostream& s, const Matrix& m );
 
 }

@@ -173,7 +173,7 @@ namespace linalg {
 		virtual ~Vector ();
 	};
 
-	/** Ouput a {@link Vector}. */
+	/** Output a {@link Vector}. */
 	std::ostream& operator<< ( std::ostream& s, const Vector& v );
 
 }
