@@ -204,8 +204,9 @@ namespace io {
 		// prepare space
 		const hsize_t coordinates[1] = { index };
 		assert( coordinates[0] == index );	// guard against assignment overflow
-		// REMARK<BB>: select breaks thread-safety.
-		if ( 0 > H5Sselect_elements( dataspaceId.id, H5S_SELECT_SET, 1, coordinates ) ) {
+		// mark selection on a copy only to keep it thread-safe
+		Hdf5DataspaceId dataspaceCopy( H5Scopy( dataspaceId.id ), dataspaceId.name + "[clone]" );
+		if ( 0 > H5Sselect_elements( dataspaceCopy.id, H5S_SELECT_SET, 1, coordinates ) ) {
 			throw Exception(
 				"HDF5 \"%s\" dataset select element %u failed.",
 				datasetId.getName(),
@@ -218,7 +219,7 @@ namespace io {
 		string value;
 		if ( isVarString ) {
 			char* buffer[1];
-			if ( 0 > H5Dread( datasetId.id, memType.id, memSpace.id, dataspaceId.id, H5P_DEFAULT, buffer ) ) {
+			if ( 0 > H5Dread( datasetId.id, memType.id, memSpace.id, dataspaceCopy.id, H5P_DEFAULT, buffer ) ) {
 				throw Exception(
 					"HDF5 \"%s\" dataset read variable length string[%u] failed.",
 					datasetId.getName(),
@@ -235,7 +236,7 @@ namespace io {
 			}
 		} else {
 			vector<char> buffer( datatypeSize );
-			if ( 0 > H5Dread( datasetId.id, memType.id, memSpace.id, dataspaceId.id, H5P_DEFAULT, buffer.data() ) ) {
+			if ( 0 > H5Dread( datasetId.id, memType.id, memSpace.id, dataspaceCopy.id, H5P_DEFAULT, buffer.data() ) ) {
 				throw Exception(
 					"HDF5 \"%s\" dataset read fixed length string[%u] failed.",
 					datasetId.getName(),
@@ -262,8 +263,9 @@ namespace io {
 		// prepare space
 		const hsize_t coordinates[1] = { index };
 		assert( coordinates[0] == index );	// guard against assignment overflow
-		// REMARK<BB>: select breaks thread-safety.
-		if ( 0 > H5Sselect_elements( dataspaceId.id, H5S_SELECT_SET, 1, coordinates ) ) {
+		// mark selection on a copy only to keep it thread-safe
+		Hdf5DataspaceId dataspaceCopy( H5Scopy( dataspaceId.id ), dataspaceId.name + "[clone]" );
+		if ( 0 > H5Sselect_elements( dataspaceCopy.id, H5S_SELECT_SET, 1, coordinates ) ) {
 			throw Exception(
 				"HDF5 \"%s\" dataset select element %u failed.",
 				datasetId.getName(),
@@ -274,7 +276,7 @@ namespace io {
 
 		// read
 		double value;
-		if ( 0 > H5Dread( datasetId.id, H5T_NATIVE_DOUBLE, memSpace.id, dataspaceId.id, H5P_DEFAULT, &value ) ) {
+		if ( 0 > H5Dread( datasetId.id, H5T_NATIVE_DOUBLE, memSpace.id, dataspaceCopy.id, H5P_DEFAULT, &value ) ) {
 			throw Exception(
 				"HDF5 \"%s\" dataset read double[%u] failed.",
 				datasetId.getName(),
@@ -302,11 +304,12 @@ namespace io {
 		const hsize_t
 			start[2] = { row, 0 },
 			count[2] = { 1, countColumns() };
-		// REMARK<BB>: select breaks thread-safety.
-		const herr_t status = H5Sselect_hyperslab( dataspaceId.id, H5S_SELECT_SET, start, NULL, count, NULL );
+		// mark selection on a copy only to keep it thread-safe
+		Hdf5DataspaceId dataspaceCopy( H5Scopy( dataspaceId.id ), dataspaceId.name + "[clone]" );
+		const herr_t status = H5Sselect_hyperslab( dataspaceCopy.id, H5S_SELECT_SET, start, NULL, count, NULL );
 
 		Hdf5DataspaceId memSpace( H5Screate_simple( 1, &count[1], NULL ), "creature of simple row space" );
-		const herr_t status2 = H5Dread( datasetId.id, H5T_NATIVE_DOUBLE, memSpace.id, dataspaceId.id, H5P_DEFAULT, array );
+		const herr_t status2 = H5Dread( datasetId.id, H5T_NATIVE_DOUBLE, memSpace.id, dataspaceCopy.id, H5P_DEFAULT, array );
 		if ( 0 > status2 ) {
 			throw Exception(
 				"HDF5 \"%s\" dataset read row[%u] of length %u failed.",
