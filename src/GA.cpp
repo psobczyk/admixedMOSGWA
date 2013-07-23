@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2011–2013, Artur Gola, Bernhard Bodenstorfer.		*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "GA.hpp"  
 #include <algorithm>
 #include <iterator>
@@ -1402,10 +1417,10 @@ void GA::calculateIndividualTests()
   printLOG("GA: Start Individual Tests");
   
   Model SingleSNP( data ); // create Model with current MData
-  int*  SNPList = new int[data.getSnpNo()]; // to store information for SortVec snp_order_
+  size_t*  SNPList = new size_t[data.getSnpNo()]; // to store information for SortVec snp_order_
   double* TestStat = new double[data.getSnpNo()]; // to store information for SortVec snp_order_
   
-  for (unsigned int i = 0; i < data.getSnpNo(); ++i ) 
+  for ( size_t i = 0; i < data.getSnpNo(); ++i )
   {
     SNPList[i] = i; // for sorting, store positon 
     TestStat[i]= SingleSNP.computeSingleRegressorTest(i); // compute p-value of single marker test, and store for sorting

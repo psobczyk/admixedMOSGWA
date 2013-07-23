@@ -70,10 +70,13 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	const int
 		dataSize = mData.getSnpNo(),
 		remainingSize = dataSize - index.size();
-	vector<int> snps( remainingSize );
+	vector<size_t> snps( remainingSize );
 	vector<double> scores( remainingSize );
-	// Erich: Should this loop be parallelized? - BB: You can try, scoreTest() should be thread-safe. But be careful with the conditional increment ++j. I think it may not be worhwhile at this point in time for the remaining experiments.
-	for ( int i = 0, j = 0; i < dataSize; ++i ) {
+	// Erich: Should this loop be parallelized?
+	// BB: You can try, scoreTest() should be thread-safe.
+	// But be careful with the conditional increment ++j.
+	// I think it may not be worthwhile for the remaining experiments.
+	for ( size_t i = 0, j = 0; i < dataSize; ++i ) {
 		if ( ! index.contains( i ) ) {
 			snps[j] = i;
 			scores[j] = scoreTest( const_cast<MData&>( mData ).getXcolumn( i ) );
@@ -84,7 +87,8 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	assert( remainingSize == scores.size() );
 	sortVec.fillVec( remainingSize, &snps[0], &scores[0], false );
 }
-int ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec,int  start, int stop ) {
+
+size_t ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec, size_t start, size_t stop ) {
 	const ModelIndex index = model.getIndex();
 	const size_t
 		rows = mData.getIdvNo(),
@@ -126,20 +130,23 @@ int ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec,int  st
 	setCoefficients( coefficients );
 
 	// score tests for snps not yet in model
-	const int
-		dataSize =stop,//ERICH original: mData.getSnpNo(),
+	const size_t
+		dataSize = stop,//ERICH original: mData.getSnpNo(),
 		remainingSize = stop-start+1; //ERICH origninal dataSize - index.size();
 	                                     //da liegt aber eigentlich immer ein SNP drinnen der schon im Model ist, daher gbit es einen SNP zuviel fast immer!
-	vector<int> snps( remainingSize );
+	vector<size_t> snps( remainingSize );
 	vector<double> scores( remainingSize );
-	// Erich: Should this loop be parallelized? - BB: You can try, scoreTest() should be thread-safe. But be careful with the conditional increment ++j. I think it may not be worhwhile at this point in time for the remaining experiments.
-	int J=0;
-	for ( int i = start, j = 0  ; i < stop+1; ++i ) {
+	// Erich: Should this loop be parallelized?
+	// BB: You can try, scoreTest() should be thread-safe.
+	// But be careful with the conditional increment ++j.
+	// I think it may not be worthwhile for the remaining experiments.
+	size_t J = 0;
+	for ( size_t i = start, j = 0; i <= stop; ++i ) {
 	//DEBUG	cerr<<"SCORE:SNP="<<i<<endl;
 		if ( ! index.contains( i ) ) {
 			snps[j] = i;
 			scores[j] = scoreTest( const_cast<MData&>( mData ).getXcolumn( i ) );
-			J=j;++j;
+			J = j++;
 		}
 	}
 	assert( remainingSize == snps.size() );

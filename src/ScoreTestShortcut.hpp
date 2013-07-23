@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2012–2013, Bernhard Bodenstorfer, Erich Dolejsi		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -39,7 +39,7 @@ class ScoreTestShortcut : private Firthimizer {
 	* @param sortVec will be updated to contain the SNP indices sorted by test result.
 	*/
 	void scoreTests ( const Model& model, SortVec& sortVec );
-        int scoreTests ( const Model& model, SortVec& sortVec,int, int );
+	size_t scoreTests ( const Model& model, SortVec& sortVec, size_t, size_t );
 
 
 };
