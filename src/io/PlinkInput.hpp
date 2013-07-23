@@ -89,7 +89,7 @@ namespace io {
 		virtual size_t countCovariateVectors () const;
 
 		/** Get the name of the given covariate. */
-		virtual const char * getCovariateName ( const size_t covIndex ) const;
+		virtual std::string getCovariateName ( const size_t covIndex ) const;
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
 		virtual void retrieveCovariatesIntoVector ( const size_t covIndex, linalg::Vector& vector );

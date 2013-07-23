@@ -309,13 +309,13 @@ namespace test {
 		AutoVector vector( plinkInput.countIndividuals() );
 
 		{
-			const char * name = plinkInput.getCovariateName( 0 );
-			assert_eq( "cov[0].name", 0, strcmp( "Age", name ) );
+			const string name = plinkInput.getCovariateName( 0 );
+			assert_eq( "cov[0].name", string( "Age" ), name );
 		}
 
 		{
-			const char * name = plinkInput.getCovariateName( 1 );
-			assert_eq( "cov[1].name", 0, strcmp( "Salary", name ) );
+			const string name = plinkInput.getCovariateName( 1 );
+			assert_eq( "cov[1].name", string( "Salary" ), name );
 		}
 
 		{

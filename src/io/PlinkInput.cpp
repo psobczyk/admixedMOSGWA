@@ -476,8 +476,8 @@ namespace io {
 		return covariateList.size();
 	}
 
-	const char * PlinkInput::getCovariateName ( const size_t covIndex ) const {
-		return covariateList.at( covIndex ).c_str();
+	string PlinkInput::getCovariateName ( const size_t covIndex ) const {
+		return covariateList.at( covIndex );
 	}
 
 	void PlinkInput::retrieveCovariatesIntoVector ( const size_t covIndex, linalg::Vector& vector ) {
