@@ -19,7 +19,7 @@
 #include <stdint.h>
 
 /** The index identifying an {@link SNP}. */
-typedef uint32_t snp_index_t;
+typedef uint32_t snp_index_t;	// TODO<BB>: rather use size_t
 
 /** Maximum number of SNPs in a {@link Model}.
 * Models will typically be much smaller.
