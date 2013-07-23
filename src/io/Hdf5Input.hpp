@@ -22,7 +22,7 @@
 namespace io {
 
 	/** Reads input data from HDF5 file format. */
-	class Hdf5Input : public Input {
+	class Hdf5Input : virtual public Input {
 
 		protected:
 
