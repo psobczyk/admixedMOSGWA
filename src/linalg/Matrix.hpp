@@ -25,6 +25,7 @@
 
 namespace linalg {
 
+	class Permutation;
 	class Vector;
 
 	/** A cheap C++ wrapper for a fixed-size GSL matrix view.

@@ -56,6 +56,11 @@ namespace linalg {
 		gsl_permutation_init( this );
 	}
 
+	bool Permutation::isPermutation () const {
+		const bool isP = gsl_permutation_valid( this );
+		return isP;
+	}
+
 	void Permutation::fill ( const size_t *array ) {
 		// A harmless snappy const_cast circumvents a complete class "ConstPermutation"
 		Permutation that( countDimensions(), const_cast<size_t*>( array ) );
@@ -82,6 +87,15 @@ namespace linalg {
 
 	void Permutation::swap ( const size_t dim1, const size_t dim2 ) {
 		gsl_permutation_swap( this, dim1, dim2 );
+	}
+
+	/**
+	* @see https://www.gnu.org/software/gsl/manual/html_node/Sorting-vectors.html
+	* @see http://www.codecogs.com/library/computing/c/stdlib.h/qsort.php
+	* @see http://stackoverflow.com/questions/4300896/how-portable-is-the-re-entrant-qsort-r-function-compared-to-qsort
+	*/
+	void Permutation::sort ( const Vector& vector ) {
+		gsl_sort_vector_index( this, &vector.vector );
 	}
 
 	string Permutation::toString () const {

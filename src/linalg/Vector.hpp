@@ -30,12 +30,16 @@ namespace minimization {
 
 namespace linalg {
 
+	class Permutation;
 	class Matrix;
 
 	/** A cheap C++ wrapper for a fixed-size GSL vector view.
 	* @see http://www.gnu.org/software/gsl/manual/html_node/Vector-views.html
 	*/
 	class Vector : protected gsl_vector_view {
+
+		/** Necessary to apply GSL vector sort function. */
+		friend class Permutation;
 
 		/** Used to obtain 0-dimensional vectors. */
 		friend class Matrix;

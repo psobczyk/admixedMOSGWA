@@ -19,8 +19,14 @@
 #include <string>
 #include <ostream>
 #include <gsl/gsl_permutation.h>
+#include <gsl/gsl_sort_vector.h>
+
+#include "Vector.hpp"
 
 namespace linalg {
+
+	class Vector;
+	class Matrix;
 
 	/** A cheap C++ wrapper for a fixed-size GSL permutation,
 	* which functions as a permutation view.
@@ -71,6 +77,11 @@ namespace linalg {
 		/** Initialise the permutation as identity. */
 		void init ();
 
+		/** Test whether <code>this</code> mapping is a permutation indeed.
+		* @see #init for initialisation.
+		*/
+		bool isPermutation () const;
+
 		/** Fill the permutation with values from an array.
 		* The fill affects the logical portion of the permutation,
 		* i.e. the array must be at least of size {@link countDimensions()}.
@@ -95,6 +106,16 @@ namespace linalg {
 
 		/** Swap the two elements for the given dimensions. */
 		void swap ( const size_t dim1, const size_t dim2 );
+
+		/** Make <code>this</code> a permutation which would sort the given vector ascending.
+		* If the vector contains equal elements, an arbitrary ordering will be chosen.
+		* Precondition: The permutation must have been initialised before the call.
+		* (With GSL this appears not to be necessary,
+		* but in future, for more general mappings than permutations,
+		* the initial mapping (namely its range)
+		* might be important.)
+		*/
+		void sort ( const Vector &vector );
 
 		/** Create a string representation. Mainly for debugging. */
 		std::string toString () const;

@@ -14,6 +14,8 @@
  ********************************************************************************/
 
 #include "AutoPermutation.hpp"
+#include "AutoVector.hpp"
+#include "AutoMatrix.hpp"
 #include "../TestSuite.hpp"
 #include <math.h>
 
@@ -31,6 +33,7 @@ namespace test {
 		void testAssignment ();
 		void testOperators ();
 		void testFillGetSetSwap ();
+		void testSort ();
 		void testResize ();
 		void testUpSize ();
 
@@ -42,6 +45,7 @@ namespace test {
 			addTestMethod( "AutoPermutationTest::testAssignment", this, &AutoPermutationTest::testAssignment );
 			addTestMethod( "AutoPermutationTest::testOperators", this, &AutoPermutationTest::testOperators );
 			addTestMethod( "AutoPermutationTest::testFillGetSetSwap", this, &AutoPermutationTest::testFillGetSetSwap );
+			addTestMethod( "AutoPermutationTest::testSort", this, &AutoPermutationTest::testSort );
 			addTestMethod( "AutoPermutationTest::testResize", this, &AutoPermutationTest::testResize );
 			addTestMethod( "AutoPermutationTest::testUpSize", this, &AutoPermutationTest::testUpSize );
 		}
@@ -178,6 +182,54 @@ namespace test {
 		assert_eq( "sameswap p[2]", 1, p.get( 2 ) );
 		assert_eq( "sameswap p[3]", 3, p.get( 3 ) );
 		assert_eq( "sameswap p[4]", 1, p.get( 4 ) );
+	}
+
+	/** Test {@link Permutation::sort( Vector )}. */
+	void AutoPermutationTest::testSort () {
+		{
+			const AutoVector o( 0 );
+			AutoPermutation p( 0 );
+			p.init();
+			p.sort( o );
+		}
+
+		{
+			AutoVector e( 1 );
+			e.set( 0, 13.6 );
+			AutoPermutation p( 1 );
+			p.init();
+			p.sort( e );
+			assert_eq( "1-dim[0]", 0, p.get( 0 ) );
+		}
+
+		const double data[] = { 3.1, 4.7, 10.9, -12.3, -6.6, 8.2 };
+		AutoVector v( 6 );
+		v.fill( data );
+
+		AutoPermutation p( 6 );
+		p.init();
+		p.sort( v );
+		assert_eq( "p[0]", 3, p.get( 0 ) );	// index of minimum
+		assert_eq( "p[1]", 4, p.get( 1 ) );
+		assert_eq( "p[2]", 0, p.get( 2 ) );
+		assert_eq( "p[3]", 1, p.get( 3 ) );
+		assert_eq( "p[4]", 5, p.get( 4 ) );
+		assert_eq( "p[5]", 2, p.get( 5 ) );
+
+		// Also test with vector strides
+		AutoMatrix a( 3, 2 );
+		a.fill( data );
+		const Vector x = a.columnVector( 0 );
+		assert_eq( "x[0]", 3.1, x.get( 0 ) );	// document the values
+		assert_eq( "x[1]", 10.9, x.get( 1 ) );
+		assert_eq( "x[2]", -6.6, x.get( 2 ) );
+
+		AutoPermutation q( 3 );
+		q.init();
+		q.sort( x );
+		assert_eq( "q[0]", 2, q.get( 0 ) );	// index of minimum
+		assert_eq( "q[1]", 0, q.get( 1 ) );
+		assert_eq( "q[2]", 1, q.get( 2 ) );
 	}
 
 	/** Test {@link AutoPermutation::exactSize( size_t )}. */
