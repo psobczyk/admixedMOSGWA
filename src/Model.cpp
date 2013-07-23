@@ -115,7 +115,7 @@ int Model::getModelSize () const {
 }
 
 int Model::getNoOfVariables () const {
-	return 1 + parameter.covariables + getModelSize();
+	return 1 + data_->getCovNo() + getModelSize();
 }
 
 double Model::getMJC () const {
@@ -221,14 +221,14 @@ if(DEBUG2)
         <<"XMat_->size2="<<XMat_->size2<<endl<<"getNoOfVariables="<<getNoOfVariables()<<endl;
 	for (int j=0;j<100;j++)
 {cerr<<"XMat"<<j<<" ";
-	for ( int i = 1 + parameter.covariables; i < getNoOfVariables(); ++i ) {
+	for ( int i = 1 + data_->getCovNo(); i < getNoOfVariables(); ++i ) {
 	cerr<<gsl_matrix_get(XMat_,j,i)<<" ";
 	}
 cerr<<endl;
 }
 }
 
-	const snp_index_t reset = 1 + parameter.covariables + position;		//position 0 is the first 
+	const snp_index_t reset = 1 + data_->getCovNo() + position;		//position 0 is the first 
  //cout<<"reset="<<reset<<endl;
  upToDateXMat_= false;
  modelSnps_[reset-1]= snp;//
@@ -246,7 +246,7 @@ if(DEBUG2)
 
 for (int j=0;j<100;j++)
 {cerr<<"XMat"<<j<<" ";
-	for ( int i = 1 + parameter.covariables; i < getNoOfVariables(); ++i ) {
+	for ( int i = 1 + data_->getCovNo(); i < getNoOfVariables(); ++i ) {
 	cerr<<gsl_matrix_get(XMat_,j,i)<<" ";
 	
 }	cerr<<endl;
@@ -282,11 +282,11 @@ bool Model::removeSNPfromModel ( const snp_index_t snp ) {
 			// Copy columns of the old Matrix
 			// except 1 + parameter.covariables + snp == i
 			for ( int i = 0; i <= getNoOfVariables(); ++i ) {	// compare <= because noOfVariables has been decremented
-				if ( i < 1 + parameter.covariables + snp ) {
+				if ( i < 1 + data_->getCovNo() + snp ) {
 					gsl_matrix_get_col( CopyV, XMat_, i );
 					gsl_matrix_set_col( NewXMat, i, CopyV );
 					gsl_vector_set(NEWbetas_,i,gsl_vector_get(betas_,i));
-				} else if ( i > 1 + parameter.covariables + snp ) {
+				} else if ( i > 1 + data_->getCovNo() + snp ) {
 					gsl_matrix_get_col( CopyV, XMat_, i );
 					gsl_matrix_set_col( NewXMat, i-1, CopyV );
 					gsl_vector_set(NEWbetas_,i-1,gsl_vector_get(betas_,i));//NEWbetas_(i)=betas(i+1)
@@ -341,7 +341,7 @@ void Model::initializeModel () {
 	Matrix xMat( *XMat_ );
 	size_t col = 0;
 	xMat.columnVector( col++ ).fill( 1.0 );		// intercept
-	for ( size_t cov = 0; cov < parameter.covariables; ++cov ) {
+	for ( size_t cov = 0; cov < data_->getCovNo(); ++cov ) {
 		const Vector covVec = const_cast<MData*>( data_ )->getCovariateColumn( cov );
 		Vector xVec = xMat.columnVector( col++ );
 		xVec.copy( covVec );
@@ -684,7 +684,7 @@ void Model::printModel ( const string& out, const string& filemodifier ) {
 				<< getSNPId(i) << "\t"
 				<< (data_->getSNP(modelSnps_.at(i)))->getChromosome()<<"\t"
 				<< setw(10)<<(data_->getSNP(modelSnps_.at(i)))->getBasePairPosition()<<"\t"   //the setw for formating 
-				<< getBeta( 1 + parameter.covariables + i ) << "\t"
+				<< getBeta( 1 + data_->getCovNo() + i ) << "\t"
 				<< (data_->getSNP(modelSnps_.at(i)))->getSingleMarkerTest()
 				<< endl;
 	}
@@ -693,7 +693,7 @@ void Model::printModel ( const string& out, const string& filemodifier ) {
 	else
 	ss << "\tIntercept \t \t \t" << getBeta(0)<< endl;
 
-	for ( int i = 0; i < parameter.covariables ; ++i ) {
+	for ( int i = 0; i < data_->getCovNo() ; ++i ) {
 		ss << "\t" << data_->getCovMatElementName(i) << "\t\t\t"<< getBeta( i + 1 ) << endl;
 	}
 
@@ -2605,7 +2605,7 @@ void Model::printModelNew() const {
 			
 		}
 
-		for ( int i = 0; i < parameter.covariables; ++i ) {
+		for ( int i = 0; i < data_->getCovNo(); ++i ) {
 			SNPL << data_->getCovMatElementName(i)<<" <- c(";
 			const Vector covVec = const_cast<MData*>( data_ )->getCovariateColumn( i );
 			SNPL <<  covVec.get( 0 );
