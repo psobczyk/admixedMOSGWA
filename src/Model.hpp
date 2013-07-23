@@ -234,7 +234,7 @@ bool replaceModelSNPSCORE(); //neuer Fall mit conditionalen scoretest für jedes
 	bool computeRegression ();
         /** scoreTest runs trhe score Test from Bernhard*/
 	bool scoreTest(string add="");
-        int scoreTestWithOneSNPless(int SNPindex, SortVec &score);
+	size_t scoreTestWithOneSNPless ( size_t SNPindex, SortVec &score );
 	/** computes single marker test for SNP snp (absolut postition)
 	* @returns the p-value of the according teststatistic */
 	double computeSingleRegressorTest ( const snp_index_t snp );
