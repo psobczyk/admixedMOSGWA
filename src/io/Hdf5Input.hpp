@@ -16,12 +16,10 @@
 #ifndef IO_HDF5INPUT_HPP
 #define IO_HDF5INPUT_HPP
 
-#include <string>
 #include <hdf5.h>
-#include "Input.hpp"
+#include "InputCo.hpp"
+#include "Hdf5Object.hpp"
 #include "../Exception.hpp"
-#include "../linalg/AutoVector.hpp"
-#include "../linalg/AutoMatrix.hpp"
 
 namespace io {
 
@@ -30,37 +28,24 @@ namespace io {
 
 		/** Paths of the relevant objects in the HDF5 file. */
 		static const char
-			* const genotypeMatrixPath,
-			* const individualListPath,
 			* const snpListPath,
+			* const individualListPath,
+			* const genotypeMatrixPath,
 			* const phenotypeVectorPath;
 
-		/** The path of the opened HDF5-file, used for error reports. */
-		const std::string hdf5filename;
+		/** Holds the identifier of the opened HDF5-file. */
+		Hdf5FileId fileId;
 
-		/** HDF5 identifier of the opened HDF5-file. */
-		const hid_t hdf5file;
+		/** Gets axis data names into MOSGWA. */
+		Hdf5StringList
+			snpNames,
+			individualNames;
 
-		/** Genome data matrix.
-		* It is stored as transposed matrix in order to optimise memory access.
-		* The vectors holding all individuals' data for one SNP should be in a contiguous piece of memory
-		* so that the whole vector fits into cache.
-		* It is these vectors which are added to the regression algorithm in the search phase.
-		*/
-		linalg::AutoMatrix genotypeMatrixTransposed;
+		/** Gets genotype data into MOSGWA. */
+		Hdf5DoubleTable genotypesTransposed;
 
-		/** Phenotype data vector. */
-		linalg::AutoVector phenotypeVector;
-
-		protected:
-
-		/** Determine length of a one-dimensional array. */
-		size_t countDimensions ( const char * const objectPath ) const;
-
-		/** Retrieve a string from the given one-dimensional array of strings.
-		* @param objectPath must point to a one-dimensional array of strings.
-		*/
-		std::string getString ( const char * const objectPath, const size_t index ) const;
+		/** Gets phenotype data into MOSGWA. */
+		Hdf5DoubleList phenotypes;
 
 		public:
 
@@ -68,10 +53,10 @@ namespace io {
 		Hdf5Input ( const char* const filename );
 
 		/** Return the number of SNPs in the data. */
-		virtual size_t countSnps () const;
+		virtual size_t countSnps ();
 
 		/** Return the number of individuals in the data. */
-		virtual size_t countIndividuals () const;
+		virtual size_t countIndividuals ();
 
 		/** Retrieve the data for the given SNP. */
 		virtual SNP getSnp ( const size_t snpIndex );
@@ -80,34 +65,13 @@ namespace io {
 		virtual Individual getIndividual ( const size_t individualIndex );
 
 		/** Copy the {@link countIndividuals} sized vector of genotype information for the given SNP into the given vector. */
-		virtual void retrieveGenotypesIntoVector ( const size_t snpIndex, linalg::Vector& vector );
+		virtual void retrieveGenotypesIntoVector ( const size_t snpIndex, linalg::Vector& v );
 
 		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
-		virtual void retrievePhenotypesIntoVector ( linalg::Vector& vector );
+		virtual void retrievePhenotypesIntoVector ( linalg::Vector& v );
 
 		/** Declare access to be finished, release all resources. */
 		virtual ~Hdf5Input ();
-
-		private:	// HDF5 helper functions
-
-		hid_t h5fOpen ( const char* const filename ) throw ( Exception );
-		void h5fClose () throw ( Exception );
-
-		hid_t h5dOpen ( const char * const objectPath ) const throw ( Exception );
-		hid_t h5dType ( const hid_t datasetId, const char * const objectPath ) const throw ( Exception );
-		hid_t h5dSpace ( const hid_t datasetId, const char * const objectPath ) const throw ( Exception );
-		void h5dReadAll ( const hid_t datasetId, const char * const objectPath, double *buffer ) const throw ( Exception );
-		void h5dClose ( const hid_t datasetId, const char * const objectPath ) const throw ( Exception );
-
-		hid_t h5tCopy ( const hid_t datatypeId, const char * const typeDescription ) const throw ( Exception );
-		size_t h5tSize ( const hid_t datatypeId, const char * const objectPath ) const throw ( Exception );
-		bool h5tIsVarString ( const hid_t datatypeId, const char * const objectPath ) const throw ( Exception );
-		void h5tClose ( const hid_t datatypeId, const char * const objectPath ) const throw ( Exception );
-
-		int h5sDims ( const hid_t dataspaceId, const char * const objectPath ) const throw ( Exception );
-		void h5sDimSizes ( const hid_t dataspaceId, const char * const objectPath, hsize_t *sizes ) const throw ( Exception );
-		void h5sClose ( const hid_t dataspaceId, const char * const objectPath ) const throw ( Exception );
-
 	};
 
 }

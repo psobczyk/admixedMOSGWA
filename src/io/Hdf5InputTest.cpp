@@ -15,6 +15,8 @@
 
 #include "Hdf5Input.hpp"
 #include "../TestSuite.hpp"
+#include "../linalg/AutoVector.hpp"
+#include "../linalg/AutoMatrix.hpp"
 #include <unistd.h>	// for unlink(char[]), close()
 #include <cstdlib>	// for mkstemp(char[])
 #include <cstring>
