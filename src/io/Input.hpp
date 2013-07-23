@@ -29,10 +29,10 @@ namespace io {
 	struct Input {
 
 		/** Return the number of SNPs in the data. */
-		virtual size_t countSnps () const = 0;
+		virtual size_t countSnps () = 0;
 
 		/** Return the number of individuals in the data. */
-		virtual size_t countIndividuals () const = 0;
+		virtual size_t countIndividuals () = 0;
 
 		/** Retrieve the data for the given SNP. */
 		virtual SNP getSnp ( const size_t snpIndex ) = 0;

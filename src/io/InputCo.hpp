@@ -25,10 +25,10 @@ namespace io {
 	struct InputCo : public Input {
 
 		/** Return the number of covariate vectors in the data. */
-		virtual size_t countCovariateVectors () const = 0;
+		virtual size_t countCovariateVectors () = 0;
 
 		/** Get the name of the given covariate. */
-		virtual std::string getCovariateName ( const size_t covIndex ) const = 0;
+		virtual std::string getCovariateName ( const size_t covIndex ) = 0;
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
 		virtual void retrieveCovariatesIntoVector ( const size_t covIndex, linalg::Vector& vector ) = 0;

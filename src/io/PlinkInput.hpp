@@ -68,10 +68,10 @@ namespace io {
 		PlinkInput ( const char* const filename );
 
 		/** Return the number of SNPs in the data. */
-		virtual size_t countSnps () const;
+		virtual size_t countSnps ();
 
 		/** Return the number of individuals in the data. */
-		virtual size_t countIndividuals () const;
+		virtual size_t countIndividuals ();
 
 		/** Retrieve the data for the given SNP. */
 		virtual SNP getSnp ( const size_t snpIndex );
@@ -86,10 +86,10 @@ namespace io {
 		virtual void retrievePhenotypesIntoVector ( linalg::Vector& vector );
 
 		/** Return the number of covariate vectors in the data. */
-		virtual size_t countCovariateVectors () const;
+		virtual size_t countCovariateVectors ();
 
 		/** Get the name of the given covariate. */
-		virtual std::string getCovariateName ( const size_t covIndex ) const;
+		virtual std::string getCovariateName ( const size_t covIndex );
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
 		virtual void retrieveCovariatesIntoVector ( const size_t covIndex, linalg::Vector& vector );

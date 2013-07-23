@@ -448,11 +448,11 @@ namespace io {
 		}
 	}
 
-	size_t PlinkInput::countSnps () const {
+	size_t PlinkInput::countSnps () {
 		return snpList.size();
 	}
 
-	size_t PlinkInput::countIndividuals () const {
+	size_t PlinkInput::countIndividuals () {
 		return individualList.size();
 	}
 
@@ -472,11 +472,11 @@ namespace io {
 		vector.copy( phenotypeVector );
 	}
 
-	size_t PlinkInput::countCovariateVectors () const {
+	size_t PlinkInput::countCovariateVectors () {
 		return covariateList.size();
 	}
 
-	string PlinkInput::getCovariateName ( const size_t covIndex ) const {
+	string PlinkInput::getCovariateName ( const size_t covIndex ) {
 		return covariateList.at( covIndex );
 	}
 
