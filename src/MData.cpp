@@ -59,9 +59,9 @@ MData::MData ( io::InputCo *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
 	const bool allocateInput = NULL == input;
 	if ( allocateInput ) {
 		if ( parameter.in_file_hdf5.empty() ) {
-			input = new Hdf5InputCo( parameter.in_file_hdf5.c_str() );
-		} else {
 			input = new PlinkInput( parameter.in_files_plink.c_str() );
+		} else {
+			input = new Hdf5InputCo( parameter.in_file_hdf5.c_str() );
 		}
 	}
 
@@ -81,10 +81,10 @@ MData::MData ( io::InputCo *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
 		idvList.push_back( input->getIndividual( idv ) );
 	}
 	input->retrievePhenotypesIntoVector( yVec );
-	for ( size_t snp = 0; snp < snps; ++snp ) {
-		covNames.push_back( string( input->getCovariateName( snp ) ) );
-		Vector covVec = covMat.columnVector( snp );
-		input->retrieveCovariatesIntoVector( snp, covVec );
+	for ( size_t cov = 0; cov < covs; ++cov ) {
+		covNames.push_back( string( input->getCovariateName( cov ) ) );
+		Vector covVec = covMat.columnVector( cov );
+		input->retrieveCovariatesIntoVector( cov, covVec );
 	}
 	if ( allocateInput ) {
 		delete input;
@@ -168,14 +168,13 @@ void MData::checkYValues()
 {
 	
 	int noOfRemovedIndividuals=0;
-	double indPheno;
 	parameter.affection_status_phenotype = true;	// intitial setting, Y-values are tested if the are just (0,1) (or missing)
 	
 	caseNo_=0;
 	contNo_=0;
 	
 	for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-		indPheno = idvList.at( idv ).getPhenotype();
+		const double indPheno = yVec.get( idv );
 		// do not consider individuals with missing phenotype
 		if ( indPheno == parameter.missing_phenotype_code ) {
 			removeIndividual( idv );
@@ -186,10 +185,6 @@ void MData::checkYValues()
 		}
 		else // no missing phenotype, determine if phenotype is affection (case-control) or quantitative
 		{
-			const size_t dim = yVec.countDimensions();
-			yVec.upSize( 1 + dim );
-			yVec.set( dim, indPheno );
-	                
 			if ( indPheno == parameter.case_value) // was set 1 check affection status
 			{
 				caseNo_++;
