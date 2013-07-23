@@ -18,9 +18,6 @@
 
 #include <string>
 #include <vector>
-#include <sstream>
-#include <bitset>
-#include <map>
 
 #include "Parameter.hpp"
 #include "Helpfull.hpp"
@@ -31,42 +28,37 @@
 #include "OneSnpAllInd.hpp"
 #include "linalg/AutoVector.hpp"
 #include "linalg/AutoMatrix.hpp"
-#include "io/Input.hpp"
+#include "io/InputCo.hpp"
 #include "deprecate.h"
 
 #include "Model.hpp" // ag
 class Model;
 
-using namespace std;
+using namespace std;	// TODO<BB>: remove namespace import in *.hpp
 
 /** Stores all the information from the input plink files. Data is read
 * and access methodes are provided. The genotype matrix can be imputated and
 * single marker test and model selection can be performed. */
 class MData {
 
-private:
-	/** pointers to the SNPs */
-	vector <SNP*> snps_;
+	/** Holds the SNPs */
+	vector <SNP> snpList;
 
 	/** pointers to the individuals */
-	vector <Individual*> individuals_;
+	vector <Individual> idvList;
 
-	/** the matrix where the genotype information is stored.
-	* a vector of length = No of SNPs,
-	* where every entry is an objects point to two bit-vectors, each No.of.Ind. long) */
-	vector <OneSnpAllInd*> genoMat_;
-//public:
 	/** The regression matrix. */
 	linalg::AutoMatrix xMat;
-private:
+	// TODO<BB>: Transpose it for cache optimisation. But the io::Input framework will make this irrelevant.
+
 	/** the name of the target trait */
 	string Y_name_;
 	
 	/** the values of the trait, one for each individual */
 	linalg::AutoVector yVec;
 	
-	/** the name of the Covariables */
-	vector <string> Cov_Names_;
+	/** the names of the Covariates */
+	vector <string> covNames;
 
 	/** Matrix where the covariables are stored.
 	* It has parameter.covariables columns and getIdvNo() rows.
@@ -74,10 +66,10 @@ private:
 	linalg::AutoMatrix covMat;
 
 	/** the number of cases (for affection phenotype) */
-	int caseNo_;
+	size_t caseNo_;
 
 	/** the number of controls (for affection phenotype) */
-	int contNo_;
+	size_t contNo_;
 
 	/** the SNPs, sorted according to ascending single marker tests */
 	SortVec snp_order_;
@@ -85,66 +77,28 @@ private:
 	/** the log-likelihood of the zero-model (without any SNPs) */
 	double loglikelihood0Model_;
 
-
-//+++++++++++++
-// private Setters an Getters
-
-	/** set an entry = 0,1,2 in the Genotype-Matrix, used for imputation only */
-	void setGenoMatElement ( const int snp, const int idv, const int entry );
-
-	/** for affection-type targets, stores the log-likelihood of the zero-model */
-
-	//void setLL0M ( const double ll ) { loglikelihood0Model_ = ll; }
-public: //not that private anymore
-	//because of setingYvalues on the fly
-	void setLL0M ( const double ll );
-	void setY ( const size_t index, const double value );
-	void setY ( const size_t index, const int value );
-
 	/** subroutine to check Y-values */
 	void checkYValues();
-private:
-	// get elements of the Genotype-Matrix with different parameters
-	/** access with iterators. CAUTION:SLOW! */
-	int getGenoMatElement(vector<SNP*>::iterator const& it_snp, vector<Individual*>::iterator const& it_ind);
-	int getGenoMatElement ( OneSnpAllInd* const & locus, const int idv ) const;
 
-//+++++++++++++
-
-	/** to get a integer (0,1, 2) (or -1 for missing) from two boolean values
-		privately used to extract the genotyp of a SNP in genoMat_ */
-	int data2Geno ( const bool one, const bool two ) const;
-
-	/** subroutine to read in binary files */
-	void openBinaryFile ( string filename, ifstream & BIT );
-
-	/** computes the correlation between two SNPs (loci)
-	double computeCorrelation (OneSnpAllInd* const & locus1, OneSnpAllInd* const & locus2 ) const;
- */
-	/** subroutine to read in Y-values from a different file */
-	void readInYValues();
-
-	void readCovariablesFile();
-
-	/** remove the idv-th individual from the whole dataset */
-	void removeIndividual ( const int idv );
-
+	/** Remove the given individual from the data. */
+	void removeIndividual ( const size_t idv );
 
 public:
+	// not private anymore because of setting Y values on the fly
+	/** for affection-type targets, stores the log-likelihood of the zero-model */
+	void setLL0M ( const double ll );
+
+	void setY ( const size_t index, const double value );
 
 	/** Default Constructor: reads the input-files in, sets parameters, deals with missing phenotypes.
 	* @param input provides access to input data for the transition of the MOSGWA architecture.
 	* Otherwise, input is read according to the preference settings in {@link Parameter}.
 	* @see Parameter
 	*/
-	MData ( io::Input *input = NULL );
+	MData ( io::InputCo *input = NULL );
 
 	/** Destructor: clean up */
 	~MData();
-
-
-//+++++++++++++
-// public Setters an Getters
 
 	/** get the /number of SNPs in the data (the number of variables) */
 	size_t getSnpNo () const;
@@ -164,11 +118,6 @@ public:
 	*/
 	const linalg::Vector getXcolumn ( const size_t snp );
 
-	/** returns the genotype of the idv-th individual for the snp-th SNP.
-	* @deprecated Use {@link MData::getXcolumn()} instead to access the regression matrix.
-	*/
-	DEPRECATED( int getGenoMatElement ( const int snp, const int idv ) const );
-
 	/** Get the regression target vector.
 	* The returned Vector provides a snapshot.
 	* Its behaviour becomes undefined if the content of MData is changed after the call of getY().
@@ -176,16 +125,14 @@ public:
 	*/
 	const linalg::Vector getY ();
 
-	/** returns the target value for the i-th individual
-	* @deprecated Use {@link MData::getY()} instead.
-	*/
-	DEPRECATED( double getYvalue ( const size_t idv ) const );
+	/** for an integer snp a pointer to the snp-th SNP is returned */
+	const SNP * getSNP ( const size_t snp ) const;
 
-	/** for an integer i a pointer to the i-th SNP is returned */
-	SNP* getSNP ( const size_t snp ) const;
-
-	/** For an integer i, return the (absolute) postition of the SNP with the i-th lowest p-value. */
+	/** For an integer i, return the (absolute) postition of the SNP with the snp-th lowest p-value. */
 	size_t getOrderedSNP ( const size_t snp ) const;
+
+	/** Get the number of covariate vectors in the data. */
+	size_t getCovNo () const;
 
 	/** Access a column of the covariate matrix.
 	* The returned <code>Vector</code> provides a snapshot.
@@ -195,7 +142,7 @@ public:
 	const linalg::Vector getCovariateColumn ( const size_t cov );
 
 	/** return the name of the cov-th covaribale */
-	string getCovMatElementName( const int cov ) const { return Cov_Names_.at( cov ); }
+	const string& getCovMatElementName( const size_t cov ) const;
 
 	// for affection-type targets
 	/** # of cases in for affection-type target (should not be used for quantitive traits, intialised with 0) */
@@ -221,7 +168,7 @@ public:
 		WARNING: just for speed up testing, causes memory leaks */
 	void readInSNPOrder(const string& filename);
     /*a hopefully not neccercery function */
-	void setYfromMOSGWA(std::vector<bool>);
+	void setYfromMOSGWA( const std::vector<bool>& Y );
 
 	// file-output
 	/** the binary genotype file is written */
@@ -253,8 +200,8 @@ public:
  these are tested in the Forward Step
  */
 
-int	calculatePValueBorder() const;
-int	calculatePValueBorder();
+	size_t calculatePValueBorder() const;
+
 	/** model selection is performed
 	* @deprecated Formulate this as a {@link search::Search} algorithm.
 	* Dealing with {@link Model}s is not the role of MData.
@@ -271,18 +218,18 @@ int	calculatePValueBorder();
 
 	/** TESTING // screen-output of the informations stored for the individuals */
 	void printIndividuals ();
-	void printIndividuals (ofstream &Y);
+	void printIndividuals ( std::ostream &s );
 	void printmyY	();
         void printYforGWASselect ();
 	/** print GWASselect print a GWASselect input file  */
 	void printGWASselect(Model & newmodel) const;
 	/** TESTING // screen-output of genotyp matrix */
 	void printGenoData () const;
-	void printGenoData (ofstream &Hyper, vector <bool> sel,bool caco) const;
-        /** print GenoData in a ofstream */
-        void printGenoData (ofstream & Hyper) const;
+	void printGenoData ( std::ostream& hyper, const vector<bool>& sel, const bool caco ) const;
+	/** print GenoData in an ostream */
+	void printGenoData ( std::ostream& hyper ) const;
         /**print SNPId in a stream */
-        void  printSNPId(std::ofstream & Hyper) const;
+	void  printSNPId ( std::ostream& hyper ) const;
         /** printHyper print in a inputfile for HyperLasso */
         void printHyper() const;
 	/** a special version for Artur */
@@ -311,7 +258,7 @@ int	calculatePValueBorder();
   /** Artur's new code:
    * @brief fills vector
    */
-  void fillSnp_order_Vec ( const size_t snpNo, int*  SNPList, double* TestStat );
+  void fillSnp_order_Vec ( const size_t snpNo, size_t* SNPList, double* TestStat );
   
   
   /** Artur's new code:
@@ -321,6 +268,6 @@ int	calculatePValueBorder();
   //that should work
 // template<class Vals> void  sortingPermutation(const Vals& values, std::vector<int>& v);
   /** findSNPIndex is here to add many SNP from a list of SNPNames instead of a vector of int's */
-  void findSNPIndex(vector<string>& SNPNames,vector<unsigned int>& index) const;
+  void findSNPIndex ( vector<string>& SNPNames, vector<size_t>& index ) const;
 };
 #endif

@@ -139,13 +139,13 @@ string 	Model::getSNPId ( const snp_index_t i ) const {
 	}
 }
 
-void Model::sortSNPsAccordingBetas()
-{ vector<int> SNP(getNoOfVariables(),0);
+void Model::sortSNPsAccordingBetas () {
+	vector<size_t> SNP( getNoOfVariables(), 0 );
   SortVec sbetas(getNoOfVariables());
   vector<double> betas(getNoOfVariables(),0);
  for (int i=0;i<getNoOfVariables();i++) //this asumes that getNoOfVariables	
  { betas[i]=getBeta(i);
-   SNP[i]=  modelSnps_[i];
+   SNP[i] = modelSnps_[i];
  }
 sbetas.fillVec(getNoOfVariables(), &SNP[0],&betas[0],false);
 }
@@ -355,9 +355,8 @@ void Model::initializeModel () {
 	assert( getNoOfVariables() == col );
 
 	// Set YVec_
-	for ( int i = 0; i < data_->getIdvNo(); ++i ) {
-		gsl_vector_set(YVec_, i, data_->getYvalue(i) );
-	}
+	Vector yVec = Vector( *YVec_ );
+	yVec.copy( const_cast<MData*>( data_ )->getY() );
 
 	upToDateXMat_ = true;	// XMat_ is uptodate 
 	upToDateBetas_ = false; // the betas_ are not uptodate, they are just initialiesed
@@ -622,51 +621,53 @@ gsl_matrix_get_col (YVec_,out, 0); // the first column
  gsl_vector_free( p );
 
 }
-void  Model::getYvec(vector<bool> &out)
-{ if(YVec_==NULL)
-	{cerr<<"YVec_ is NULL I take the Y from MDATA getYvalue"<<endl
-	     <<"and YVec_-1"<<endl;
-	 YVec_ = gsl_vector_alloc( data_->getIdvNo() ); //some initialisation for the YVec_
-    
-	for ( int i = 0; i < data_->getIdvNo(); ++i )
-	{ //cerr<<data_->getYvalue(i);
-		gsl_vector_set(YVec_, i, data_->getYvalue(i)-1 );}
-}
- if(out.size()<YVec_->size)
-	 out.resize(YVec_->size);//out
- for(unsigned int i=0;i<YVec_->size;++i)
-     out[i]=gsl_vector_get(YVec_,i);
-// return out;
-cout <<"getYvec";
+void Model::getYvec ( vector<bool> &out ) {
+	if ( NULL == YVec_ ) {
+		cerr	<< "YVec_ is NULL I take the Y from MDATA getYvalue"
+			<< endl
+			<< "and YVec_-1"
+			<<endl;
+		YVec_ = gsl_vector_alloc( data_->getIdvNo() );	//some initialisation for the YVec_
+		Vector yVec = Vector( *YVec_ );
+		yVec.copy( const_cast<MData*>( data_ )->getY() );
+		// BB: previously it was gsl_vector_set(YVec_, i, data_->getYvalue(i)-1 );}
+	}
+	if ( out.size() < YVec_->size ) {
+		out.resize(YVec_->size);//out
+	}
+	for ( size_t idv = 0; idv<YVec_->size; ++idv ) {
+		out[idv] = gsl_vector_get( YVec_, idv );
+	}
+	cout << "getYvec";
 }
 
 //printYvec 
 // check = false print data_->getYvalue(i)
 // else 
 // check =true print gsl_vector_get(YVec_,i)
-void Model::printYvec(bool check)//bool check)
-{ofstream Y;
-Y.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
-try
-{Y.open( ( parameter.out_file_name + "Yvecout" ).c_str(), fstream::out );
-
- if(false==check)//YVec_==NULL)
-	for ( int i = 0; i < data_->getIdvNo(); ++i ) {
-	//	gsl_vector_set(YVec_, i, data_->getYvalue(i) ); //instead of copying printing, cool!
-	   Y<<data_->getYvalue(i)<<endl; //-1<<"\n"; 
-	   //Achtung -1 für FREGENE Daten
-	   //es werden immer 0 1 2 ausgegeben wo 0 für
-	   //für Fehler steht das kommt aus plink!
+void Model::printYvec ( const bool check ) {
+	ofstream Y;
+	Y.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
+	try {
+		Y.open( ( parameter.out_file_name + "Yvecout" ).c_str(), fstream::out );
+		if ( check ) {
+			for ( size_t idv = 0; idv < YVec_->size; ++idv ) {
+				Y << gsl_vector_get( YVec_, idv ) << "\n";
+			}
+		} else {
+			const Vector yVec = const_cast<MData*>( data_ )->getY();
+			for ( size_t idv = 0; idv < data_->getIdvNo(); ++idv ) {
+	   			Y << yVec.get( idv ) <<endl;
+			}
+		}
+		Y.close();
 	}
- else if (true==check) //print YVec_  
-	for(unsigned int i=0; i<YVec_->size;++i)
-            Y<<gsl_vector_get(YVec_,i)<<"\n";
+	catch ( ofstream::failure e ) {
+		cerr	<< "Could not write Yvecout file"
+			<< ( parameter.out_file_name + "Yvecout" ).c_str()
+			<< endl;
+	}
 }
-catch (ofstream::failure e)//why e? 
- { cerr << "Could not write Yvecout file" << ( parameter.out_file_name + "Yvecout" ).c_str()<< endl; }	
-}
-
-
 
 //REM 
 void Model::printModel ( const string& out, const string& filemodifier ) {
@@ -2239,17 +2240,17 @@ ofstream S;
 	//S<<i<<"="<<score.getId(i)<<endl;
 return 	true;
 }
-int  Model::scoreTestWithOneSNPless(int position,SortVec &score)
+
+size_t Model::scoreTestWithOneSNPless ( size_t position, SortVec &score )
 {
 //foreach model SNP: remove them (make a  regression) and make scoretest
 //take the result snps and add these snps, when the improve the model 
 //then take the best of these snp in the new model.
 Model intermediateModel(*data_);
 	intermediateModel=*this;
-        int size=data_->getSnpNo();
 	//SortVec score(size); should be created outside
 
-    	intermediateModel.removeSNPfromModel( position);
+    	intermediateModel.removeSNPfromModel( position );
 	intermediateModel.computeLogRegression ();
         //DEBUG intermediateModel.printModel();
         ScoreTestShortcut stsc( *data_);
@@ -2258,21 +2259,24 @@ Model intermediateModel(*data_);
         //big windows make the prozess very very slow
 	//HARDCODED for my computer this varies for different computer and probably
 	//for different size of the XMat_ 
-	int fenster=25;
+	size_t fenster = 25;
 	if (35<getModelSize ())  //when you assume the models have to be in this size or when the computer is fast enough set it to somewhat higher
 		fenster=10;
 	if (45<getModelSize ())
 		fenster=5;
 	if (55<getModelSize ())
 		fenster=1;
-        int start=max((int)modelSnps_[position]-fenster,(int)0),
-            stop=min((int)modelSnps_[position]+fenster,size);
-       int nscore= stsc.ScoreTestShortcut::scoreTests (intermediateModel , score , start, stop);
+	const size_t
+		size=data_->getSnpNo(),
+		start = modelSnps_[position] > fenster ? modelSnps_[position] - fenster : 0u,
+		stop = min( modelSnps_[position] + fenster, size ),
+		nscore = stsc.scoreTests( intermediateModel, score, start, stop );
         //then try this snp for replacing
         return nscore; //does this make sense? 	
-           
+
 //ERICH
 } 
+
 bool Model::computeLogRegression () {	
 	// the plain C code for logistic firth-regression "logistf package" for R from Georg Heinze is used
 	// therefore, the C++ objects have to be converted to C arrays
@@ -2589,29 +2593,18 @@ void Model::printModelNew() const {
 		SNPL.open( ( parameter.out_file_name + "_SNPListNew.txt" ).c_str(),  fstream::out );
 		
 		
-		for (int i = 0; i< getModelSize(); i++)
-		{
-				SNPL << getSNPId(i) <<" <- c(";
-				SNPL << data_->getGenoMatElement(modelSnps_.at(i),0)-1; 
-				for (int j= 1; j < data_->getIdvNo(); j++)
-				{
-					SNPL <<","<< data_->getGenoMatElement(modelSnps_.at(i), j)-1;
-				}
-				SNPL<< ")"<< endl;
+		for ( size_t i = 0; i < getModelSize(); ++i ) {
+			const size_t snp = modelSnps_.at(i);
+			const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( snp );
+			SNPL << getSNPId(i) <<" <- c(";
+			for ( size_t idv = 1; idv  < data_->getIdvNo(); ++idv ) {
+				SNPL << ( 0 < idv ? "," : "" );
+				SNPL << xVec.get( idv );
+			}
+			SNPL<< ")"<< endl;
 			
 		}
-		
-		//~ for(int i = 1; i<=3; i++)
-		//~ {
-			//~ SNPL << "Dummy"<<i <<" <- c(";
-			//~ SNPL<<  PopulationVector(i, 0);
-			//~ for (int j= 1; j < idvNo_; j++)
-			//~ {
-				//~ SNPL <<"," <<  PopulationVector(i, j);
-			//~ }
-			//~ SNPL<< ")"<< endl;
-		//~ }
-		
+
 		for ( int i = 0; i < parameter.covariables; ++i ) {
 			SNPL << data_->getCovMatElementName(i)<<" <- c(";
 			const Vector covVec = const_cast<MData*>( data_ )->getCovariateColumn( i );
@@ -2841,8 +2834,6 @@ void Model::checkallSNPS ()
 	int nSNPs=	data_->getSnpNo();
 	vector<int> snps( nSNPs );//SCORE
         vector<double> scores( nSNPs);//SCORE
-
-        double oldBIC,newBIC;
 
         snp_index_t orderedSnpIndex =50505;// data_-> getOrderedSNP( 0 );
 //snps[0]=orderedSnpIndex;
