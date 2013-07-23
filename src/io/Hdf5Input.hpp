@@ -16,15 +16,15 @@
 #ifndef IO_HDF5INPUT_HPP
 #define IO_HDF5INPUT_HPP
 
-#include <hdf5.h>
 #include "InputCo.hpp"
 #include "Hdf5Object.hpp"
-#include "../Exception.hpp"
 
 namespace io {
 
 	/** Reads input data from HDF5 file format. */
 	class Hdf5Input : public Input {
+
+		protected:
 
 		/** Paths of the relevant objects in the HDF5 file. */
 		static const char
@@ -50,7 +50,7 @@ namespace io {
 		public:
 
 		/** Set up the HDF5 file reading. */
-		Hdf5Input ( const char* const filename );
+		Hdf5Input ( const char * const filename );
 
 		/** Return the number of SNPs in the data. */
 		virtual size_t countSnps ();

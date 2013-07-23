@@ -17,6 +17,7 @@
 #include "../Exception.hpp"
 #include <cassert>
 #include <vector>
+#include <hdf5.h>
 
 using namespace std;
 using namespace linalg;
@@ -42,7 +43,7 @@ namespace io {
 			throw Exception(
 				"HDF5 input file \"%s\""
 				" dataset \"%s\" has %u dimensions"
-				" and dataset \"%s\" has %u dimensions"
+				" and dataset \"%s\" has major %u dimensions"
 				" but both numbers should be equal.",
 				filename,
 				snpListPath,
@@ -55,7 +56,7 @@ namespace io {
 			throw Exception(
 				"HDF5 input file \"%s\""
 				" dataset \"%s\" has %u dimensions"
-				" and dataset \"%s\" has %u dimensions"
+				" and dataset \"%s\" has minor %u dimensions"
 				" but both numbers should be equal.",
 				filename,
 				individualListPath,
