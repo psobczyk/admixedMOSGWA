@@ -65,9 +65,6 @@ public:
 	* setting is determined by MData::checkYValues() */
 	bool affection_status_phenotype;
 
-	/** the number of covariables */
-	int covariables;
-
 	/** 1 = Recessive, 2 = Additive, 3 = Dominant */
 	int genetic_model;
 
