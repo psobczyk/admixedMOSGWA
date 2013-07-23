@@ -25,7 +25,6 @@
 #include "Log.hpp"
 #include "Individual.hpp"
 #include "SNP.hpp"
-#include "OneSnpAllInd.hpp"
 #include "linalg/AutoVector.hpp"
 #include "linalg/AutoMatrix.hpp"
 #include "io/InputCo.hpp"

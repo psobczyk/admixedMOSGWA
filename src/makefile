@@ -74,7 +74,7 @@ Parameter.o : Parameter.hpp Parameter.cpp parser/ConfigParser.hpp
 	$(CC) $(CFLAGS) Parameter.cpp
 main_artur_problem.o: main_artur_problem.cpp MData.hpp  Model.hpp $(SLIB)
 	$(CC) $(CFLAGS) main_artur_problem.cpp
-MData.o : MData.cpp MData.hpp OneSnpAllInd.hpp Individual.hpp GenotypeFreq.hpp PermSort.hpp  $(SLIB) 
+MData.o : MData.cpp MData.hpp Individual.hpp GenotypeFreq.hpp PermSort.hpp  $(SLIB) 
 	$(CC) $(CFLAGS) MData.cpp
 
 Model.o : Model.cpp Model.hpp GenotypeFreq.hpp QRuncher.hpp $(SLIB)
