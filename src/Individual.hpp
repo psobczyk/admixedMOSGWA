@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #ifndef INDIVIDUAL_HPP
 #define INDIVIDUAL_HPP
 
@@ -33,9 +48,6 @@ private:
 	/** Specifies the individual's biological sex. */
 	Sex sex;
 
-	/** Specifies the individual's affectedness. */
-	double phenotype;
-
 public:
 
 	/** Construct an Individual. */
@@ -44,8 +56,7 @@ public:
 		const std::string& individualId,
 		const std::string& paternalId,
 		const std::string& maternalId,
-		const Sex sex,
-		const double phenotype
+		const Sex sex
 	);
 
 	// Getters
@@ -54,10 +65,6 @@ public:
 	std::string getPaternalID () const;
 	std::string getMaternalID () const;
 	Sex getSexCode () const;
-	double getPhenotype () const;
-
-	/** Modify the stored phenotype value. */
-	void setPhenotype ( const double phenotype );
 };
 
 /** Ouput a {@link Vector}. */

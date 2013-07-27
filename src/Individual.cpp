@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "Individual.hpp"
 
 using namespace std;
@@ -7,15 +22,13 @@ Individual::Individual (
 	const string& individualId,
 	const string& paternalId,
 	const string& maternalId,
-	const Sex sex,
-	const double phenotype
+	const Sex sex
 ) :
 	familyId( familyId ),
 	individualId( individualId ),
 	paternalId( paternalId ),
 	maternalId( maternalId ),
-	sex( sex ),
-	phenotype( phenotype )
+	sex( sex )
 {
 }
 
@@ -43,14 +56,6 @@ Individual::Sex Individual::getSexCode () const {
 	return sex;
 }
 
-double Individual::getPhenotype () const {
-	return phenotype;
-}
-
-void Individual::setPhenotype ( const double phenotype ) {
-	this->phenotype = phenotype;
-}
-
 ostream& operator<< ( ostream& s, const Individual& individual ) {
 	s
 		<< "Individual( \""
@@ -68,8 +73,6 @@ ostream& operator<< ( ostream& s, const Individual& individual ) {
 		default: s << "MISSING";
 	}
 	s
-		<< ","
-		<< individual.getPhenotype()
 		<< ")";
 	return s;
 }
