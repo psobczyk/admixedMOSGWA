@@ -16,7 +16,6 @@
 #include "Hdf5Input.hpp"
 #include "../Exception.hpp"
 #include <cassert>
-#include <vector>
 #include <hdf5.h>
 
 using namespace std;
@@ -28,18 +27,88 @@ namespace io {
 		* const Hdf5Input::snpListPath = "/single_nucleotide_polymorphisms",
 		* const Hdf5Input::individualListPath = "/individuals",
 		* const Hdf5Input::genotypeMatrixPath = "/genome_matrix",
+		* const Hdf5Input::covariateListPath = "/covariates",
+		* const Hdf5Input::covariateMatrixPath = "/covariate_matrix",
 		* const Hdf5Input::phenotypeVectorPath = "/phenotypes";
 
-	Hdf5Input::Hdf5Input ( const char * const filename )
+	Hdf5Input::Hdf5Input ( const char * const filename, const bool useCovariates )
 		:
 		fileId( filename ),
-		snpNames( fileId, snpListPath ),
-		individualNames( fileId, individualListPath ),
-		genotypesTransposed( fileId, genotypeMatrixPath ),
-		phenotypes( fileId, phenotypeVectorPath )
+		phenotypes( fileId, phenotypeVectorPath ),
+		genotypesTransposed( fileId, genotypeMatrixPath )
 	{
+		// Read about individuals
+		{
+			Hdf5StringList individualList( fileId, individualListPath );
+			const size_t individualCount = individualList.countDimensions();
+			vector<string> individualNames( individualCount );
+			individualList.readAll( individualNames.data() );
+			individuals.reserve( individualCount );		// hint space requirements
+			for ( size_t individualIndex = 0; individualIndex < individualCount; ++individualIndex ) {
+				const string individualId = individualNames.at( individualIndex );
+				const Individual individual(
+					"",
+					individualId,
+					"",
+					"",
+					Individual::MISSING
+				);
+				individuals.push_back( individual );
+			}
+		}
+
+		// Read about SNPs
+		{
+			Hdf5StringList snpList( fileId, snpListPath );
+			const size_t snpCount = snpList.countDimensions();
+			vector<string> snpNames( snpCount );
+			snpList.readAll( snpNames.data() );
+			snps.reserve( snpCount );	// hint space requirements
+			for ( size_t snpIndex = 0; snpIndex < snpCount; ++snpIndex ) {
+				const string snpId = snpNames.at( snpIndex );
+				const size_t idLength = snpId.length();
+				size_t
+					i,
+					chromosomeIdLength = 0,
+					positionStringStart = 0;
+				for ( i = 0; i < idLength; ++i ) {
+					const char c = snpId[i];
+					if ( '_' == c && 0 == positionStringStart ) {
+						chromosomeIdLength = i;
+						positionStringStart = i + 1;
+					} else if ( c < '0' || '9' < c ) {
+						throw Exception(
+							"HDF5 input file \"%s\" dataset \"%s\""
+							" SNP[%d] has bad character in name \"%s\" at position %l;"
+							" expecting decimals indicating chromosome and position,"
+							" separated by a single underscore.",
+							fileId.getName(),
+							snpListPath,
+							snpIndex,
+							snpId.c_str(),
+							i
+						);
+					}
+				}
+				const string chromosomeId( snpId, 0, chromosomeIdLength );
+				const unsigned long position = strtoul( snpId.c_str() + positionStringStart, NULL, 10 );
+				const SNP snp( chromosomeId, snpId, 0.0, position, 0, 0 );
+				snps.push_back( snp );
+			}
+		}
+
+		if ( useCovariates ) {
+			Hdf5StringList covariateList( fileId, covariateListPath );
+			const size_t covariateCount = covariateList.countDimensions();
+			covariates.resize( covariateCount );
+			covariateList.readAll( covariates.data() );
+			covariatesTransposedPtr.reset( new Hdf5DoubleTable( fileId, covariateMatrixPath ) );
+		} else {
+			// else no info is read thus leaving covariate count 0
+		}
+
 		// Tests for input data consistency
-		if ( snpNames.countDimensions() != genotypesTransposed.countRows() ) {
+		if ( countSnps() != genotypesTransposed.countRows() ) {
 			throw Exception(
 				"HDF5 input file \"%s\""
 				" dataset \"%s\" has %u dimensions"
@@ -47,12 +116,12 @@ namespace io {
 				" but both numbers should be equal.",
 				filename,
 				snpListPath,
-				snpNames.countDimensions(),
+				countSnps(),
 				genotypeMatrixPath,
 				genotypesTransposed.countRows()
 			);
 		}
-		if ( individualNames.countDimensions() != genotypesTransposed.countColumns() ) {
+		if ( countIndividuals() != genotypesTransposed.countColumns() ) {
 			throw Exception(
 				"HDF5 input file \"%s\""
 				" dataset \"%s\" has %u dimensions"
@@ -60,12 +129,12 @@ namespace io {
 				" but both numbers should be equal.",
 				filename,
 				individualListPath,
-				individualNames.countDimensions(),
+				countIndividuals(),
 				genotypeMatrixPath,
 				genotypesTransposed.countColumns()
 			);
 		}
-		if ( individualNames.countDimensions() != phenotypes.countDimensions() ) {
+		if ( countIndividuals() != phenotypes.countDimensions() ) {
 			throw Exception(
 				"HDF5 input file \"%s\""
 				" dataset \"%s\" has %u dimensions"
@@ -73,68 +142,42 @@ namespace io {
 				" but both numbers should be equal.",
 				filename,
 				individualListPath,
-				individualNames.countDimensions(),
+				countIndividuals(),
 				phenotypeVectorPath,
 				phenotypes.countDimensions()
 			);
 		}
-	}
 
-	size_t Hdf5Input::countSnps () {
-		return snpNames.countDimensions();
-	}
-
-	size_t Hdf5Input::countIndividuals () {
-		return individualNames.countDimensions();
-	}
-
-	SNP Hdf5Input::getSnp ( const size_t snpIndex ) {
-		const string snpId = snpNames.readOne( snpIndex );
-		const size_t idLength = snpId.length();
-		size_t
-			i,
-			chromosomeIdLength = 0,
-			positionStringStart = 0;
-		for ( i = 0; i < idLength; ++i ) {
-			const char c = snpId[i];
-			if ( '_' == c && 0 == positionStringStart ) {
-				chromosomeIdLength = i;
-				positionStringStart = i + 1;
-			} else if ( c < '0' || '9' < c ) {
+		if ( useCovariates ) {
+			if ( countIndividuals() != covariatesTransposedPtr->countColumns() ) {
 				throw Exception(
-					"HDF5 input file \"%s\" dataset \"%s\""
-					" SNP[%d] has bad character in name \"%s\" at position %l;"
-					" expecting decimals indicating chromosome and position,"
-					" separated by a single underscore.",
-					fileId.getName(),
-					snpListPath,
-					snpIndex,
-					snpId.c_str(),
-					i
+					"HDF5 input file \"%s\""
+					" dataset has %u rows"
+					" and transposed covariates dataset \"%s\" has minor %u dimensions"
+					" but both numbers should be equal.",
+					filename,
+					countIndividuals(),
+					covariateMatrixPath,
+					covariatesTransposedPtr->countColumns()
+				);
+			}
+			if ( countCovariates() != covariatesTransposedPtr->countRows() ) {
+				throw Exception(
+					"HDF5 input file \"%s\""
+					" dataset \"%s\" has %u dimensions"
+					" and dataset \"%s\" has %u dimensions"
+					" but both numbers should be equal.",
+					filename,
+					covariateListPath,
+					countCovariates(),
+					covariateMatrixPath,
+					covariatesTransposedPtr->countRows()
 				);
 			}
 		}
-		const string chromosomeId( snpId, 0, chromosomeIdLength );
-		const unsigned long position = strtoul( snpId.c_str() + positionStringStart, NULL, 10 );
-		return SNP( chromosomeId, snpId, 0.0, position, 0, 0 );
 	}
 
-	Individual Hdf5Input::getIndividual ( const size_t individualIndex ) {
-		const string individualId = individualNames.readOne( individualIndex );
-
-		const Individual individual(
-			"",
-			individualId,
-			"",
-			"",
-			Individual::MISSING,
-			phenotypes.readOne( individualIndex )
-		);
-
-		return individual;
-	}
-
-	void Hdf5Input::retrieveGenotypesIntoVector ( const size_t snpIndex, Vector& v ) {
+	void Hdf5Input::retrieveGenotypeVector ( const size_t snpIndex, Vector& v ) {
 		const size_t
 			rows = genotypesTransposed.countColumns(),	// equals rows
 			cols = genotypesTransposed.countRows();		// equals cols
@@ -145,11 +188,22 @@ namespace io {
 		v.fill( array.data() );
 	}
 
-	void Hdf5Input::retrievePhenotypesIntoVector ( Vector& v ) {
+	void Hdf5Input::retrievePhenotypeVector ( Vector& v ) {
 		const size_t dims = phenotypes.countDimensions();	// equals rows
 		assert( dims == v.countDimensions() );
 		vector<double> array( dims );
 		phenotypes.readAll( array.data() );
+		v.fill( array.data() );
+	}
+
+	void Hdf5Input::retrieveCovariateVector ( const size_t covIndex, linalg::Vector& v ) {
+		const size_t
+			rows = covariatesTransposedPtr->countColumns(), // equals rows
+			covs = covariatesTransposedPtr->countRows();	// equals covs
+		assert( covIndex < covs );
+		assert( rows == v.countDimensions() );
+		vector<double> array( rows );
+		covariatesTransposedPtr->readRow( covIndex, array.data() );
 		v.fill( array.data() );
 	}
 

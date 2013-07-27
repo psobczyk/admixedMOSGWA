@@ -16,15 +16,14 @@
 #ifndef IO_PLINKINPUT_HPP
 #define IO_PLINKINPUT_HPP
 
-#include "InputCo.hpp"
-#include <vector>
+#include "InputAdapter.hpp"
 #include "../linalg/AutoVector.hpp"
 #include "../linalg/AutoMatrix.hpp"
 
 namespace io {
 
 	/** Reads input data from PLink BIM, FAM and BED formatted files. */
-	class PlinkInput : public InputCo {
+	class PlinkInput : public InputAdapter {
 
 		/** File extensions for the Plink files for SNPs, Individuals and genome. */
 		static const char
@@ -35,15 +34,6 @@ namespace io {
 
 		/** Translation table from two genome bits to the number for the regression matrix entry. */
 		static const double genotypeTranslation[];
-
-		/** Stores all SNP characteristics in memory. */
-		std::vector<SNP> snpList;
-
-		/** Stores all Individual characteristics in memory. */
-		std::vector<Individual> individualList;
-
-		/** Stores all covariate names in memory. */
-		std::vector<std::string> covariateList;
 
 		/** Genome data matrix.
 		* It is stored as transposed matrix in order to optimise memory access.
@@ -67,32 +57,14 @@ namespace io {
 		/** Set up the Plink file reading. */
 		PlinkInput ( const char* const filename );
 
-		/** Return the number of SNPs in the data. */
-		virtual size_t countSnps ();
-
-		/** Return the number of individuals in the data. */
-		virtual size_t countIndividuals ();
-
-		/** Retrieve the data for the given SNP. */
-		virtual SNP getSnp ( const size_t snpIndex );
-
-		/** Retrieve the data for the given individual. */
-		virtual Individual getIndividual ( const size_t individualIndex );
-
 		/** Copy the {@link countIndividuals} sized vector of genotype information for the given SNP into the given vector. */
-		virtual void retrieveGenotypesIntoVector ( const size_t snpIndex, linalg::Vector& vector );
+		virtual void retrieveGenotypeVector ( const size_t snpIndex, linalg::Vector& vector );
 
 		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
-		virtual void retrievePhenotypesIntoVector ( linalg::Vector& vector );
-
-		/** Return the number of covariate vectors in the data. */
-		virtual size_t countCovariateVectors ();
-
-		/** Get the name of the given covariate. */
-		virtual std::string getCovariateName ( const size_t covIndex );
+		virtual void retrievePhenotypeVector ( linalg::Vector& vector );
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
-		virtual void retrieveCovariatesIntoVector ( const size_t covIndex, linalg::Vector& vector );
+		virtual void retrieveCovariateVector ( const size_t covIndex, linalg::Vector& vector );
 
 		/** Declare access to be finished, release all resources. */
 		virtual ~PlinkInput ();

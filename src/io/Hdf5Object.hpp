@@ -109,6 +109,12 @@ namespace io {
 		* and the type <code>double<code> must match the stored HDF5-type.
 		*/
 		void readAll ( double* array );
+
+		/** Retrieve textual data in one big lump.
+		* The array size must be at least {@link #countItems}
+		* and the type <code>std::string<code> must match the stored HDF5-type.
+		*/
+		void readAll ( std::string* array );
 	};
 
 	struct Hdf5StringList : public Hdf5Object<1> {
@@ -116,9 +122,6 @@ namespace io {
 
 		/** Retrieve the number of strings. */
 		size_t countDimensions () const;
-
-		/** Retrieve a string. */
-		std::string readOne ( const size_t index );
 	};
 
 	struct Hdf5DoubleList : public Hdf5Object<1> {
@@ -126,9 +129,6 @@ namespace io {
 
 		/** Retrieve the number of strings. */
 		size_t countDimensions () const;
-
-		/** Retrieve a double. */
-		double readOne ( const size_t index );
 	};
 
 	struct Hdf5DoubleTable : public Hdf5Object<2> {

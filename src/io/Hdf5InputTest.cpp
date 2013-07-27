@@ -15,6 +15,7 @@
 
 #include "Hdf5Input.hpp"
 #include "../TestSuite.hpp"
+#include "../Exception.hpp"
 #include "../linalg/AutoVector.hpp"
 #include "../linalg/AutoMatrix.hpp"
 #include <unistd.h>	// for unlink(char[]), close()
@@ -39,13 +40,16 @@ namespace test {
 		/** Prepare test setup.
 		* @returns name of the test file.
 		*/
-		string setUp ();
+		string setUp ( const bool withCovariates );
 
 		/** Remove test setup. */
 		void tearDown ( const string& testFilename );
 
-		/** Test interface methods. */
+		/** Test interface methods for reading. */
 		void testRead ();
+
+		/** Test what happens when covariates are missing, but selected to be used. */
+		void testMissingCovariates ();
 
 		public:
 
@@ -58,9 +62,10 @@ namespace test {
 
 	Hdf5InputTest::Hdf5InputTest () : TestSuite( "Hdf5InputTest" ) {
 		addTestMethod( "Hdf5InputTest::testRead", this, &Hdf5InputTest::testRead );
+		addTestMethod( "Hdf5InputTest::testMissingCovariates", this, &Hdf5InputTest::testMissingCovariates );
 	}
 
-	string Hdf5InputTest::setUp () {
+	string Hdf5InputTest::setUp ( const bool withCovariates ) {
 		vector<char> tmpFilename( strlen( tmpFilenameTemplate ) + 1 );	// +1 for trailing 0
 		strcpy( tmpFilename.data(), tmpFilenameTemplate );
 		const int fd = mkstemp( tmpFilename.data() );
@@ -159,6 +164,50 @@ namespace test {
 			H5Sclose( individualsSpace );
 		}
 
+		if ( withCovariates ) {
+			const hsize_t covs[2] = {2, 3};
+			{
+				const char * covNameData[2] = {
+					"Age",
+					"Salary"
+				};
+				const hid_t covNameSpace = H5Screate( H5S_SIMPLE );
+				H5Sset_extent_simple( covNameSpace, 1, covs, NULL );
+				const hid_t covNameDataset = H5Dcreate2(
+					h5FileId,
+					"/covariates",
+					varStringType,
+					covNameSpace,
+					H5P_DEFAULT,
+					H5P_DEFAULT,
+					H5P_DEFAULT
+				);
+				H5Dwrite( covNameDataset, varStringType, H5S_ALL, H5S_ALL, H5P_DEFAULT, covNameData );
+				H5Dclose( covNameDataset );
+				H5Sclose( covNameSpace );
+			}
+			{
+				const double covariateData[2][3] = {
+					{ -1.0, 0.0, 1.0 },
+					{ -2.0, ::nan("test"), 2.0 }
+				};
+				const hid_t covariateSpace = H5Screate( H5S_SIMPLE );
+				H5Sset_extent_simple( covariateSpace, 2, covs, NULL );
+				const hid_t covariateDataset = H5Dcreate2(
+					h5FileId,
+					"/covariate_matrix",
+					H5T_NATIVE_DOUBLE,
+					covariateSpace,
+					H5P_DEFAULT,
+					H5P_DEFAULT,
+					H5P_DEFAULT
+				);
+				H5Dwrite( covariateDataset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, covariateData );
+				H5Dclose( covariateDataset );
+				H5Sclose( covariateSpace );
+			}
+		}
+
 		H5Tclose( varStringType );
 		H5Tclose( fixStringType );
 		H5Fclose( h5FileId );
@@ -171,93 +220,107 @@ namespace test {
 	}
 
 	void Hdf5InputTest::testRead () {
-		const string testFilename( setUp() );
-		Hdf5Input hdf5Input( testFilename.c_str() );
-		AutoVector vector( hdf5Input.countIndividuals() );
+		for ( int createCovariates = 0; createCovariates < 2; ++createCovariates ) {
+			const bool withCovariates = 0 < createCovariates;
+			const bool useCovariates = 1 < createCovariates;
+			const string testFilename( setUp( withCovariates ) );
+			Hdf5Input hdf5Input( testFilename.c_str(), useCovariates );
+			AutoVector vector( hdf5Input.countIndividuals() );
 
-		{
-			const SNP snp0 = hdf5Input.getSnp( 0 );
-			assert_eq( "SNP[0].id", string( "1_2" ), snp0.getSnpId() );
-			assert_eq( "SNP[0].chromosome", 1, snp0.getChromosome() );
-			assert_eq( "SNP[0].position", 2, snp0.getBasePairPosition() );
+			{
+				const SNP * snp = hdf5Input.getSnps();
+				assert_eq( "countSnps", 4, hdf5Input.countSnps() );
+
+				assert_eq( "snp[0].id", string( "1_2" ), snp[0].getSnpId() );
+				assert_eq( "snp[0].chromosome", 1, snp[0].getChromosome() );
+				assert_eq( "snp[0].position", 2, snp[0].getBasePairPosition() );
+
+				assert_eq( "snp[1].id", string( "22_11" ), snp[1].getSnpId() );
+				assert_eq( "snp[1].chromosome", 22, snp[1].getChromosome() );
+				assert_eq( "snp[1].position", 11, snp[1].getBasePairPosition() );
+
+				assert_eq( "snp[2].id", string( "0_0" ), snp[2].getSnpId() );
+				assert_eq( "snp[2].chromosome", 0, snp[2].getChromosome() );
+				assert_eq( "snp[2].position", 0, snp[2].getBasePairPosition() );
+
+				assert_eq( "snp[3].id", string( "98_97" ), snp[3].getSnpId() );
+				assert_eq( "snp[3].chromosome", 98, snp[3].getChromosome() );
+				assert_eq( "snp[3].position", 97, snp[3].getBasePairPosition() );
+			}
+
+			{
+				const Individual * idv = hdf5Input.getIndividuals();
+				assert_eq( "countIndividuals", 3, hdf5Input.countIndividuals() );
+
+				assert_eq( "individual[0].id", string( "Eric" ), idv[0].getIndividualID() );
+				assert_eq( "individual[1].id", string( "Benhao" ), idv[1].getIndividualID() );
+				assert_eq( "individual[2].id", string( "Flo" ), idv[2].getIndividualID() );
+			}
+
+			{
+				hdf5Input.retrieveGenotypeVector( 0, vector );
+				assert_eq( "genotypeMatrixNontransposed[0,0]", 0.0, vector.get( 0 ) );
+				assert_eq( "genotypeMatrixNontransposed[1,0]", 0.1, vector.get( 1 ) );
+				assert_eq( "genotypeMatrixNontransposed[2,0]", 0.2, vector.get( 2 ) );
+
+				hdf5Input.retrieveGenotypeVector( 1, vector );
+				assert_eq( "genotypeMatrixNontransposed[0,1]", 1.0, vector.get( 0 ) );
+				assert_eq( "genotypeMatrixNontransposed[1,1]", 1.1, vector.get( 1 ) );
+				assert_eq( "genotypeMatrixNontransposed[2,1]", 1.2, vector.get( 2 ) );
+
+				hdf5Input.retrieveGenotypeVector( 2, vector );
+				assert_eq( "genotypeMatrixNontransposed[0,2]", 2.0, vector.get( 0 ) );
+				assert_true( "genotypeMatrixNontransposed[1,2] is NaN", ::isnan( vector.get( 1 ) ) );
+				assert_eq( "genotypeMatrixNontransposed[2,2]", 2.2, vector.get( 2 ) );
+			}
+
+			{
+				hdf5Input.retrieveGenotypeVector( 3, vector );
+				assert_eq( "genotypeMatrixNontransposed[0,3]", 3.0, vector.get( 0 ) );
+				assert_eq( "genotypeMatrixNontransposed[1,3]", 3.1, vector.get( 1 ) );
+				assert_eq( "genotypeMatrixNontransposed[2,3]", 3.2, vector.get( 2 ) );
+			}
+
+			{
+				hdf5Input.retrievePhenotypeVector( vector );
+				// Mind that in the test data, phenotype has been stored from a float array.
+				assert_eq( "phenotypeVector[0]", -0.0f, vector.get( 0 ) );
+				assert_true( "phenotypeVector[1] is NaN", ::isnan( vector.get( 1 ) ) );
+				assert_eq( "phenotypeVector[2]", -0.2f, vector.get( 2 ) );
+			}
+
+			if ( useCovariates ) {
+				const string * cov = hdf5Input.getCovariates();
+				assert_eq( "countCovariates", 2, hdf5Input.countCovariates() );
+
+				assert_eq( "covariate[0]", string( "Age" ), cov[0] );
+				assert_eq( "covariate[1]", string( "Salary" ), cov[1] );
+
+				hdf5Input.retrieveCovariateVector( 0, vector );
+				assert_eq( "covariateMatrixNontransposed[0,0]", -1.0, vector.get( 0 ) );
+				assert_eq( "covariateMatrixNontransposed[0,1]", 0.0, vector.get( 1 ) );
+				assert_eq( "covariateMatrixNontransposed[0,2]", 1.0, vector.get( 2 ) );
+
+				hdf5Input.retrieveCovariateVector( 1, vector );
+				assert_eq( "covariateMatrixNontransposed[0,0]", -2.0, vector.get( 0 ) );
+				assert_true( "covariateMatrixNontransposed[0,1]", ::isnan( vector.get( 1 ) ) );
+				assert_eq( "covariateMatrixNontransposed[0,2]", 2.0, vector.get( 2 ) );
+			} else {
+				assert_eq( "countCovariates", 0, hdf5Input.countCovariates() );
+				hdf5Input.getCovariates();	// assert that no fail despite 0 count
+			}
+
+			tearDown( testFilename );
 		}
-
-		{
-			const SNP snp1 = hdf5Input.getSnp( 1 );
-			assert_eq( "SNP[1].id", string( "22_11" ), snp1.getSnpId() );
-			assert_eq( "SNP[1].chromosome", 22, snp1.getChromosome() );
-			assert_eq( "SNP[1].position", 11, snp1.getBasePairPosition() );
-		}
-
-		{
-			const SNP snp2 = hdf5Input.getSnp( 2 );
-			assert_eq( "SNP[2].id", string( "0_0" ), snp2.getSnpId() );
-			assert_eq( "SNP[2].chromosome", 0, snp2.getChromosome() );
-			assert_eq( "SNP[2].position", 0, snp2.getBasePairPosition() );
-		}
-
-		{
-			const SNP snp3 = hdf5Input.getSnp( 3 );
-			assert_eq( "SNP[3].id", string( "98_97" ), snp3.getSnpId() );
-			assert_eq( "SNP[3].chromosome", 98, snp3.getChromosome() );
-			assert_eq( "SNP[3].position", 97, snp3.getBasePairPosition() );
-		}
-
-		{
-			const Individual idv0 = hdf5Input.getIndividual( 0 );
-			assert_eq( "Individual[0].id", string( "Eric" ), idv0.getIndividualID() );
-			assert_eq( "Individual[0].phenotype", -0.0f, idv0.getPhenotype() );
-		}
-
-		{
-			const Individual idv1 = hdf5Input.getIndividual( 1 );
-			assert_eq( "Individual[1].id", string( "Benhao" ), idv1.getIndividualID() );
-			assert_true( "Individual[1].phenotype is NaN", ::isnan( idv1.getPhenotype() ) );
-		}
-
-		{
-			const Individual idv2 = hdf5Input.getIndividual( 2 );
-			assert_eq( "Individual[2].id", string( "Flo" ), idv2.getIndividualID() );
-			assert_eq( "Individual[2].phenotype", -0.2f, idv2.getPhenotype() );
-		}
-
-		{
-			hdf5Input.retrieveGenotypesIntoVector( 0, vector );
-			assert_eq( "genotypeMatrixNontransposed[0,0]", 0.0, vector.get( 0 ) );
-			assert_eq( "genotypeMatrixNontransposed[1,0]", 0.1, vector.get( 1 ) );
-			assert_eq( "genotypeMatrixNontransposed[2,0]", 0.2, vector.get( 2 ) );
-		}
-
-		{
-			hdf5Input.retrieveGenotypesIntoVector( 1, vector );
-			assert_eq( "genotypeMatrixNontransposed[0,1]", 1.0, vector.get( 0 ) );
-			assert_eq( "genotypeMatrixNontransposed[1,1]", 1.1, vector.get( 1 ) );
-			assert_eq( "genotypeMatrixNontransposed[2,1]", 1.2, vector.get( 2 ) );
-		}
-
-		{
-			hdf5Input.retrieveGenotypesIntoVector( 2, vector );
-			assert_eq( "genotypeMatrixNontransposed[0,2]", 2.0, vector.get( 0 ) );
-			assert_true( "genotypeMatrixNontransposed[1,2] is NaN", ::isnan( vector.get( 1 ) ) );
-			assert_eq( "genotypeMatrixNontransposed[2,2]", 2.2, vector.get( 2 ) );
-		}
-
-		{
-			hdf5Input.retrieveGenotypesIntoVector( 3, vector );
-			assert_eq( "genotypeMatrixNontransposed[0,3]", 3.0, vector.get( 0 ) );
-			assert_eq( "genotypeMatrixNontransposed[1,3]", 3.1, vector.get( 1 ) );
-			assert_eq( "genotypeMatrixNontransposed[2,3]", 3.2, vector.get( 2 ) );
-		}
-
-		{
-			hdf5Input.retrievePhenotypesIntoVector( vector );
-			// Mind that in the test data, phenotype has been stored from a float array.
-			assert_eq( "phenotypeVector[0]", -0.0f, vector.get( 0 ) );
-			assert_true( "phenotypeVector[1] is NaN", ::isnan( vector.get( 1 ) ) );
-			assert_eq( "phenotypeVector[2]", -0.2f, vector.get( 2 ) );
-		}
-
-		tearDown( testFilename );
 	}
 
+	void Hdf5InputTest::testMissingCovariates () {
+		const string testFilename( setUp( false ) );
+		try {
+			Hdf5Input hdf5Input( testFilename.c_str(), true );
+			assert_fail( "Exception should be raised for covariates missing" );
+		} catch ( Exception e ) {
+		}
+		tearDown( testFilename );
+	}
 }

@@ -73,11 +73,59 @@ namespace io {
 	}
 
 	template<size_t D> void Hdf5Object<D>::readAll ( double* array ) {
-		if ( 0 > H5Dread( datasetId.id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, array ) ) {
+		if ( 0 > H5Dread( datasetId.id, H5T_NATIVE_DOUBLE, dataspaceId.id, dataspaceId.id, H5P_DEFAULT, array ) ) {
 			throw Exception(
-				"HDF5 \"%s\" dataset \"%s\" read failed.",
+				"HDF5 \"%s\" dataset \"%s\" read all as double precision numbers failed.",
 				datasetId.getName()
 			);
+		}
+	}
+
+	template<size_t D> void Hdf5Object<D>::readAll ( string* array ) {
+
+		// prepare type
+		const size_t datatypeSize = datatypeId.size() + 1;	// + 1 for trailing \000
+		const bool isVarString = datatypeId.isVariableString();
+		Hdf5DatatypeId memType( H5Tcopy( H5T_C_S1 ), "copy of H5T_C_S1" );
+		if ( 0 > H5Tset_size( memType.id, isVarString ? H5T_VARIABLE : datatypeSize ) ) {
+			throw isVarString
+				? Exception( "HDF5 set string size %u failed.", datatypeSize )
+				: Exception( "HDF5 set string size variable failed." );
+		}
+
+		const size_t items = countItems();
+		if ( isVarString ) {
+			vector<char*> buffer( items );
+			if ( 0 > H5Dread( datasetId.id, memType.id, dataspaceId.id, dataspaceId.id, H5P_DEFAULT, buffer.data() ) ) {
+				throw Exception(
+					"HDF5 \"%s\" dataset read all as variable length strings failed.",
+					datasetId.getName()
+				);
+			}
+			for ( size_t i = 0; i < items; ++i ) {
+				const char* value = buffer.at( i );
+				array[i] = value;
+			}
+			if ( 0 > H5Dvlen_reclaim( memType.id, dataspaceId.id, H5P_DEFAULT, buffer.data() ) ) {
+				throw Exception(
+					"HDF5 \"%s\" dataset reclaim buffer failed for %u variable length strings.",
+					datasetId.getName(),
+					items
+				);
+			}
+		} else {
+			const size_t totalSize = datatypeSize * items;
+			vector<char> buffer( totalSize );
+			if ( 0 > H5Dread( datasetId.id, memType.id, H5S_ALL, H5S_ALL, H5P_DEFAULT, buffer.data() ) ) {
+				throw Exception(
+					"HDF5 \"%s\" dataset read all as fixed length strings failed.",
+					datasetId.getName()
+				);
+			}
+			for ( size_t i = 0; i < items; ++i ) {
+				const char* value = & buffer.at( datatypeSize * i );
+				array[i] = value;
+			}
 		}
 	}
 }

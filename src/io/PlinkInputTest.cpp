@@ -190,111 +190,97 @@ namespace test {
 			AutoVector vector( plinkInput.countIndividuals() );
 
 			{
-				const SNP snp0 = plinkInput.getSnp( 0 );
-				assert_eq( "SNP[0].chromosome", 0, snp0.getChromosome() );
-				assert_eq( "SNP[0].id", string( "Adenin" ), snp0.getSnpId() );
-				assert_eq( "SNP[0].distance", 0.0, snp0.getGeneticDistance() );
-				assert_eq( "SNP[0].position", 0, snp0.getBasePairPosition() );
-				assert_eq( "SNP[0].allele1", 'A', snp0.getAllele1() );
-				assert_eq( "SNP[0].allele2", 'T', snp0.getAllele2() );
+				const SNP * snp = plinkInput.getSnps();
+				assert_eq( "countSnps", 4, plinkInput.countSnps() );
+
+				assert_eq( "snp[0].chromosome", 0, snp[0].getChromosome() );
+				assert_eq( "snp[0].id", string( "Adenin" ), snp[0].getSnpId() );
+				assert_eq( "snp[0].distance", 0.0, snp[0].getGeneticDistance() );
+				assert_eq( "snp[0].position", 0, snp[0].getBasePairPosition() );
+				assert_eq( "snp[0].allele1", 'A', snp[0].getAllele1() );
+				assert_eq( "snp[0].allele2", 'T', snp[0].getAllele2() );
+
+				assert_eq( "snp[1].chromosome", 4, snp[1].getChromosome() );
+				assert_eq( "snp[1].id", string( "Cytosin" ), snp[1].getSnpId() );
+				assert_eq( "snp[1].distance", 17.0, snp[1].getGeneticDistance() );
+				assert_eq( "snp[1].position", 27, snp[1].getBasePairPosition() );
+				assert_eq( "snp[1].allele1", 'C', snp[1].getAllele1() );
+				assert_eq( "snp[1].allele2", 'G', snp[1].getAllele2() );
+
+				assert_eq( "snp[2].chromosome", 4, snp[2].getChromosome() );
+				assert_eq( "snp[2].id", string( "Guanin" ), snp[2].getSnpId() );
+				assert_eq( "snp[2].distance", -0.7, snp[2].getGeneticDistance() );
+				assert_eq( "snp[2].position", 271717, snp[2].getBasePairPosition() );
+				assert_eq( "snp[2].allele1", 'G', snp[2].getAllele1() );
+				assert_eq( "snp[2].allele2", 'C', snp[2].getAllele2() );
+
+				assert_eq( "snp[3].chromosome", 7, snp[3].getChromosome() );
+				assert_eq( "snp[3].id", string( "Thymin" ), snp[3].getSnpId() );
+				assert_eq( "snp[3].distance", 7.0, snp[3].getGeneticDistance() );
+				assert_eq( "snp[3].position", 1, snp[3].getBasePairPosition() );
+				assert_eq( "snp[3].allele1", 'T', snp[3].getAllele1() );
+				assert_eq( "snp[3].allele2", 'A', snp[3].getAllele2() );
 			}
 
 			{
-				const SNP snp1 = plinkInput.getSnp( 1 );
-				assert_eq( "SNP[1].chromosome", 4, snp1.getChromosome() );
-				assert_eq( "SNP[1].id", string( "Cytosin" ), snp1.getSnpId() );
-				assert_eq( "SNP[1].distance", 17.0, snp1.getGeneticDistance() );
-				assert_eq( "SNP[1].position", 27, snp1.getBasePairPosition() );
-				assert_eq( "SNP[1].allele1", 'C', snp1.getAllele1() );
-				assert_eq( "SNP[1].allele2", 'G', snp1.getAllele2() );
+				const Individual * idv = plinkInput.getIndividuals();
+				assert_eq( "countIndividuals", 3, plinkInput.countIndividuals() );
+
+				assert_eq( "individual[0].familyId", string( "Fohliks" ), idv[0].getFamilyID() );
+				assert_eq( "individual[0].id", string( "Flo" ), idv[0].getIndividualID() );
+				assert_eq( "individual[0].paternalId", string( "Stefan" ), idv[0].getPaternalID() );
+				assert_eq( "individual[0].maternalId", string( "Ludmilla" ), idv[0].getMaternalID() );
+				assert_eq( "individual[0].sex", Individual::MALE, idv[0].getSexCode() );
+
+				assert_eq( "individual[1].familyId", string( "Grün" ), idv[1].getFamilyID() );
+				assert_eq( "individual[1].id", string( "Georg" ), idv[1].getIndividualID() );
+				assert_eq( "individual[1].paternalId", string( "Karl" ), idv[1].getPaternalID() );
+				assert_eq( "individual[1].maternalId", string( "Waltraud" ), idv[1].getMaternalID() );
+				assert_eq( "individual[1].sex", Individual::MALE, idv[1].getSexCode() );
+
+				assert_eq( "individual[2].familyId", string( "Skala" ), idv[2].getFamilyID() );
+				assert_eq( "individual[2].id", string( "Esra" ), idv[2].getIndividualID() );
+				assert_eq( "individual[2].paternalId", string( "Reginald" ), idv[2].getPaternalID() );
+				assert_eq( "individual[2].maternalId", string( "Rabia" ), idv[2].getMaternalID() );
+				assert_eq( "individual[2].sex", Individual::FEMALE, idv[2].getSexCode() );
 			}
 
 			{
-				const SNP snp2 = plinkInput.getSnp( 2 );
-				assert_eq( "SNP[2].chromosome", 4, snp2.getChromosome() );
-				assert_eq( "SNP[2].id", string( "Guanin" ), snp2.getSnpId() );
-				assert_eq( "SNP[2].distance", -0.7, snp2.getGeneticDistance() );
-				assert_eq( "SNP[2].position", 271717, snp2.getBasePairPosition() );
-				assert_eq( "SNP[2].allele1", 'G', snp2.getAllele1() );
-				assert_eq( "SNP[2].allele2", 'C', snp2.getAllele2() );
-			}
-
-			{
-				const SNP snp3 = plinkInput.getSnp( 3 );
-				assert_eq( "SNP[3].chromosome", 7, snp3.getChromosome() );
-				assert_eq( "SNP[3].id", string( "Thymin" ), snp3.getSnpId() );
-				assert_eq( "SNP[3].distance", 7.0, snp3.getGeneticDistance() );
-				assert_eq( "SNP[3].position", 1, snp3.getBasePairPosition() );
-				assert_eq( "SNP[3].allele1", 'T', snp3.getAllele1() );
-				assert_eq( "SNP[3].allele2", 'A', snp3.getAllele2() );
-			}
-
-			{
-				const Individual idv0 = plinkInput.getIndividual( 0 );
-				assert_eq( "Individual[0].familyId", string( "Fohliks" ), idv0.getFamilyID() );
-				assert_eq( "Individual[0].id", string( "Flo" ), idv0.getIndividualID() );
-				assert_eq( "Individual[0].paternalId", string( "Stefan" ), idv0.getPaternalID() );
-				assert_eq( "Individual[0].maternalId", string( "Ludmilla" ), idv0.getMaternalID() );
-				assert_eq( "Individual[0].sex", Individual::MALE, idv0.getSexCode() );
-				assert_eq( "Individual[0].phenotype", -0.1, idv0.getPhenotype() );
-			}
-
-			{
-				const Individual idv1 = plinkInput.getIndividual( 1 );
-				assert_eq( "Individual[1].familyId", string( "Grün" ), idv1.getFamilyID() );
-				assert_eq( "Individual[1].id", string( "Georg" ), idv1.getIndividualID() );
-				assert_eq( "Individual[1].paternalId", string( "Karl" ), idv1.getPaternalID() );
-				assert_eq( "Individual[1].maternalId", string( "Waltraud" ), idv1.getMaternalID() );
-				assert_eq( "Individual[1].sex", Individual::MALE, idv1.getSexCode() );
-				assert_eq( "Individual[1].phenotype", 200.0, idv1.getPhenotype() );
-			}
-
-			{
-				const Individual idv2 = plinkInput.getIndividual( 2 );
-				assert_eq( "Individual[2].familyId", string( "Skala" ), idv2.getFamilyID() );
-				assert_eq( "Individual[2].id", string( "Esra" ), idv2.getIndividualID() );
-				assert_eq( "Individual[2].paternalId", string( "Reginald" ), idv2.getPaternalID() );
-				assert_eq( "Individual[2].maternalId", string( "Rabia" ), idv2.getMaternalID() );
-				assert_eq( "Individual[2].sex", Individual::FEMALE, idv2.getSexCode() );
-				assert_eq( "Individual[2].phenotype", 7.0, idv2.getPhenotype() );
-			}
-
-			{
-				plinkInput.retrieveGenotypesIntoVector( 0, vector );
+				plinkInput.retrieveGenotypeVector( 0, vector );
 				assert_eq( "genotypeMatrixNontransposed[0,0]", 1.0, vector.get( 0 ) );
 				assert_eq( "genotypeMatrixNontransposed[1,0]", 1.0, vector.get( 1 ) );
 				assert_eq( "genotypeMatrixNontransposed[2,0]", -1.0, vector.get( 2 ) );
 			}
 
 			{
-				plinkInput.retrieveGenotypesIntoVector( 1, vector );
+				plinkInput.retrieveGenotypeVector( 1, vector );
 				assert_true( "genotypeMatrixNontransposed[0,1]", ::isnan( vector.get( 0 ) ) );
 				assert_eq( "genotypeMatrixNontransposed[1,1]", 1.0, vector.get( 1 ) );
 				assert_eq( "genotypeMatrixNontransposed[2,1]", -1.0, vector.get( 2 ) );
 			}
 
 			{
-				plinkInput.retrieveGenotypesIntoVector( 2, vector );
+				plinkInput.retrieveGenotypeVector( 2, vector );
 				assert_eq( "genotypeMatrixNontransposed[0,2]", 0.0, vector.get( 0 ) );
 				assert_eq( "genotypeMatrixNontransposed[1,2]", 1.0, vector.get( 1 ) );
 				assert_eq( "genotypeMatrixNontransposed[2,2]", -1.0, vector.get( 2 ) );
 			}
 
 			{
-				plinkInput.retrieveGenotypesIntoVector( 3, vector );
+				plinkInput.retrieveGenotypeVector( 3, vector );
 				assert_eq( "genotypeMatrixNontransposed[0,3]", -1.0, vector.get( 0 ) );
 				assert_eq( "genotypeMatrixNontransposed[1,3]", 1.0, vector.get( 1 ) );
 				assert_eq( "genotypeMatrixNontransposed[2,3]", -1.0, vector.get( 2 ) );
 			}
 
 			{
-				plinkInput.retrievePhenotypesIntoVector( vector );
+				plinkInput.retrievePhenotypeVector( vector );
 				assert_eq( "phenotypeVector[0]", -0.1, vector.get( 0 ) );
 				assert_eq( "phenotypeVector[1]", 200.0, vector.get( 1 ) );
 				assert_eq( "phenotypeVector[2]", 7.0, vector.get( 2 ) );
 			}
 
-			assert_eq( "No covariates", 0, plinkInput.countCovariateVectors() );
+			assert_eq( "No covariates", 0, plinkInput.countCovariates() );
 
 			tearDown( testDirname, false );
 		}
@@ -305,28 +291,25 @@ namespace test {
 		const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
 		const char * const tft = testFilenameTrunc.c_str();
 		PlinkInput plinkInput( tft );
-		assert_eq( "Two covariates", 2, plinkInput.countCovariateVectors() );
+		assert_eq( "Two covariates", 2, plinkInput.countCovariates() );
 		AutoVector vector( plinkInput.countIndividuals() );
 
 		{
-			const string name = plinkInput.getCovariateName( 0 );
-			assert_eq( "cov[0].name", string( "Age" ), name );
+			const string * cov = plinkInput.getCovariates();
+
+			assert_eq( "cov[0].name", string( "Age" ), cov[0] );
+			assert_eq( "cov[1].name", string( "Salary" ), cov[1] );
 		}
 
 		{
-			const string name = plinkInput.getCovariateName( 1 );
-			assert_eq( "cov[1].name", string( "Salary" ), name );
-		}
-
-		{
-			plinkInput.retrieveCovariatesIntoVector( 0, vector );
+			plinkInput.retrieveCovariateVector( 0, vector );
 			assert_true( "covariateMatrixNontransposed[0,0] NaN", ::isnan( vector.get( 0 ) ) );
 			assert_eq( "covariateMatrixNontransposed[1,0]", 10.0, vector.get( 1 ) );
 			assert_eq( "covariateMatrixNontransposed[2,0]", 0.15, vector.get( 2 ) );
 		}
 
 		{
-			plinkInput.retrieveCovariatesIntoVector( 1, vector );
+			plinkInput.retrieveCovariateVector( 1, vector );
 			assert_true( "covariateMatrixNontransposed[0,1]", ::isnan( vector.get( 0 ) ) );
 			assert_eq( "covariateMatrixNontransposed[1,1]", 20000000.0, vector.get( 1 ) );
 			assert_eq( "covariateMatrixNontransposed[2,1]", -1.3, vector.get( 2 ) );

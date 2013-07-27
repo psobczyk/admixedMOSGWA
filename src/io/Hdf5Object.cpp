@@ -188,102 +188,12 @@ namespace io {
 		return size[0];
 	}
 
-	string Hdf5StringList::readOne ( const size_t index ) {
-		assert( index < countDimensions() );
-
-		// prepare type
-		const size_t datatypeSize = datatypeId.size() + 1;	// + 1 for trailing \000
-		const bool isVarString = datatypeId.isVariableString();
-		Hdf5DatatypeId memType( H5Tcopy( H5T_C_S1 ), "copy of H5T_C_S1" );
-		if ( 0 > H5Tset_size( memType.id, isVarString ? H5T_VARIABLE : datatypeSize ) ) {
-			throw isVarString
-				? Exception( "HDF5 set string size %u failed.", datatypeSize )
-				: Exception( "HDF5 set string size variable failed." );
-		}
-
-		// prepare space
-		const hsize_t coordinates[1] = { index };
-		assert( coordinates[0] == index );	// guard against assignment overflow
-		// mark selection on a copy only to keep it thread-safe
-		Hdf5DataspaceId dataspaceCopy( H5Scopy( dataspaceId.id ), dataspaceId.name + "[clone]" );
-		if ( 0 > H5Sselect_elements( dataspaceCopy.id, H5S_SELECT_SET, 1, coordinates ) ) {
-			throw Exception(
-				"HDF5 \"%s\" dataset select element %u failed.",
-				datasetId.getName(),
-				index
-			);
-		}
-		Hdf5DataspaceId memSpace( H5Screate( H5S_SCALAR ), "creature of H5S_SCALAR" );
-
-		// read
-		string value;
-		if ( isVarString ) {
-			char* buffer[1];
-			if ( 0 > H5Dread( datasetId.id, memType.id, memSpace.id, dataspaceCopy.id, H5P_DEFAULT, buffer ) ) {
-				throw Exception(
-					"HDF5 \"%s\" dataset read variable length string[%u] failed.",
-					datasetId.getName(),
-					index
-				);
-			}
-			value = string( buffer[0] );
-			if ( 0 > H5Dvlen_reclaim( memType.id, memSpace.id, H5P_DEFAULT, buffer ) ) {
-				throw Exception(
-					"HDF5 \"%s\" dataset reclaim buffer for variable length string[%u] failed.",
-					datasetId.getName(),
-					index
-				);
-			}
-		} else {
-			vector<char> buffer( datatypeSize );
-			if ( 0 > H5Dread( datasetId.id, memType.id, memSpace.id, dataspaceCopy.id, H5P_DEFAULT, buffer.data() ) ) {
-				throw Exception(
-					"HDF5 \"%s\" dataset read fixed length string[%u] failed.",
-					datasetId.getName(),
-					index
-				);
-			}
-			value = string( buffer.data(), 0, datatypeSize );
-		}
-
-		return value;
-	}
-
 	Hdf5DoubleList::Hdf5DoubleList ( Hdf5FileId& fileId, const std::string& objectPath )
 		: Hdf5Object<1>( fileId, objectPath )
 	{}
 
 	size_t Hdf5DoubleList::countDimensions () const {
 		return size[0];
-	}
-
-	double Hdf5DoubleList::readOne ( const size_t index ) {
-		assert( index < countDimensions() );
-
-		// prepare space
-		const hsize_t coordinates[1] = { index };
-		assert( coordinates[0] == index );	// guard against assignment overflow
-		// mark selection on a copy only to keep it thread-safe
-		Hdf5DataspaceId dataspaceCopy( H5Scopy( dataspaceId.id ), dataspaceId.name + "[clone]" );
-		if ( 0 > H5Sselect_elements( dataspaceCopy.id, H5S_SELECT_SET, 1, coordinates ) ) {
-			throw Exception(
-				"HDF5 \"%s\" dataset select element %u failed.",
-				datasetId.getName(),
-				index
-			);
-		}
-		Hdf5DataspaceId memSpace( H5Screate( H5S_SCALAR ), "creature of H5S_SCALAR" );
-
-		// read
-		double value;
-		if ( 0 > H5Dread( datasetId.id, H5T_NATIVE_DOUBLE, memSpace.id, dataspaceCopy.id, H5P_DEFAULT, &value ) ) {
-			throw Exception(
-				"HDF5 \"%s\" dataset read double[%u] failed.",
-				datasetId.getName(),
-				index
-			);
-		}
-		return value;
 	}
 
 	Hdf5DoubleTable::Hdf5DoubleTable ( Hdf5FileId& fileId, const std::string& objectPath )

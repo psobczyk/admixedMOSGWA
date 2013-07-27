@@ -16,13 +16,14 @@
 #ifndef IO_HDF5INPUT_HPP
 #define IO_HDF5INPUT_HPP
 
-#include "InputCo.hpp"
+#include "InputAdapter.hpp"
 #include "Hdf5Object.hpp"
+#include <memory>
 
 namespace io {
 
 	/** Reads input data from HDF5 file format. */
-	class Hdf5Input : virtual public Input {
+	class Hdf5Input : public InputAdapter {
 
 		protected:
 
@@ -31,44 +32,37 @@ namespace io {
 			* const snpListPath,
 			* const individualListPath,
 			* const genotypeMatrixPath,
+			* const covariateListPath,
+			* const covariateMatrixPath,
 			* const phenotypeVectorPath;
 
 		/** Holds the identifier of the opened HDF5-file. */
 		Hdf5FileId fileId;
 
-		/** Gets axis data names into MOSGWA. */
-		Hdf5StringList
-			snpNames,
-			individualNames;
+		/** Gets phenotype data into MOSGWA. */
+		Hdf5DoubleList phenotypes;
 
 		/** Gets genotype data into MOSGWA. */
 		Hdf5DoubleTable genotypesTransposed;
 
-		/** Gets phenotype data into MOSGWA. */
-		Hdf5DoubleList phenotypes;
+		/** Gets covariate matrix into MOSGWA. */
+		std::auto_ptr<Hdf5DoubleTable> covariatesTransposedPtr;
 
 		public:
 
-		/** Set up the HDF5 file reading. */
-		Hdf5Input ( const char * const filename );
-
-		/** Return the number of SNPs in the data. */
-		virtual size_t countSnps ();
-
-		/** Return the number of individuals in the data. */
-		virtual size_t countIndividuals ();
-
-		/** Retrieve the data for the given SNP. */
-		virtual SNP getSnp ( const size_t snpIndex );
-
-		/** Retrieve the data for the given individual. */
-		virtual Individual getIndividual ( const size_t individualIndex );
-
-		/** Copy the {@link countIndividuals} sized vector of genotype information for the given SNP into the given vector. */
-		virtual void retrieveGenotypesIntoVector ( const size_t snpIndex, linalg::Vector& v );
+		/** Set up the HDF5 file reading.
+		* @param useCovariates indicates whether covariates should be read.
+		*/
+		Hdf5Input ( const char * const filename, const bool useCovariates = false );
 
 		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
-		virtual void retrievePhenotypesIntoVector ( linalg::Vector& v );
+		virtual void retrievePhenotypeVector ( linalg::Vector& v );
+
+		/** Copy the {@link countIndividuals} sized vector of genotype information for the given SNP into the given vector. */
+		virtual void retrieveGenotypeVector ( const size_t snpIndex, linalg::Vector& v );
+
+		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
+		virtual void retrieveCovariateVector ( const size_t covIndex, linalg::Vector& vector );
 
 		/** Declare access to be finished, release all resources. */
 		virtual ~Hdf5Input ();

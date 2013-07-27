@@ -140,7 +140,7 @@ namespace io {
 					allele1,
 					allele2
 				);
-				snpList.push_back( snp );
+				snps.push_back( snp );
 			}
 			bim.close();
 		}
@@ -205,11 +205,13 @@ namespace io {
 					individualId,
 					paternalId,
 					maternalId,
-					sex,
-					phenotype
+					sex
 				);
-				idvIndex[ familyId + '\t' + individualId ] = individualList.size();
-				individualList.push_back( individual );
+				const size_t idv = countIndividuals();
+				idvIndex[ familyId + '\t' + individualId ] = idv;
+				individuals.push_back( individual );
+				phenotypeVector.upSize( idv+1 );
+				phenotypeVector.set( idv, phenotype );
 			}
 			fam.close();
 		}
@@ -266,18 +268,6 @@ namespace io {
 		}
 
 		{
-			// Cache phenotype vector
-
-			const size_t idvs = countIndividuals();
-			phenotypeVector.exactSize( countIndividuals() );
-			for ( size_t idv = 0; idv < idvs; ++idv ) {
-				const Individual individual( individualList.at( idv ) );
-				const double phenotype = individual.getPhenotype();
-				phenotypeVector.set( idv, phenotype );
-			}
-		}
-
-		{
 			// Read covariate file
 			string covFilename( filenameTrunc );
 			covFilename += covariateMatrixExtension;
@@ -331,14 +321,14 @@ namespace io {
 					if ( *( text = cursor ) ) {
 						while ( *cursor && ' ' != *cursor && '\t' != *cursor ) ++cursor;
 						const string covId( text, cursor - text );
-						covariateList.push_back( covId );
+						covariates.push_back( covId );
 					}
 				} while ( *( text = cursor ) );
 
 				// Lines after the first
 				const size_t
 					idvs = countIndividuals(),
-					covs = countCovariateVectors();
+					covs = countCovariates();
 				covariateMatrixTransposed.exactSize( covs, idvs );
 				covariateMatrixTransposed.fill( ::nan( "missing" ) );
 				vector<bool> idvEncountered( idvs );
@@ -416,7 +406,7 @@ namespace io {
 								covFilename.c_str(),
 								familyId.c_str(),
 								individualId.c_str(),
-								covariateList.at( cov ).c_str(),
+								covariates.at( cov ).c_str(),
 								cursor
 							);
 						}
@@ -448,39 +438,15 @@ namespace io {
 		}
 	}
 
-	size_t PlinkInput::countSnps () {
-		return snpList.size();
-	}
-
-	size_t PlinkInput::countIndividuals () {
-		return individualList.size();
-	}
-
-	SNP PlinkInput::getSnp ( const size_t snpIndex ) {
-		return snpList.at( snpIndex );
-	}
-
-	Individual PlinkInput::getIndividual ( const size_t individualIndex ) {
-		return individualList.at( individualIndex );
-	}
-
-	void PlinkInput::retrieveGenotypesIntoVector ( const size_t snpIndex, Vector& vector ) {
+	void PlinkInput::retrieveGenotypeVector ( const size_t snpIndex, Vector& vector ) {
 		vector.copy( genotypeMatrixTransposed.rowVector( snpIndex ) );
 	}
 
-	void PlinkInput::retrievePhenotypesIntoVector ( Vector& vector ) {
+	void PlinkInput::retrievePhenotypeVector ( Vector& vector ) {
 		vector.copy( phenotypeVector );
 	}
 
-	size_t PlinkInput::countCovariateVectors () {
-		return covariateList.size();
-	}
-
-	string PlinkInput::getCovariateName ( const size_t covIndex ) {
-		return covariateList.at( covIndex );
-	}
-
-	void PlinkInput::retrieveCovariatesIntoVector ( const size_t covIndex, linalg::Vector& vector ) {
+	void PlinkInput::retrieveCovariateVector ( const size_t covIndex, linalg::Vector& vector ) {
 		vector.copy( covariateMatrixTransposed.rowVector( covIndex ) );
 	}
 
