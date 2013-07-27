@@ -27,7 +27,7 @@
 #include "SNP.hpp"
 #include "linalg/AutoVector.hpp"
 #include "linalg/AutoMatrix.hpp"
-#include "io/InputCo.hpp"
+#include "io/Input.hpp"
 #include "deprecate.h"
 
 #include "Model.hpp" // ag
@@ -94,7 +94,7 @@ public:
 	* Otherwise, input is read according to the preference settings in {@link Parameter}.
 	* @see Parameter
 	*/
-	MData ( io::InputCo *input = NULL );
+	MData ( io::Input *input = NULL );
 
 	/** Destructor: clean up */
 	~MData();

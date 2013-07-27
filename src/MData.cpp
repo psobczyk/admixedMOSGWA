@@ -18,7 +18,7 @@
 #include "GenotypeFreq.hpp"
 #include "PermSort.hpp"
 #include "io/PlinkInput.hpp"
-#include "io/Hdf5InputCo.hpp"
+#include "io/Hdf5Input.hpp"
 #include <sstream>
 #include <map>
 #include <memory>
@@ -54,37 +54,40 @@ void MData::setY ( const size_t index, const double value ) {
 }
 
 /** Default Constructor: reads the input-files, sets parameters, deallambda.hpps with missing phenotypes */
-MData::MData ( io::InputCo *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
+MData::MData ( io::Input *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
 
 	const bool allocateInput = NULL == input;
 	if ( allocateInput ) {
 		if ( parameter.in_file_hdf5.empty() ) {
 			input = new PlinkInput( parameter.in_files_plink.c_str() );
 		} else {
-			input = new Hdf5InputCo( parameter.in_file_hdf5.c_str() );
+			input = new Hdf5Input( parameter.in_file_hdf5.c_str(), parameter.cov_extra_file );
 		}
 	}
 
 	const size_t
 		snps = input->countSnps(),
 		idvs = input->countIndividuals(),
-		covs = input->countCovariateVectors();
+		covs = input->countCovariates();
 	xMat.exactSize( idvs, snps );
 	yVec.exactSize( idvs );
 	covMat.exactSize( idvs, covs );
+	const SNP * snpArray = input->getSnps();
 	for ( size_t snp = 0; snp < snps; ++snp ) {
-		snpList.push_back( input->getSnp( snp ) );
+		snpList.push_back( snpArray[ snp ] );
 		Vector xVec = xMat.columnVector( snp );
-		input->retrieveGenotypesIntoVector( snp, xVec );
+		input->retrieveGenotypeVector( snp, xVec );
 	}
+	const Individual * idvArray = input->getIndividuals();
 	for ( size_t idv = 0; idv < idvs; ++idv ) {
-		idvList.push_back( input->getIndividual( idv ) );
+		idvList.push_back( idvArray[ idv ] );
 	}
-	input->retrievePhenotypesIntoVector( yVec );
+	input->retrievePhenotypeVector( yVec );
+	const std::string * covariates = input->getCovariates();
 	for ( size_t cov = 0; cov < covs; ++cov ) {
-		covNames.push_back( string( input->getCovariateName( cov ) ) );
+		covNames.push_back( covariates[ cov ] );
 		Vector covVec = covMat.columnVector( cov );
-		input->retrieveCovariatesIntoVector( cov, covVec );
+		input->retrieveCovariateVector( cov, covVec );
 	}
 	if ( allocateInput ) {
 		delete input;
@@ -225,7 +228,7 @@ void MData::checkYValues()
 
 void MData::setYfromMOSGWA( const vector<bool>& Y ) {
 	for( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-		idvList.at( idv ).setPhenotype( Y[idv] );
+		yVec.set( idv, Y[idv] ? 1.0 : 0.0 );
 	}
 }
 
@@ -256,28 +259,14 @@ void MData::printIndividuals () {
 }
 
 void MData::printIndividuals ( ostream &s ) {
-	for (
-		vector<Individual>::const_iterator itidvs = idvList.begin();
-		itidvs < idvList.end();
-		++itidvs
-	) {
-		s << (*itidvs).getFamilyID() << " "
-	
-			 << (*itidvs).getIndividualID() << " " 
-  
-		//	 << (*itidvs)->paternalID_	<< " " 
-		 
-		//	 << (*itidvs)->maternalID_	<< " " 
-
-		//	 << (*itidvs)->sexCode_	<< " " 
-
-		// here pheno 1-num pheno;
-		//here should be the new phenotype 
-			 << (*itidvs).getPhenotype() << " " 
-			 << endl;
-            // cout<<(*itidvs)->phenotype_;
+	const size_t idvs = getIdvNo();
+	for ( size_t idv = 0; idv < idvs; ++idv ) {
+		const Individual individual = idvList.at( idv );
+		s
+			<< individual.getFamilyID() << " "
+			<< individual.getIndividualID() << " "
+			<< yVec.get( idv ) << endl;
 	}
-	
 }
 
 //WARNING this is not used for generation of a new yvm file with generated data
@@ -312,7 +301,7 @@ void MData::printYforGWASselect () {
 	}
 
 		for ( size_t dim = 0; dim < counter; ++dim ) 
-			Y  << yVec.get( dim ) << endl;
+			Y << yVec.get( dim ) << endl;
 	try {	Y.close();
 		}
 	catch ( ofstream::failure e/*xception*/ ) {
@@ -538,7 +527,7 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 		SNPL << "Y" <<" <- c(";
 		for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
 			SNPL << ( 0 < idv ? "," : "" );
-			SNPL << idvList.at( idv ).getPhenotype();
+			SNPL << yVec.get( idv );
 		}
 		SNPL<< ")"<< endl;
 
@@ -617,7 +606,7 @@ unsigned int ii=0;
 	        }
 	}	
         for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-		Y[idv]=idvList.at( idv ).getPhenotype();
+		Y[idv] = yVec.get( idv );
 	}
 
       	status = H5Dwrite (dataset,filetype , H5S_ALL, H5S_ALL, H5P_DEFAULT, S);
@@ -697,7 +686,7 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 		SNPL << "Y" <<" = [";
 		for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
 			SNPL << ( 0 < idv ? ";" : "" );
-			SNPL << idvList.at( idv ).getPhenotype();
+			SNPL << yVec.get( idv );
 		}
 		SNPL << "]" << endl;
 		SNPL.close();
@@ -710,8 +699,8 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 }
 
 void MData::writeBEDfile() {
-	printLOG( "Over_Writing genotype bitfile to \"" + parameter.in_files_plink_bed+"\"" );
-	ofstream bed( parameter.in_files_plink_bed.c_str(), ios::out | ios::binary );
+	printLOG( "Writing genotype bitfile to \"" + parameter.in_files_plink + ".bed\"" );
+	ofstream bed( ( parameter.in_files_plink + ".bed" ).c_str(), ios::out | ios::binary );
   
 	// Magic numbers for .bed file
 	const char magic[3] = {
