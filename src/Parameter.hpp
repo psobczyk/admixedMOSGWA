@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #ifndef PARAMETER_HPP
 #define PARAMETER_HPP
 #include <vector>  //for SNPs
@@ -7,12 +22,8 @@
 
 #include "parser/ConfigParser.hpp"
 
-using namespace std;
-
-using namespace parser;
-
 /** Holds relevant additional parameters, which can be read from a file. */
-class Parameter : protected ConfigParser {
+class Parameter : protected parser::ConfigParser {
 
 public:
 
@@ -20,43 +31,21 @@ public:
 // Input:
 
 	/** path + name for the plinkfiles .bed .fam .bim */
-	string in_files_plink;
+	std::string in_files_plink;
 
-	/** path + name for the plinkfiles .bed (if different) */
-	string in_files_plink_bed;
-
-	/** path + name for the plinkfiles .fam (if different) */
-	string in_files_plink_fam;
-
-	/** path + name for the plinkfiles .bim (if different) */
-	string in_files_plink_bim;
-
-	// Y-value
 	/** true = use extra file for Y-values, false use values in .fam file */
 	bool y_value_extra_file;
 
 	/** path + name for the HDF5 input file.
 	* Use either this or PLink input files, not both.
 	*/
-	string in_file_hdf5;
-
-	/** path + name for the Y-value matrix file .yvm (if different) */
-	string in_files_values_yvm;
+	std::string in_file_hdf5;
 
 	/** position of trait in .yvm file */
 	int in_values_int;
 
-	/** use a name to find trait in .yvm file */
-	string in_values_name;
-
-	/** name for the trait used for Y-values */
-	string y_value_name;
-
 	/** true = use extra file for covariables */
 	bool cov_extra_file;
-
-	/** path + name for the .cov file */
-	string cov_file_name;
 
 //+++++++++++++
 // Parameters describing the Data
@@ -78,8 +67,9 @@ public:
 // Output:
 
 	/** path + name for the output files .log ... */
-	string out_file_name;
-        string singlefile;
+	std::string out_file_name;
+        std::string singlefile;
+
 	/** true = no output on screen */
 	bool silent;
 
@@ -157,9 +147,10 @@ public:
 	double beta;
 	int  nSNP;
 	int  replications; 
-	vector<string> SNPs;
-        vector<string> SNPs1;
-        vector<string> SNPs2;
+
+	std::vector<std::string> SNPs;
+	std::vector<std::string> SNPs1;
+	std::vector<std::string> SNPs2;
 //++++++++++++
 
 	/** Constructor */

@@ -1,27 +1,39 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "Parameter.hpp"
 #include <limits>
 #include <stdlib.h>
 #include <sstream>  //for stringstream
+
+using namespace std;
+using namespace parser;
+
 /** Internally declares the configuration variables. */
 Parameter::Parameter () {
 
 	// input file settings
 	declare( "input", "plink_files", in_files_plink );
-	declare( "input", "plink_bed_file", in_files_plink_bed );
-	declare( "input", "plink_fam_file", in_files_plink_fam );
-	declare( "input", "plink_bim_file", in_files_plink_bim );
 	declare( "input", "hdf5_file", in_file_hdf5 );
 	declare( "input", "use_extra_yvalues", y_value_extra_file );
-	declare( "input", "extra_yvalues_file", in_files_values_yvm );
 	declare( "input", "use_extra_covariables", cov_extra_file );
-	declare( "input", "extra_covariables_file", cov_file_name );
 	declare( "input", "control_value",control_value); //the control are normally 0
 	declare( "input", "case_value",case_value); //the case are normally 1
 
 	// input data settings
-	declare( "data", "trait_name", y_value_name );
 	declare( "data", "trait_position_in_yvm", in_values_int );
-	declare( "data", "trait_name_in_yvm", in_values_name );
 	{
 		map< const string, int > choice;
 		choice[ "recessive" ] = 1;
@@ -122,37 +134,13 @@ void Parameter::setParameters ( const int argn, const char* argv[] ) {
 			exit( 255 );
 		}
 	}
-	cerr<<y_value_extra_file<<","<<y_value_name.empty()<<","<<in_values_int<<endl;
 //this creates an unique file for all yvm and of course also in the version without 
 //this has to be done before the number is added in the yvm case	
 singlefile=out_file_name; //this is for simulators which need in every run the genotyp file 
-if(y_value_extra_file)
-	if(!y_value_name.empty())
-             out_file_name=out_file_name+y_value_name;
-	else if (0< in_values_int)
-	{    stringstream number;
-	     number<<in_values_int;
-	     out_file_name=out_file_name+number.str();
-	     //cerr<<out_file_name<<endl;
-	}
-
-	if ( in_file_hdf5.empty() ) {
-		//  parameter.out_file_name=parameter.out_file_name+parameter.y_value_name;			
-		if ( in_files_plink_bed.empty() ) {
-			in_files_plink_bed = in_files_plink+".bed";
-		}
-		if ( in_files_plink_fam.empty() ) {
-			in_files_plink_fam = in_files_plink+".fam";
-		}
-		if ( in_files_plink_bim.empty() ) {
-			in_files_plink_bim = in_files_plink+".bim";
-		}
-		if ( y_value_extra_file and in_files_values_yvm.empty() ) {
-			in_files_values_yvm = in_files_plink+".yvm";
-		}
-		if ( cov_extra_file and cov_file_name.empty() ) {
-			cov_file_name = in_files_plink+".cov";
-		}
+	if ( y_value_extra_file && 0 < in_values_int ) {
+		stringstream number;
+		number << in_values_int;
+		out_file_name = out_file_name + number.str();
 	}
 
 	//forward step settings
