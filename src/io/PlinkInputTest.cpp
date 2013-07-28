@@ -32,7 +32,7 @@ using namespace unitpp;
 
 namespace test {
 
-	/** Tests the class {@link PlinkInput}. */
+	/** Tests the class {@link io::PlinkInput}. */
 	class PlinkInputTest : public TestSuite {
 
 		/** Name template for temporary test data directory and files. */

@@ -31,7 +31,7 @@ using namespace unitpp;
 
 namespace test {
 
-	/** Tests the class {@link Hdf5Input}. */
+	/** Tests the class {@link io::Hdf5Input}. */
 	class Hdf5InputTest : public TestSuite {
 
 		/** Name template for temporary test data file. */
