@@ -19,7 +19,7 @@
 #include "../io/Input.hpp"
 #include "../lookup/ResultStore.hpp"
 
-/** Search algorithms. These try to find optimal {@link Model}s for given {@link Input} data.
+/** Search algorithms. These try to find optimal {@link Model}s for given {@link io::Input} data.
 * @author Bernhard Bodenstorfer
 */
 namespace search {

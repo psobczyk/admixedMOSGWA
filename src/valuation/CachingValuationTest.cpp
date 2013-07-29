@@ -25,7 +25,7 @@ using namespace unitpp;
 
 namespace test {
 
-	/** Tests the class {@link CachingValuation}. */
+	/** Tests the class {@link valuation::CachingValuation}. */
 	class CachingValuationTest : public TestSuite {
 
 		/** Test  methods. */
