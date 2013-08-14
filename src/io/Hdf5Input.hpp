@@ -17,7 +17,9 @@
 #define IO_HDF5INPUT_HPP
 
 #include "InputAdapter.hpp"
-#include "Hdf5Object.hpp"
+#include "hdf5/StringList.hpp"
+#include "hdf5/DoubleList.hpp"
+#include "hdf5/DoubleTable.hpp"
 #include <memory>
 
 namespace io {
@@ -37,16 +39,16 @@ namespace io {
 			* const phenotypeVectorPath;
 
 		/** Holds the identifier of the opened HDF5-file. */
-		Hdf5FileId fileId;
+		hdf5::File file;
 
 		/** Gets phenotype data into MOSGWA. */
-		Hdf5DoubleList phenotypes;
+		hdf5::DoubleList phenotypes;
 
 		/** Gets genotype data into MOSGWA. */
-		Hdf5DoubleTable genotypesTransposed;
+		hdf5::DoubleTable genotypesTransposed;
 
 		/** Gets covariate matrix into MOSGWA. */
-		std::auto_ptr<Hdf5DoubleTable> covariatesTransposedPtr;
+		std::auto_ptr<hdf5::DoubleTable> covariatesTransposedPtr;
 
 		public:
 

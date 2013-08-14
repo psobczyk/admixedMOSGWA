@@ -16,9 +16,9 @@
 #include "Hdf5Input.hpp"
 #include "../Exception.hpp"
 #include <cassert>
-#include <hdf5.h>
 
 using namespace std;
+using namespace hdf5;
 using namespace linalg;
 
 namespace io {
@@ -33,13 +33,13 @@ namespace io {
 
 	Hdf5Input::Hdf5Input ( const char * const filename, const bool useCovariates )
 		:
-		fileId( filename ),
-		phenotypes( fileId, phenotypeVectorPath ),
-		genotypesTransposed( fileId, genotypeMatrixPath )
+		file( filename ),
+		phenotypes( file, phenotypeVectorPath ),
+		genotypesTransposed( file, genotypeMatrixPath )
 	{
 		// Read about individuals
 		{
-			Hdf5StringList individualList( fileId, individualListPath );
+			StringList individualList( file, individualListPath );
 			const size_t individualCount = individualList.countDimensions();
 			vector<string> individualNames( individualCount );
 			individualList.readAll( individualNames.data() );
@@ -59,7 +59,7 @@ namespace io {
 
 		// Read about SNPs
 		{
-			Hdf5StringList snpList( fileId, snpListPath );
+			StringList snpList( file, snpListPath );
 			const size_t snpCount = snpList.countDimensions();
 			vector<string> snpNames( snpCount );
 			snpList.readAll( snpNames.data() );
@@ -82,7 +82,7 @@ namespace io {
 							" SNP[%d] has bad character in name \"%s\" at position %l;"
 							" expecting decimals indicating chromosome and position,"
 							" separated by a single underscore.",
-							fileId.getName(),
+							file.getName().c_str(),
 							snpListPath,
 							snpIndex,
 							snpId.c_str(),
@@ -98,11 +98,11 @@ namespace io {
 		}
 
 		if ( useCovariates ) {
-			Hdf5StringList covariateList( fileId, covariateListPath );
+			StringList covariateList( file, covariateListPath );
 			const size_t covariateCount = covariateList.countDimensions();
 			covariates.resize( covariateCount );
 			covariateList.readAll( covariates.data() );
-			covariatesTransposedPtr.reset( new Hdf5DoubleTable( fileId, covariateMatrixPath ) );
+			covariatesTransposedPtr.reset( new DoubleTable( file, covariateMatrixPath ) );
 		} else {
 			// else no info is read thus leaving covariate count 0
 		}
