@@ -29,15 +29,6 @@ namespace io {
 
 		protected:
 
-		/** Paths of the relevant objects in the HDF5 file. */
-		static const char
-			* const snpListPath,
-			* const individualListPath,
-			* const genotypeMatrixPath,
-			* const covariateListPath,
-			* const covariateMatrixPath,
-			* const phenotypeVectorPath;
-
 		/** Holds the identifier of the opened HDF5-file. */
 		hdf5::File file;
 

@@ -14,6 +14,7 @@
  ********************************************************************************/
 
 #include "Hdf5Input.hpp"
+#include "Hdf5Constants.hpp"
 #include "../TestSuite.hpp"
 #include "../Exception.hpp"
 #include "../linalg/AutoVector.hpp"
@@ -26,6 +27,7 @@
 
 using namespace std;
 using namespace io;
+using namespace io::Hdf5Constants;
 using namespace linalg;
 using namespace unitpp;
 
@@ -94,7 +96,7 @@ namespace test {
 			H5Sset_extent_simple( genomeSpace, 2, dims, NULL );
 			const hid_t genomeDataset = H5Dcreate2(
 				h5FileId,
-				"/genome_matrix",
+				genotypeMatrixPath,
 				H5T_NATIVE_DOUBLE,
 				genomeSpace,
 				H5P_DEFAULT,
@@ -117,7 +119,7 @@ namespace test {
 			H5Sset_extent_simple( snpsSpace, 1, dims, NULL );
 			const hid_t snpsDataset = H5Dcreate2(
 				h5FileId,
-				"/single_nucleotide_polymorphisms",
+				snpListPath,
 				varStringType,
 				snpsSpace,
 				H5P_DEFAULT,
@@ -136,7 +138,7 @@ namespace test {
 			const char individualsData[] = "Eric\000\000BenhaoFlo\000\000\000";
 			const hid_t individualsDataset = H5Dcreate2(
 				h5FileId,
-				"/individuals",
+				individualListPath,
 				fixStringType,
 				individualsSpace,
 				H5P_DEFAULT,
@@ -148,7 +150,7 @@ namespace test {
 
 			const hid_t phenotypeDataset = H5Dcreate2(
 				h5FileId,
-				"/phenotypes",
+				phenotypeVectorPath,
 				H5T_NATIVE_FLOAT,
 				individualsSpace,
 				H5P_DEFAULT,
@@ -175,7 +177,7 @@ namespace test {
 				H5Sset_extent_simple( covNameSpace, 1, covs, NULL );
 				const hid_t covNameDataset = H5Dcreate2(
 					h5FileId,
-					"/covariates",
+					covariateListPath,
 					varStringType,
 					covNameSpace,
 					H5P_DEFAULT,
@@ -195,7 +197,7 @@ namespace test {
 				H5Sset_extent_simple( covariateSpace, 2, covs, NULL );
 				const hid_t covariateDataset = H5Dcreate2(
 					h5FileId,
-					"/covariate_matrix",
+					covariateMatrixPath,
 					H5T_NATIVE_DOUBLE,
 					covariateSpace,
 					H5P_DEFAULT,

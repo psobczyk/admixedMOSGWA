@@ -14,22 +14,16 @@
  ********************************************************************************/
 
 #include "Hdf5Input.hpp"
+#include "Hdf5Constants.hpp"
 #include "../Exception.hpp"
 #include <cassert>
 
 using namespace std;
 using namespace hdf5;
 using namespace linalg;
+using namespace io::Hdf5Constants;
 
 namespace io {
-
-	const char
-		* const Hdf5Input::snpListPath = "/single_nucleotide_polymorphisms",
-		* const Hdf5Input::individualListPath = "/individuals",
-		* const Hdf5Input::genotypeMatrixPath = "/genome_matrix",
-		* const Hdf5Input::covariateListPath = "/covariates",
-		* const Hdf5Input::covariateMatrixPath = "/covariate_matrix",
-		* const Hdf5Input::phenotypeVectorPath = "/phenotypes";
 
 	Hdf5Input::Hdf5Input ( const char * const filename, const bool useCovariates )
 		:
