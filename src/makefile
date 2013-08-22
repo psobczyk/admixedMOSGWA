@@ -1,9 +1,10 @@
 PARSER_OBS = parser/Parslet.o parser/ParsletTemplate.o parser/NameParslet.o parser/SectionParslet.o parser/VariableParslet.o parser/BoolParslet.o parser/IntParslet.o parser/DoubleParslet.o parser/StringParslet.o parser/VectorStringParslet.o parser/ChoiceParslet.o parser/ConfigParser.o
 LINALG_OBS = linalg/package.o linalg/Vector.o linalg/AutoVector.o linalg/Matrix.o linalg/AutoMatrix.o linalg/Permutation.o linalg/AutoPermutation.o
-IO_OBS = io/Input.o io/InputAdapter.o io/PlinkInput.o io/Hdf5Object.o io/Hdf5Input.o
+IO_OBS = io/Input.o io/InputAdapter.o io/PlinkInput.o io/Hdf5Object.o io/Hdf5Input.o io/Hdf5Constants.o
+HDF5_OBS = io/hdf5/Id.o io/hdf5/File.o io/hdf5/Datatype.o io/hdf5/Dataset.o io/hdf5/StringList.o io/hdf5/DoubleList.o io/hdf5/DoubleTable.o
 MINIMIZATION_OBS = minimization/GslMinimizerHolder.o minimization/GslMinimizerRetriever.o minimization/Minimizable.o minimization/Minimizer.o
 LOOKUP_OBS = lookup/package.o lookup/ModelIndex.o lookup/MutableModelIndex.o
-OBJ = $(PARSER_OBS) $(LINALG_OBS) $(IO_OBS) $(MINIMIZATION_OBS) $(LOOKUP_OBS)
+OBJ = $(PARSER_OBS) $(LINALG_OBS) $(IO_OBS) $(HDF5_OBS) $(MINIMIZATION_OBS) $(LOOKUP_OBS)
 OBJSL =Helpfull.o SortVec.o Parameter.o Log.o SNP.o Individual.o MData.o Model.o GenotypeFreq.o QRuncher.o Firthimizer.o ScoreTestShortcut.o GA.o Pool.o Exception.o $(OBJ)
 
 MOBJ = main.o $(OBJSL)
