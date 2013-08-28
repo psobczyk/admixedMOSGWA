@@ -31,7 +31,10 @@ namespace io {
 		/** Return the number of individuals in the data. */
 		virtual size_t countIndividuals () const = 0;
 
-		/** Retrieve the descriptions of the individuals. */
+		/** Retrieve the descriptions of the individuals.
+		* The pointer returned points into the <code>Input</code> object
+		* and must not be used after the lifetime of <code>this</code>.
+		*/
 		virtual const Individual* getIndividuals () const = 0;
 
 		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
@@ -40,7 +43,10 @@ namespace io {
 		/** Return the number of SNPs in the data. */
 		virtual size_t countSnps () const = 0;
 
-		/** Retrieve the descriptions of the SNPs. */
+		/** Retrieve the descriptions of the SNPs.
+		* The pointer returned points into the <code>Input</code> object
+		* and must not be used after the lifetime of <code>this</code>.
+		*/
 		virtual const SNP* getSnps () const = 0;
 
 		/** Copy the {@link countIndividuals} sized vector of genotype information for the given SNP into the given vector. */
@@ -49,7 +55,10 @@ namespace io {
 		/** Return the number of covariate vectors in the data. */
 		virtual size_t countCovariates () const = 0;
 
-		/** Retrieve the names of the covariates. */
+		/** Retrieve the names of the covariates.
+		* The pointer returned points into the <code>Input</code> object
+		* and must not be used after the lifetime of <code>this</code>.
+		*/
 		virtual const std::string* getCovariates () const = 0;
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
