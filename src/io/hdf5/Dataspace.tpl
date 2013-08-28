@@ -22,14 +22,14 @@
 
 namespace hdf5 {
 
-	template<size_t D> Dataspace<D>::Dataspace ( const std::string& name, size_t size[D] )
+	template<size_t D> Dataspace<D>::Dataspace ( const std::string& name, const size_t size[D] )
 		:
 		Id(
 			H5Screate( H5S_SIMPLE ),
 			name
 		)
 	{
-		if ( 0 > id ) {
+		if ( 0 > getId() ) {
 			throw Exception(
 				"HDF5 \"%s\" simple dataspace creation failed.",
 				getName().c_str()
@@ -40,12 +40,17 @@ namespace hdf5 {
 			hSize[i] = size[i];
 			assert( size[i] == hSize[i] );	// guard against type overflow
 		}
-		if ( 0 > H5Sset_extent_simple( id, D, hSize, NULL ) ) {
+		if ( 0 > H5Sset_extent_simple( getId(), D, hSize, NULL ) ) {
 			throw Exception(
 				"HDF5 \"%s\" dataspace set %u sizes failed.",
 				getName().c_str(),
 				D
 			);
+		}
+		// initialise the remainder back from HDF5 object
+		initFromId();
+		for ( size_t i = 0; i < D; ++i ) {
+			assert( size[i] == this->size[i] );
 		}
 	}
 
