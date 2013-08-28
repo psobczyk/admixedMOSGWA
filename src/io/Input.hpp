@@ -35,7 +35,7 @@ namespace io {
 		virtual const Individual* getIndividuals () const = 0;
 
 		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
-		virtual void retrievePhenotypeVector ( linalg::Vector& vector ) = 0;
+		virtual void retrievePhenotypeVector ( linalg::Vector& v ) = 0;
 
 		/** Return the number of SNPs in the data. */
 		virtual size_t countSnps () const = 0;
@@ -44,7 +44,7 @@ namespace io {
 		virtual const SNP* getSnps () const = 0;
 
 		/** Copy the {@link countIndividuals} sized vector of genotype information for the given SNP into the given vector. */
-		virtual void retrieveGenotypeVector ( const size_t snpIndex, linalg::Vector& vector ) = 0;
+		virtual void retrieveGenotypeVector ( const size_t snpIndex, linalg::Vector& v ) = 0;
 
 		/** Return the number of covariate vectors in the data. */
 		virtual size_t countCovariates () const = 0;
@@ -53,7 +53,7 @@ namespace io {
 		virtual const std::string* getCovariates () const = 0;
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
-		virtual void retrieveCovariateVector ( const size_t covIndex, linalg::Vector& vector ) = 0;
+		virtual void retrieveCovariateVector ( const size_t covIndex, linalg::Vector& v ) = 0;
 
 		/** Declare access to be finished, release all resources. */
 		virtual ~Input ();
