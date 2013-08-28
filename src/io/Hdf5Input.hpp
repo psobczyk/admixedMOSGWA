@@ -32,13 +32,13 @@ namespace io {
 		/** Holds the identifier of the opened HDF5-file. */
 		hdf5::File file;
 
-		/** Gets phenotype data into MOSGWA. */
+		/** Gets phenotype vector from HDF5. */
 		hdf5::DoubleList phenotypes;
 
-		/** Gets genotype data into MOSGWA. */
+		/** Gets genotype matrix from HDF5. */
 		hdf5::DoubleTable genotypesTransposed;
 
-		/** Gets covariate matrix into MOSGWA. */
+		/** Gets covariate matrix from HDF5. */
 		std::auto_ptr<hdf5::DoubleTable> covariatesTransposedPtr;
 
 		public:
@@ -55,7 +55,7 @@ namespace io {
 		virtual void retrieveGenotypeVector ( const size_t snpIndex, linalg::Vector& v );
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
-		virtual void retrieveCovariateVector ( const size_t covIndex, linalg::Vector& vector );
+		virtual void retrieveCovariateVector ( const size_t covIndex, linalg::Vector& v );
 
 		/** Declare access to be finished, release all resources. */
 		virtual ~Hdf5Input ();
