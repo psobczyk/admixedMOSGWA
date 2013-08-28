@@ -29,7 +29,7 @@ namespace test {
 		void testDestructible ();
 		void testCounting ();
 
-	} * cacheTest = new ReferenceCountedTest();	// automatically freed by unit++
+	} * referenceCountedTest = new ReferenceCountedTest();	// automatically freed by unit++
 
 	ReferenceCountedTest::ReferenceCountedTest () : TestSuite( "util::ReferenceCounted Test" ) {
 		addTestMethod( "ReferenceCountedTest::testPrimitive", this, &ReferenceCountedTest::testPrimitive );
