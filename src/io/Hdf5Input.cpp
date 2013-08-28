@@ -70,7 +70,9 @@ namespace io {
 					if ( '_' == c && 0 == positionStringStart ) {
 						chromosomeIdLength = i;
 						positionStringStart = i + 1;
-					} else if ( c < '0' || '9' < c ) {
+					} else if ( isdigit( c ) ) {
+						// a digit is o.k.
+					} else {
 						throw Exception(
 							"HDF5 input file \"%s\" dataset \"%s\""
 							" SNP[%d] has bad character in name \"%s\" at position %l;"
