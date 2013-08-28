@@ -33,7 +33,7 @@ namespace hdf5 {
 		public:
 
 		/** Create a <code>D</code>-dimensional rectangular data space. */
-		Dataspace ( const std::string& name, size_t size[D] );
+		Dataspace ( const std::string& name, const size_t size[D] );
 
 		/** Wrap an already existing data space <code>hid_t</code> for certain destruction. */
 		Dataspace ( const hid_t id, const std::string& name );
