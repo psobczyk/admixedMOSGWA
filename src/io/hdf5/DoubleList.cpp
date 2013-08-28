@@ -19,6 +19,10 @@ using namespace std;
 
 namespace hdf5 {
 
+	DoubleList::DoubleList ( File& file, const std::string& objectPath, const size_t size )
+		: Object<1>( file, objectPath, false, &size )
+	{}
+
 	DoubleList::DoubleList ( File& file, const std::string& objectPath )
 		: Object<1>( file, objectPath )
 	{}

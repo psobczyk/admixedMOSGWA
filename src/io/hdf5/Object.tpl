@@ -30,15 +30,18 @@ namespace hdf5 {
 		const size_t size[D]
 	)
 		:
-		dataset( H5Dcreate2(
-			file.getId(),
-			objectPath.c_str(),
-			isString ? Datatype::varString.getId() : H5T_NATIVE_DOUBLE,
-			Dataspace<D>( objectPath, size ).getId(),
-			H5P_DEFAULT,
-			H5P_DEFAULT,
-			H5P_DEFAULT
-		) ),
+		dataset(
+			H5Dcreate2(
+				file.getId(),
+				objectPath.c_str(),
+				isString ? Datatype::varString.getId() : H5T_NATIVE_DOUBLE,
+				Dataspace<D>( objectPath, size ).getId(),
+				H5P_DEFAULT,
+				H5P_DEFAULT,
+				H5P_DEFAULT
+			),
+			objectPath
+		),
 		datatype( dataset ),
 		dataspace( dataset )
 	{
@@ -72,6 +75,22 @@ namespace hdf5 {
 		if ( 0 > H5Dread( dataset.getId(), H5T_NATIVE_DOUBLE, dataspace.getId(), dataspace.getId(), H5P_DEFAULT, array ) ) {
 			throw Exception(
 				"HDF5 \"%s\" dataset \"%s\" read all as double precision numbers failed.",
+				dataset.getName().c_str()
+			);
+		}
+	}
+
+	template<size_t D> void Object<D>::writeAll ( const double* array ) {
+		if ( 0 > H5Dwrite(
+			dataset.getId(),
+			H5T_NATIVE_DOUBLE,
+			dataspace.getId(),
+			dataspace.getId(),
+			H5P_DEFAULT,
+			array
+		) ) {
+			throw Exception(
+				"HDF5 \"%s\" dataset \"%s\" write all as double precision numbers failed.",
 				dataset.getName().c_str()
 			);
 		}
@@ -122,6 +141,29 @@ namespace hdf5 {
 				const char* value = & buffer.at( datatypeSize * i );
 				array[i] = value;
 			}
+		}
+	}
+
+	template<size_t D> void Object<D>::writeAll ( const std::string* array ) {
+		const size_t items = countItems();
+		std::vector<const char*> buffer( items );
+		for ( size_t i = 0; i < items; ++i ) {
+			const char* value = array[i].c_str();
+			buffer.at( i ) = value;
+		}
+
+		if ( 0 > H5Dwrite(
+			dataset.getId(),
+			Datatype::varString.getId(),
+			dataspace.getId(),
+			dataspace.getId(),
+			H5P_DEFAULT,
+			buffer.data()
+		) ) {
+			throw Exception(
+				"HDF5 \"%s\" dataset write all as variable length strings failed.",
+				dataset.getName().c_str()
+			);
 		}
 	}
 }

@@ -38,6 +38,7 @@ namespace hdf5 {
 		/** Creates in a HDF5 file the object identified by the given path.
 		* @param isString specifies whether the object should hold variable-length strings
 		* or otherwise double precision numbers.
+		* @param size specifies the array dimensions from majour to minour
 		*/
 		Object (
 			File& file,
@@ -63,6 +64,18 @@ namespace hdf5 {
 		* and the type <code>std::string<code> must match the stored HDF5-type.
 		*/
 		void readAll ( std::string* array );
+
+		/** Store numerical data in one big lump.
+		* The array size must be at least {@link #countItems}
+		* and the type <code>double<code> must match the stored HDF5-type.
+		*/
+		void writeAll ( const double* array );
+
+		/** Store textual data in one big lump.
+		* The array size must be at least {@link #countItems}
+		* and the type <code>std::string<code> must match the stored HDF5-type.
+		*/
+		void writeAll ( const std::string* array );
 	};
 
 }

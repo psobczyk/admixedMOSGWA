@@ -15,11 +15,23 @@
 
 #include "DoubleTable.hpp"
 #include "../../Exception.hpp"
+#include "../../util/Array.hpp"
 #include <cassert>
+#include <memory>
 
 using namespace std;
+using namespace util;
 
 namespace hdf5 {
+
+	DoubleTable::DoubleTable ( File& file, const std::string& objectPath, const size_t rows, const size_t columns )
+		: Object<2>(
+			file,
+			objectPath,
+			false,
+			Array<size_t,2>( rows, columns )
+		)
+	{}
 
 	DoubleTable::DoubleTable ( File& file, const std::string& objectPath )
 		: Object<2>( file, objectPath )
@@ -34,6 +46,25 @@ namespace hdf5 {
 	}
 
 	void DoubleTable::readRow ( const size_t row, double* array ) {
+		transferRow( row, array, H5Dread, "read" );
+	}
+
+	void DoubleTable::writeRow ( const size_t row, const double* array ) {
+		// casts are necessary to deal with the const double* vs. double* in H5Dwrite vs. H5Dread.
+		transferRow(
+			row,
+			const_cast<double*>( array ),
+			reinterpret_cast<herr_t (*)( hid_t, hid_t, hid_t, hid_t, hid_t, void* )>( H5Dwrite ),
+			"write"
+		);
+	}
+
+	void DoubleTable::transferRow (
+		const size_t row,
+		double* array,
+		herr_t function ( hid_t, hid_t, hid_t, hid_t, hid_t, void* ),
+		const char * description
+	) {
 		assert( row < countRows() );
 
 		const hsize_t
@@ -44,29 +75,37 @@ namespace hdf5 {
 			H5Scopy( dataspace.getId() ),
 			dataspace.getName() + "[clone]"
 		);
-		const herr_t status = H5Sselect_hyperslab(
+		if ( 0 > H5Sselect_hyperslab(
 			dataspaceCopy.getId(),
 			H5S_SELECT_SET,
 			start, NULL,
 			count, NULL
-		);
+		) ) {
+			throw Exception(
+				"HDF5 \"%s\" dataspace row[%u] hyperslab selection for %s of length %u failed.",
+				dataspace.getName().c_str(),
+				row,
+				description,
+				countColumns()
+			);
+		}
 
 		Dataspace<1> memSpace(
 			H5Screate_simple( 1, &count[1], NULL ),
 			"creature of simple row space"
 		);
-		const herr_t status2 = H5Dread(
+		if ( 0 > function(
 			dataset.getId(),
 			H5T_NATIVE_DOUBLE,
 			memSpace.getId(),
 			dataspaceCopy.getId(),
 			H5P_DEFAULT,
 			array
-		);
-		if ( 0 > status2 ) {
+		) ) {
 			throw Exception(
-				"HDF5 \"%s\" dataset read row[%u] of length %u failed.",
+				"HDF5 \"%s\" dataset %s row[%u] of length %u failed.",
 				dataset.getName().c_str(),
+				description,
 				row,
 				countColumns()
 			);

@@ -27,6 +27,10 @@ namespace hdf5 {
 
 		public:
 
+		/** Create list in HDF5 file. */
+		DoubleList ( File& file, const std::string& objectPath, const size_t size );
+
+		/** Open existing list in HDF5 file. */
 		DoubleList ( File& fileId, const std::string& objectPath );
 
 		/** Retrieve the number of strings. */

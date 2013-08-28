@@ -19,6 +19,10 @@ using namespace std;
 
 namespace hdf5 {
 
+	StringList::StringList ( File& file, const std::string& objectPath, const size_t size )
+		: Object<1>( file, objectPath, true, &size )
+	{}
+
 	StringList::StringList ( File& file, const std::string& objectPath )
 		: Object<1>( file, objectPath )
 	{}

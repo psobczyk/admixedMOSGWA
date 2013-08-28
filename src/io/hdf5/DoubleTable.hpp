@@ -25,8 +25,19 @@ namespace hdf5 {
 	/** Two-dimensional table of numbers in HDF5. */
 	class DoubleTable : public Object<2> {
 
+		void transferRow (
+			const size_t row,
+			double* array,
+			herr_t function ( hid_t, hid_t, hid_t, hid_t, hid_t, void* ),
+			const char * description
+		);
+
 		public:
 
+		/** Create table in HDF5 file. */
+		DoubleTable ( File& file, const std::string& objectPath, const size_t rows, const size_t columns );
+
+		/** Open existing table in HDF5 file. */
 		DoubleTable ( File& fileId, const std::string& objectPath );
 
 		/** Retrieve the number of rows. */
@@ -35,8 +46,15 @@ namespace hdf5 {
 		/** Retrieve the number of columns. */
 		size_t countColumns () const;
 
-		/** Retrieve one row. */
+		/** Retrieve one row (= majour index).
+		* @param row specifies which row to read.
+		*/
 		void readRow ( const size_t row, double* array );
+
+		/** Store one row (= majour index).
+		* @param row specifies which row to write.
+		*/
+		void writeRow ( const size_t row, const double* array );
 	};
 
 }
