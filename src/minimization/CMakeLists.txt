@@ -1,4 +1,4 @@
-add_library( minimization OBJECT GslMinimizerAutopointer.cpp GslMinimizerAutopointer.hpp GslMinimizerHolder.cpp GslMinimizerHolder.hpp GslMinimizerRetriever.cpp GslMinimizerRetriever.hpp Minimizable.cpp Minimizable.hpp Minimizer.cpp Minimizer.hpp package.hpp )
+add_library( minimization OBJECT GslMinimizerHolder.cpp GslMinimizerHolder.hpp GslMinimizerRetriever.cpp GslMinimizerRetriever.hpp Minimizable.cpp Minimizable.hpp Minimizer.cpp Minimizer.hpp package.hpp )
 
 add_library( TestMinimizable OBJECT TestMinimizable.cpp TestMinimizable.hpp )
 foreach ( unittest GslMinimizerHolderTest MinimizableTest MinimizerTest )
