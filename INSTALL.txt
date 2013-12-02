@@ -1,0 +1,45 @@
+Prerequisites:
+
+To build MOSGWA, use:
+• git
+• CMake
+• make
+• g++ (GNU C++-compiler)
+
+MOSGWA relies on the following of external libraries.
+• BLAS (building MOSGWA has been tested with ATLAS and OpenBLAS or with CBLAS)
+• Gnu Scientific Library (GSL)
+• HDF5
+• unit++ (optional for testing)
+Install these together with their developer packages (…-dev).
+
+Download:
+
+Download MOSGWA from Sourceforge (e.g. using the software “git”) by typing
+git clone git://git.code.sf.net/p/mosgwa/code mosgwa-code
+
+Build:
+
+In the command-line interface, go to the top level of the directory tree where you extracted MOSGWA.
+It contains a file CMakeLists.txt and a sub-directory src as well as documentation.
+Type to the command line interface a line like
+
+cmake .
+
+to use with your default BLAS implementation (which may be slow) or something along the lines of
+
+cmake . -DBLA_VENDOR=ATLAS -DCMAKE_PREFIX_PATH=/usr/lib/atlas-base
+
+to use the ATLAS library for linear algebra. Adapt the CMAKE_PREFIX_PATH to point to your installation directory of the ATLAS libraries.
+
+Remember that the CMake tool has a cache, where it stores previous choices. You may need to clear it for a fresh start.
+
+Then type
+
+make MOSGWA
+
+to obtain an executable file MOSGWA in the sub-directory build next to the directory src.
+You move it to the location you prefer and then start it from the command line.
+In case missing libraries are reported at this stage, you may need to point to those libraries, in the customary way for your platform. E.g. on Linux, this would be with a command line in bash similar to:
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/openblas-base
