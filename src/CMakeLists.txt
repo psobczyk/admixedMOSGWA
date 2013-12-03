@@ -19,9 +19,21 @@ add_custom_command(
 )
 add_library( buildinfo OBJECT buildinfo.cpp buildinfo.hpp timestamp.txt )
 
-add_executable( MOSGWA main.cpp GenotypeFreq.cpp GenotypeFreq.hpp Helpfull.cpp Helpfull.hpp Log.cpp Log.hpp MData.cpp MData.hpp Model.cpp Model.hpp Parameter.cpp Parameter.hpp PermSort.hpp SortVec.cpp SortVec.hpp ScoreTestShortcut.cpp ScoreTestShortcut.hpp $<TARGET_OBJECTS:main> $<TARGET_OBJECTS:buildinfo> $<TARGET_OBJECTS:io> $<TARGET_OBJECTS:io_hdf5> $<TARGET_OBJECTS:linalg> $<TARGET_OBJECTS:search> $<TARGET_OBJECTS:imputation> $<TARGET_OBJECTS:parser> $<TARGET_OBJECTS:valuation> $<TARGET_OBJECTS:util> $<TARGET_OBJECTS:minimization> $<TARGET_OBJECTS:lookup> )
+set( core_libraries main.cpp GenotypeFreq.cpp GenotypeFreq.hpp Helpfull.cpp Helpfull.hpp Log.cpp Log.hpp MData.cpp MData.hpp Model.cpp Model.hpp Parameter.cpp Parameter.hpp PermSort.hpp SortVec.cpp SortVec.hpp ScoreTestShortcut.cpp ScoreTestShortcut.hpp $<TARGET_OBJECTS:main> $<TARGET_OBJECTS:buildinfo> $<TARGET_OBJECTS:io> $<TARGET_OBJECTS:linalg> $<TARGET_OBJECTS:search> $<TARGET_OBJECTS:imputation> $<TARGET_OBJECTS:parser> $<TARGET_OBJECTS:valuation> $<TARGET_OBJECTS:util> $<TARGET_OBJECTS:minimization> $<TARGET_OBJECTS:lookup> )
 
-target_link_libraries( MOSGWA blas gsl hdf5 gomp z pthread )
+set ( external_core_libraries blas gsl gomp z pthread )
+
+find_package( BLAS REQUIRED )
+find_package( HDF5 REQUIRED )
+if ( HDF5_FOUND )
+	message( STATUS "Compile with HDF5" )
+	add_executable( MOSGWA ${core_libraries} $<TARGET_OBJECTS:io_hdf5> )
+	target_link_libraries( MOSGWA ${external_core_libraries} ${BLAS_LIBRARIES} ${HDF5_LIBRARIES} )
+else ( HDF5_FOUND )
+	message( STATUS "Compile without HDF5" )
+	add_executable( MOSGWA ${core_libraries} )
+	target_link_libraries( MOSGWA ${external_core_libraries} ${BLAS_LIBRARIES} )
+endif ( HDF5_FOUND )
 
 add_custom_command(
   TARGET MOSGWA
