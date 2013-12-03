@@ -22,7 +22,10 @@
 */
 namespace buildinfo {
 
-	/** The build-time as generated from the <code>cmake</code> makefile. */
+	/** The program version identifier. */
+	extern const char * version;
+
+	/** The program version timestamp. */
 	extern const char * timestamp;
 
 }

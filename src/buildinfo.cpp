@@ -14,6 +14,6 @@
  ********************************************************************************/
 
 #include "buildinfo.hpp"
-#include "../build/timestamp.txt"
 
-const char * buildinfo::timestamp = TIMESTAMP;
+const char * buildinfo::timestamp = "2013-12-03 17:26:45 CET";
+const char * buildinfo::version = "0.0.0";
