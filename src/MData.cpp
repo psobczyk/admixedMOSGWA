@@ -14,6 +14,7 @@
  ********************************************************************************/
 
 #include "MData.hpp"
+#include <cmath>	//in c++11 for nan(...)
 #include "Model.hpp"
 #include "GenotypeFreq.hpp"
 #include "PermSort.hpp"
@@ -60,6 +61,8 @@ MData::MData ( io::Input *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
 	if ( allocateInput ) {
 		if ( parameter.in_file_hdf5.empty() ) {
 			input = new PlinkInput( parameter.in_files_plink.c_str() );
+		if (0==parameter.nSNPKriterium)
+                parameter.nSNPKriterium=getSnpNo();
 		} else {
 			input = new Hdf5Input( parameter.in_file_hdf5.c_str(), parameter.cov_extra_file );
 		}
@@ -424,6 +427,8 @@ ifstream ifile((parameter.singlefile /*out_file_name*/ + "HyperLasso.in").c_str(
 if (!ifile) create=true;
 ifile.close(); //close the file
 ofstream Hyper;
+if(create)
+{
 Hyper.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if Logfile can be writt
 try
  {Hyper.open( ( parameter.singlefile /*out_file_name*/ + "HyperLasso.in" ).c_str(), fstream::out );
@@ -436,16 +441,22 @@ try
 catch (ofstream::failure e)//why e?
  {
  cerr << "Could not write Hyper-Lasso file" <<endl;
- }	
+ }
+} //no create needed
 }
 
 
 void MData::printGWASselect(Model & newmodel) const {
 //#pragma omp parallel shared(GWASselectcases,GWASselectcontrol,sel) private(i) //has to be alterd to fit
+bool createcas=false, createcont=false;
 vector<bool> sel;
 	newmodel.getYvec(sel);
-
-ofstream GWASselectcontrol;
+ifstream ifile(( parameter.out_file_name + "GWASelect.cont" ).c_str());
+   if (!ifile)
+	createcont=true;
+ifile.close(); //close the file
+if(createcont)	
+{ofstream GWASselectcontrol;
 // can be written
 GWASselectcontrol.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if Logfile can be written
 /*omp parallel section*/
@@ -461,8 +472,14 @@ catch (ofstream::failure e)//why e?
  {
  cerr << "Could not write GWASselect file" <<endl;
  }	
+}
 
-//#pragma omp section
+ifstream ifile1(( parameter.out_file_name + "GWASelect.cas" ).c_str());
+   if (!ifile1)
+	createcas=true;
+ifile1.close(); //close the file
+if (createcas)
+{//#pragma omp section
 ofstream GWASselectcases;
 GWASselectcases.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if Logfile
 try
@@ -478,7 +495,7 @@ catch (ofstream::failure e)//why e?
  cerr << "Could not write GWASselect file" <<endl;
  }	
 }
-
+}
 
 
 void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
@@ -558,11 +575,121 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 	}	
 }
 
-/** printSelectedSNPsInMatlab create an *Octave.h5 file with the selected SNPs (as a vector of strings)  and their X and ofcourse the phenotype Y
+//everything in h5
+
+bool MData::printALLmat(const string& extra){ } 
+//	char mat [getIdvNo()][getModelSize()];
+//const int64_t  IndN=getIdvNo(),SnpN=getSnpNo();
+//const int64_t sA= IndN*SnpN;
+//
+//	char * mat= (char *)malloc(sA);
+//	// genotype-data
+//	for(int64_t i=0;i<SnpN;++i){
+//	   const Vector genotypes = getX().columnVector( i );//getX unbekannt
+//	   for (int64_t   j = 0; j <IndN ; ++j ) {
+//		mat[i*IndN+j]=
+//		 genotypes.get(j );}
+//    //init of genotype matrix
+//}	
+////from h5 compress
+//    hid_t    file_id, dataset_id, dataspace_id; /* identifiers */
+//    hid_t    plist_id; 
+//
+//    size_t   nelmts;
+//    unsigned flags, filter_info;
+//    H5Z_filter_t filter_type;
+//
+//    herr_t   status;
+//    hsize_t  dims[2];
+//    hsize_t cdims[2];
+// 
+//    int      idx;
+//    int      i,j, numfilt;
+//   // int      buf[DIM0][DIM1];
+//  //  int      rbuf [DIM0][DIM1];
+//  /* Uncomment these variables to use SZIP compression 
+//    unsigned szip_options_mask;
+//    unsigned szip_pixels_per_block;
+//    */
+//
+//    /* Create a file.  */
+//string filename=	parameter.models_file+extra+".h5";
+//cerr<<filename<<endl;
+//file_id = H5Fcreate (filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+//
+//
+//    /* Create dataset "Compressed Data" in the group using absolute name. 
+//	   getIdvNo()][getModelSize()]*/
+//    dims[1] = getIdvNo();//verdreht!
+//    dims[0] = getSnpNo();
+//    dataspace_id = H5Screate_simple (2, dims, NULL); //2 ist der Rang
+//
+//    plist_id  = H5Pcreate (H5P_DATASET_CREATE);
+//
+//    /* Dataset must be chunked for compression */
+//    cdims[1] = 20;//verdreht!
+//    cdims[0] = getSnpNo();
+//    status = H5Pset_chunk (plist_id, 2, cdims);
+//
+//    /* Set ZLIB / DEFLATE Compression using compression level 6.
+//     * To use SZIP Compression comment out these lines. 
+//    */ 
+//    status = H5Pset_deflate (plist_id, 6); 
+//
+//    /* Uncomment these lines to set SZIP Compression 
+//    szip_options_mask = H5_SZIP_NN_OPTION_MASK;
+//    szip_pixels_per_block = 16;
+//    status = H5Pset_szip (plist_id, szip_options_mask, szip_pixels_per_block);
+//    */
+//    /*nun nicht H5T_STD_I32BE sondern I8BE)*/
+//    dataset_id = H5Dcreate2 (file_id, "X", H5T_STD_I8BE, 
+//                            dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT); 
+//
+//    status = H5Dwrite (dataset_id, H5T_NATIVE_CHAR, H5S_ALL, H5S_ALL, H5P_DEFAULT, mat);
+//
+//    status = H5Sclose (dataspace_id);
+//    status = H5Dclose (dataset_id);
+//    status = H5Pclose (plist_id); //für die cunchs 
+////%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+////%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//
+//
+//    status = H5Fclose (file_id);
+//
+//
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** printSelectedSNPsInMatlab create an *Octave.h5 file with the selected SNPs (as a vector of strings)  and their X and of course the phenotype Y
  * additionaly it writes a */ 
 void MData::printSelectedSNPsInMatlab ( vector<string> SNPList , string extra) const  {
 	ofstream	SNPL;
-         { //create the same in hdf
+         {        	ofstream	SNPL;
+		 //create the same in hdf
 		 hid_t file,fid,dataset,space,/*dset,memtype,*/ filetype,props;
                  herr_t status;
                  hsize_t dim[]={SNPList.size(),getIdvNo()};//transponiert
@@ -593,17 +720,13 @@ const char *S[SNPList.size()];
 unsigned int jj=0;
 vector<unsigned int> index;
 findSNPIndex(SNPList, index);
+//sortd according the names1
 unsigned int ii=0;
 	for (jj=0; jj < index.size(); ++jj)
 	{
 		const Vector tmp = const_cast<MData*>( this )->getXcolumn( index[jj] );
-	//	cerr<<index[jj]<<endl;
-/*DEBUG*/	if (false)	cerr<<"neues SNP"<<jj<<"index"<<index[jj]<<endl;
 		for(ii=0;ii<getIdvNo();++ii)
-        	{    //cerr<<tmp.get(ii)<<endl;
-		     //cerr<<	jj*getIdvNo()+ii<<" ";
 		       	zwischen[jj*getIdvNo()+ii] = tmp.get(ii);
-	        }
 	}	
         for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
 		Y[idv] = yVec.get( idv );
@@ -614,7 +737,7 @@ unsigned int ii=0;
 	status = H5Pclose(props);
 	status = H5Sclose(space);
 	status = H5Dclose(dataset);
-fid=H5Screate_simple(2,dim,NULL);
+	fid=H5Screate_simple(2,dim,NULL);
 //dataset = H5Dcreate (file, "X",filetype, space, H5P_DEFAULT,props,H5P_DEFAULT);	
 	dataset = H5Dcreate2( file, "X", H5T_NATIVE_DOUBLE, fid, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
 //ED funktioniert nicht ;dataset=H5Dcreate( file, "X", H5T_NATIVE_DOUBLE, fid, H5P_DEFAULT );
@@ -631,7 +754,7 @@ status=H5Dclose (dataset);
         status=H5Sclose (fid);
 status=H5Fclose(file);
 
-//wrtite SNP names to dataset
+//write SNP names to dataset
 
 	 }	 
 	SNPL.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if file can be written
@@ -1088,11 +1211,12 @@ void MData::calculateIndividualTests()
 	auto_ptr<double> TestStat( new double[ getSnpNo() ] ); // to store information for SortVec snp_order_
 // return allways  1 when asking for omp_get_num_threads()
 	cerr<<"!parameter.affection_status_phenotype="<<!parameter.affection_status_phenotype<<endl;
-	cerr<<"omp_get_num_threads()"<<omp_get_num_threads()<<endl;
-	if(0==parameter.affection_status_phenotype)
-	{cerr<<"reel"<<endl;	omp_set_num_threads(1);}
-	else
-	{cerr<<"1"<<endl;   omp_set_num_threads(1);}
+	int ont=omp_get_num_threads();
+	//cerr<<"omp_get_num_threads()"<<ont<<endl;
+	//if(0==parameter.affection_status_phenotype)
+	//{cerr<<"reel"<<endl;	omp_set_num_threads(1);}
+	//else
+	//{cerr<<"1"<<endl;   omp_set_num_threads(1);}
 cerr<<"omp_get_num_threads()"<<omp_get_num_threads()<<endl;
 //
 	#pragma omp parallel for
@@ -1145,15 +1269,14 @@ size_t MData::calculatePValueBorder () const {
 		--PValueBorder
 	);
 //checking this will bring something when PValueBorder will be very small
-	PValueBorder = min( 100u, PValueBorder );
+	PValueBorder = min( 100u, (unsigned int) PValueBorder );
 	if ( PValueBorder < 100 ) {
-		PValueBorder = min( 100u, getSnpNo()-1 );	//this is only for very small SNP files. REMARK<BB>: how about 0 SNPs?
+		PValueBorder = min( 100u, (unsigned int) getSnpNo()-1 );	//this is only for very small SNP files. REMARK<BB>: how about 0 SNPs?
 	}
 	return PValueBorder;
 }
-
-bool MData::selectModel ( Model *currentModel, size_t PValueBorder, int ExpectedCausalSNPs, int maxModel ) {
-       int JJ=0;
+bool MData::selectModel( Model *currentModel, size_t PValueBorder, int ExpectedCausalSNPs /*no effect */, int maxModel, int criterium ) {
+	int JJ=0;
 	printLOG("Model Selection started: ");
         bool forgetreplaceonce=false;	
 	bool 	stop = false;
@@ -1164,6 +1287,8 @@ bool MData::selectModel ( Model *currentModel, size_t PValueBorder, int Expected
        // int PValueBorder =calculatePValueBorder();
 	//or take the setting from the conf file
 	PValueBorder = min( getSnpNo() - 1, PValueBorder );	// REMARK<BB>: how about 0 SNPs?
+//	 int PValueBorder=parameter.PValueBorder;
+PValueBorder=min(getSnpNo()-1,PValueBorder);
 	cerr<<"PValueBorder"<< PValueBorder<<endl;
 	// compute the log-likelihood of the 0 Model
 	Model model0( *this );
@@ -1178,17 +1303,19 @@ bool MData::selectModel ( Model *currentModel, size_t PValueBorder, int Expected
         //	*currentModel,// = &model0, //,original 
 		*forwardModel = &model1,
 		*backwardModel = &model2;
-	int backup_for_causal_snps=parameter.ms_ExpectedCausalSNPs;
+//	int backup_for_causal_snps=parameter.ms_ExpectedCausalSNPs;
        
-	forgetreplaceonce=true;
-	parameter.ms_ExpectedCausalSNPs= ExpectedCausalSNPs;
-        cerr<<parameter.ms_ExpectedCausalSNPs<<endl;
+//	forgetreplaceonce=true;
+//	parameter.ms_ExpectedCausalSNPs= ExpectedCausalSNPs;
+//	schreibt es in die Variable für mBIC2 auch wenn man mBIC haben will
+//        cerr<<parameter.ms_ExpectedCausalSNPs<<endl; //this is for mBIC2
+if (currentModel->getModelSize()>0)
+{if (currentModel->computeMSC(criterium)>0.000001)
+	//only here a backwardstep makes sense
+	currentModel->saveguardbackwardstep( *backwardModel,criterium);
+}
 
-	currentModel->makeMultiForwardStep(PValueBorder,1,startIndex);
-//if(forgetreplaceonce)
-//	parameter.ms_ExpectedCausalSNPs=backup_for_causal_snps;
-//cerr<<parameter.ms_ExpectedCausalSNPs<<endl;
-//Achtung hier soll wieder alles beim alten sein
+	currentModel->makeMultiForwardStep(PValueBorder,criterium,startIndex);
 	currentModel->computeRegression();
        // best=currentModel;
 	// TODO<BB>: Apply a memory scheme to avoid duplicate calculation of Models
@@ -1196,17 +1323,15 @@ bool MData::selectModel ( Model *currentModel, size_t PValueBorder, int Expected
 	// I.e. need a central registry of calculated Models.
 	// But these with empty caches to sayum remove yum-packagekitve Memory.
 	// Effectively a map from subsets of SNP-indices to MSC values.
-        // currentModel->printModel("");
+       
 	printLOG( "Start stepwise selection" );
-        currentModel->computeMSC(0);
-        //currentModel->printModel("check1");
 double bestMSC= currentModel->getMSC();
 //currentModel->replaceModelSNPbyNearCorrelated(0);
 //exit(0);
 bool improvment=false;
 	while ( !stop ) {
-         improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder);
-	 improvment=currentModel->saveguardbackwardstep( *backwardModel);	 
+         improvment=currentModel->replaceModelSNPbyNearFromCAT( *startIndex, PValueBorder, criterium );
+	 improvment=currentModel->saveguardbackwardstep( *backwardModel, criterium );
          
 	 //ED break because of computational limitations
 	 if (currentModel->getModelSize()>min(parameter.maximalModelSize,maxModel))
@@ -1214,49 +1339,51 @@ bool improvment=false;
         /* linear case normal forward step
          */
           if (!parameter.affection_status_phenotype)//quantitative
-	      improvment=currentModel->makeForwardStepLinear( forwardModel,  JJ,  &bestMSC,
-		                                	 PValueBorder, startIndex);
+		improvment = currentModel->makeForwardStepLinear( forwardModel, JJ, &bestMSC, PValueBorder, startIndex );
           else if (parameter.affection_status_phenotype)/*PRÄSELECTION nur bis Revision 274*/
-              improvment=currentModel->makeForwardStepLogistic(JJ, &bestMSC,  PValueBorder, startIndex);	  
+        	improvment = currentModel->makeForwardStepLogistic( JJ, &bestMSC, PValueBorder, startIndex, criterium );	  
           else 
 		  cerr<<" not linear nor logistic, this should not happen"<<endl;
-	  stop=currentModel->finalizeModelSelection( *backwardModel, JJ,  improvment,  PValueBorder,  startIndex);
+	stop = currentModel->finalizeModelSelection( *backwardModel, JJ, improvment, PValueBorder, startIndex, criterium );
 }//while
 cerr<<parameter.ms_ExpectedCausalSNPs<<endl;
 size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs case below.
 	if( parameter.affection_status_phenotype)
       {if (350>getSnpNo()-1) reference=getSnpNo()-1;
 	    
-	while(currentModel->selectModel(*backwardModel,max(reference,PValueBorder),maxModel)) //minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
+	while(currentModel->selectModel(*backwardModel,max(reference,PValueBorder),maxModel,criterium)) //minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
 		{
 		 //currentModel->replaceModelSNPbyNearCorrelated1();//should
-		 improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder);
-		 currentModel->saveguardbackwardstep( *backwardModel);
+		 //improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder, criterium);
+	         //if(improvment)	 currentModel->saveguardbackwardstep( *backwardModel,criterium);
 		}
 	} 
+                  improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder, criterium);
+	         if(improvment)	 currentModel->saveguardbackwardstep( *backwardModel,criterium);
+
 //when all fails	
 
 //currentModel->replaceModelSNPbyNearCorrelated(); bringt nichts
 //currentModel=backwardModel;
 currentModel->printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "the_result" );
 
-currentModel->printModel("finalModel");
+currentModel->printModel("finalModel",criterium);
 //reset the .ms_ExpectedCausalSNPs
 cerr<<parameter.ms_ExpectedCausalSNPs<<endl;
 
-if(forgetreplaceonce)
-	parameter.ms_ExpectedCausalSNPs=backup_for_causal_snps;
+//if(forgetreplaceonce)
+//	parameter.ms_ExpectedCausalSNPs=backup_for_causal_snps;
 cerr<<parameter.ms_ExpectedCausalSNPs<<endl;
 
 return true ; 
 }
 
 ///////////////////////////////////////////////////7
-//selctModel ohne Argument
+//selectModel ohne Argument
 bool MData::selectModel()
 {
        int JJ=0;
-	printLOG("Model Selection started: ");
+	printLOG("OLD Model Selection started: ");
 	Model SelectedModel( *this ); 
 	Model Forward( *this );
 	Model Backward( *this );
@@ -1268,7 +1395,8 @@ bool MData::selectModel()
        // int PValueBorder =calculatePValueBorder();
 	//or take the setting from the conf file
 	size_t PValueBorder = parameter.PValueBorder;
-	PValueBorder = min( getSnpNo()-1, PValueBorder );	// REMARK<BB>: how about 0 SNPs?
+	size_t eins=1;
+	PValueBorder = max(min( getSnpNo()-1, PValueBorder ),eins);	// REMARK<BB>: how about 0 SNPs?
 //if(getSnpNo()-1>350)
 //PValueBorder=max(350,PValueBorder);
 	cerr<<"PValueBorder"<< PValueBorder<<endl;
@@ -1285,20 +1413,6 @@ bool MData::selectModel()
 		*currentModel = &model0,
 		*forwardModel = &model1,
 		*backwardModel = &model2;
-        /*this is the original multi forward step only used here*/
-//vector<string> LDSNPs={"SNP_A-2020880","SNP_A-1815642","SNP_A-2175818","SNP_A-4262563","SNP_A-4260995","SNP_A-1923094","SNP_A-2275264","SNP_A-4218005","SNP_A-2220513","SNP_A-4297940","SNP_A-1985005","SNP_A-1941585", "SNP_A-2104965","SNP_A-2225019","SNP_A-2207150","SNP_A-2089059","SNP_A-2107431","SNP_A-1865752","SNP_A-2086212","SNP_A-2141521","SNP_A-1800559","SNP_A-2301126","SNP_A-1801278","SNP_A-2160387","SNP_A-1930022","SNP_A-2302790","SNP_A-4289013","SNP_A-2134130","SNP_A-2163978","SNP_A-1780694","SNP_A-4277866","SNP_A-2062455","SNP_A-2084317","SNP_A-2033911","SNP_A-1956074","SNP_A-1913873","SNP_A-2217489","SNP_A-2073899","SNP_A-1870534","SNP_A-4291857","SNP_A-2038959","SNP_A-2155630","SNP_A-1953574","SNP_A-1859780","SNP_A-4221344","SNP_A-2197439","SNP_A-2010616","SNP_A-2010617","SNP_A-4215015","SNP_A-2010618","SNP_A-2121761","SNP_A-2079004","SNP_A-2203549","SNP_A-1986190","SNP_A-1825815","SNP_A-1786036","SNP_A-1986192","SNP_A-2214585","SNP_A-2125952","SNP_A-4211683","SNP_A-4211684","SNP_A-4289986","SNP_A-2135688","SNP_A-1987242","SNP_A-4265870"};
-//vector <string> LSNPNames(LDSNPs);
-
-  // for(int i=0;i<LSNPNames.size();i++)
-        //cerr<<"'"<<LSNPNames[i]<<"'"<<endl;
-        //vector< unsigned int> Lindex;
-        //findSNPIndex(LSNPNames, Lindex);
-        //currentModel->addManySNP(Lindex);
-     
-        //currentModel->computeRegression();
-        //currentModel->computeMSC(0);
-        //currentModel->printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "LD_fullmodel" );
-        //currentModel->saveguardbackwardstep( *backwardModel);
 int backup_for_causal_snps=parameter.ms_ExpectedCausalSNPs;
 if(parameter.expected_causal_snps1>parameter.ms_ExpectedCausalSNPs)
 parameter.ms_ExpectedCausalSNPs=parameter.expected_causal_snps1;
@@ -1314,52 +1428,44 @@ if(parameter.expected_causal_snps1>parameter.ms_ExpectedCausalSNPs)
 	// But these with empty caches to sayum remove yum-packagekitve Memory.
 	// Effectively a map from subsets of SNP-indices to MSC values.
   //      currentModel->printModel("");
-	printLOG( "Start stepwise selectionseine Leistungen in osteuropäischen Ländern über die MPA in Ungarn " );
+	printLOG( "Start stepwise selection " );
         currentModel->computeMSC(0);
         //currentModel->printModel("check1");
 double bestMSC= currentModel->getMSC();
-//currentModel->replaceModelSNPbyNearCorrelated(0);
-//exit(0);
 bool improvment=false;
-/** This is the backward step
+/*  This is the backward step
  *  one take the full model and remove every SNP.
  *  Then one look for that model with  lowest MSC 
  *  then we have a new start model.
  *
  *  We repeat this until the 1 model is selected.
  */
-//int breakfor=0;
 	while ( !stop ) {
-		// compute steps
-	// currentModel->replaceModelSNPbyNearCorrelated1(); //at first search for an improvment locally
          improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder);
 	 improvment=currentModel->saveguardbackwardstep( *backwardModel);	 
 	 currentModel=backwardModel; 
         /* linear case normal forward step
          */
-          if (!parameter.affection_status_phenotype)//quantitative
+         if (!parameter.affection_status_phenotype)//quantitative
 	      improvment=currentModel->makeForwardStepLinear( forwardModel,  JJ,  &bestMSC,
 		                                	 PValueBorder, startIndex);
           else if (parameter.affection_status_phenotype)/*PRÄSELECTION nur bis Revision 274*/
               improvment=currentModel->makeForwardStepLogistic(JJ, &bestMSC,  PValueBorder, startIndex);	  
           else cerr<<" not linear nor logistic, this should not happen"<<endl;
 	  stop=currentModel->finalizeModelSelection( *backwardModel, JJ,  improvment,  PValueBorder,  startIndex);
-}//while
+	}//while
 	size_t reference = 350;	// REMARK<BB>: Where does 350 come from?
 	if( parameter.affection_status_phenotype)
 	{
 		if ( 350 > getSnpNo()-1 ) reference=getSnpNo()-1;	// REMARK<BB>: Beware 0 SNPs case.
 	    
-	while(currentModel->getModelSize()&&currentModel->selectModel(*backwardModel,max(reference,PValueBorder))) //minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
+	while(currentModel->getModelSize()&&currentModel->selectModel(*backwardModel,max(reference,PValueBorder)))
+		 //minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
 		{
-		 //currentModel->replaceModelSNPbyNearCorrelated1();//should
 		 improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder);
 		 currentModel->saveguardbackwardstep( *backwardModel);
 		}
 	} 
-
-
-//currentModel->replaceModelSNPbyNearCorrelated(); bringt nichts
 
 currentModel->printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "the_result" );
 

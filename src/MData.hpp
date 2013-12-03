@@ -209,7 +209,7 @@ public:
 	*  ExpectedCausalSNPs (this is a variable used with mBIC2
 	*/
 	DEPRECATED( bool selectModel() );
-                   bool  selectModel(Model * inputModel, size_t PValueBorder, int ExpectedCausalSNPs, int maxModel=parameter.maximalModelSize);
+	bool  selectModel ( Model * inputModel, size_t PValueBorder, int ExpectedCausalSNPs, int maxModel=parameter.maximalModelSize, int criterium=0 );
 	//+++++++++++++
 	// methods for testing CAUTION using print_____ on big datasets
 	/** TESTING // screen-output of the informations stored for the SNPs */
@@ -237,7 +237,8 @@ public:
 	 an R-linear model. Was used to check correctness of linear regression
 	 but may be helpful in general to extract all the date of a model... */
 	void printSelectedSNPsInR ( vector<string> SNPList ) const;
-
+        //everything in h5
+	bool printALLmat(const string& extra="");
 	/** The same in Matlab extra is the number in the yvm file */
 	void printSelectedSNPsInMatlab ( vector<string> SNPList, string extra ) const;
 
@@ -267,6 +268,6 @@ public:
   //that should work
 // template<class Vals> void  sortingPermutation(const Vals& values, std::vector<int>& v);
   /** findSNPIndex is here to add many SNP from a list of SNPNames instead of a vector of int's */
-  void findSNPIndex ( vector<string>& SNPNames, vector<size_t>& index ) const;
+  void findSNPIndex ( vector<string>& SNPNames, vector<snp_index_t>& index ) const;
 };
 #endif

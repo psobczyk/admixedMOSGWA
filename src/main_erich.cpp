@@ -10,6 +10,7 @@
      #include <gsl/gsl_rng.h>
      #include <gsl/gsl_randist.h>
      #include <gsl/gsl_permutation.h>
+#include <boost/algorithm/string.hpp> //für mehrfache Modelle
 #include "TIP"
 //hier endet der Einschub 
 //include <GA.hpp>
@@ -48,7 +49,6 @@ try { LOG.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit )
 
  // Read in data by generating MData object
   MData data ;
-  //data.printIndividuals();
  
  // imputate data if nessessary
  if ( ! parameter.imp_is_imputated )
@@ -153,7 +153,8 @@ data.findSNPIndex(SNPNames, index);
  vector<unsigned int> zwischen;
 // firstmodel.printStronglyCorrelatedSnps2(0,0.7,zwischen,40);
  firstmodel.printStronglyCorrelatedSnps(0.1);  
-  
+printLOG("es wird nur printStronglyCorrelatedSnps(0.1) für ein 400 Fenster gerechnet");
+ 
 //automatic setting for beta
 for(int i=0;i<index.size();i++)
 	cerr<<index[i]<<endl;
@@ -170,12 +171,12 @@ cerr<<"index.size()"<<index.size()<<endl;
   //DEBUG 
   //cout<< 1.8,1.5,1.0-(i-1)*step<<endl;
   }
-//nur für das 2te Szenario
-printLOG("15");
-  gsl_vector_set(beta,15,-0.3002833755);
- printLOG("18"); 
-  gsl_vector_set(beta,17,-0.4110974071); //siehe makebeta
- printLOG("alles ok"); 
+//nur für das 2te Szenario mit den verdeckten SNPs, siehe He und Lin
+//printLOG("15");
+ // gsl_vector_set(beta,15,-0.3002833755);
+// printLOG("18"); 
+//  gsl_vector_set(beta,17,-0.4110974071); //siehe makebeta
+// printLOG("alles ok"); 
  firstmodel.setBeta(beta);
  //firstmodel.computeRegression();
  firstmodel.printModel("");
@@ -208,7 +209,7 @@ data.printmyY();
 cerr<<"yvm_local for checking against Yvecout only"<<endl;
 vector<bool> t;
 printLOG("vor getYvec(t)");
-newmodel.getYvec(t); //hier wird kein YVec irgen
+//newmodel.getYvec(t); //hier wird kein YVec irgen
      //printYforGWASselect
      //should print a Yout file
 
@@ -305,52 +306,249 @@ vector<string> LDSNPs={"SNP_A-2020880","SNP_A-1815642","SNP_A-2175818","SNP_A-42
 
      for(int i=0;i<LSNPNames.size();i++)
 	cerr<<"'"<<LSNPNames[i]<<"'"<<endl;
-       vector< unsigned int> Lindex;
+       vector<unsigned int> Lindex;
        data.findSNPIndex(LSNPNames, Lindex);
        Lmodel.addManySNP(Lindex);
      
        Lmodel.computeRegression();
        Lmodel.computeMSC(0);
        Lmodel.printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "LD_fullmodel" );
- Lmodel.printModel("LDorig_model","_Lf");
+ Lmodel.printModel("LDorig_model",0,"_Lf");
 
 
        Lmodel.saveguardbackwardstep(Lsmaller);
        Lmodel.printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "LD_backmodel" );
-       Lmodel.printModel("LDorig_backmodel","_Lb");
+       Lmodel.printModel("LDorig_backmodel",0,"_Lb");
 
 }
 if (6==parameter.test)
-{
+{      printLOG("calculate single marker tests only");
+	// calculate single marker test (needed for modelselection)
+	Model model(data);
+	/// calculate single marker test (needed in modelselection for selction of the order new SNP will be added to the model)
+	data.calculateIndividualTests();
+        //exit(0); //check
 }
+if (7==parameter.test)
+{ //model file names Models.txt wird gelesen und
+         string STRING;
+	ifstream infile;
+	infile.open (parameter.models_file,ios::out);
+       if(	infile.is_open())
+       {
+     
+	int i=0;
+	string ST;
+	getline(infile,ST);
+        std::vector<std::string> strs; 
+	boost::split(strs, ST, boost::is_any_of("\t "));
+        vector<int> len(strs.size());	
+        vector<vector<string>> models(strs.size());
+
+	for(int j=0;j<strs.size();j++)
+	{
+	 cerr<<strs[j]<<endl;
+	 len[j]=stoi(strs[j]);
+	}
+//	return(0);
+	vector<vector<string>> mod(strs.size());
+	vector<string>line;
+        for(int b=0;b<len.size();b++)
+	for(int c=0; c<len[b];c++)
+	{ //cerr<<"b="<<b<<endl;
+          //cerr<<"c="<<c<<endl;
+          if(!infile.eof())
+	  {
+           getline(infile,STRING); // Saves the line in STRING.
+	   models[b].push_back(STRING);
+	   //cout<<STRING<<endl; // Prints our STRING.
+	  }
+	  else	; //nothing
+	}     
+	infile.close();
+	for(int i=0;i<models.size();i++)
+	{for(int j=0; j<models[i].size();j++)
+	cerr<<models[i][j]<<";";
+	cerr<<endl;
+	}
+cerr<<i<<endl;
+Model model(data);
+	/// calculate single marker test (need for modelselection)
+	data.calculateIndividualTests();
+	 Model model0( data );
+	model0.computeRegression();
+	data.setLL0M( model0.getMJC() );
+
+for(int s=0;s<models.size();s++)
+ {vector <string> SNPNames(models[s]);
+  vector< unsigned int> index;
+  data.findSNPIndex(SNPNames, index);
+  firstmodel.addManySNP(index);
+   
+ // Model model0( data );
+ //	model0.computeRegression();
+ //	data.setLL0M( model0.getMJC() );
+  firstmodel.computeRegression();
+  firstmodel.computeMSC(0); 
+  firstmodel.printModel(int2str(s),0,'_'+int2str(s));
+  firstmodel=model;
+  index.clear();
+}
+	return(0);
+
+       } //the file open
+}
+if (9==parameter.test) //9 generiert nur Xmatrix
+{         string STRING;
+	ifstream infile;
+	infile.open (parameter.models_file,ios::out);
+       if(	infile.is_open())
+       {
+     
+	int i=0;
+	string ST;
+	getline(infile,ST);//erste Zeile enthält die Längen der Modelle
+        std::vector<std::string> strs; 
+	boost::split(strs, ST, boost::is_any_of("\t "));
+        vector<int> len(strs.size());	
+        vector<vector<string>> models(strs.size());
+//the first line are the lebgth of the models
+	for(int j=0;j<strs.size();j++)
+	{
+	 len[j]=stoi(strs[j]);
+	}
+	vector<vector<string>> mod(strs.size());
+	vector<string>line;
+        for(int b=0;b<len.size();b++)
+	for(int c=0; c<len[b];c++)
+	{ 
+          if(!infile.eof())
+	  {
+           getline(infile,STRING); // Saves the line in STRING.
+	   models[b].push_back(STRING);
+	  }
+	  else	; //nothing:
+	}     
+	infile.close();
+for(int s=0;s<models.size();s++)
+ {
+	 vector <string> SNPNames(models[s]);
+         vector<  unsigned int> index;
+         data.findSNPIndex(SNPNames, index);
+ 
+         firstmodel.addManySNP(index);
+         firstmodel.printXmat(int2str(s));
+	 firstmodel.printModelInMatlab ("selected");
+  index.clear();
+}
+
+}
+} //if 9
+
+if (10==parameter.test)
+{
+data.printALLmat();}//end 10
+
+if (8==parameter.test)//speziell wenn man glm hat zB.
+	//suche zumindest nach Modellen der Größe 35 in parameter.models_file
+{ //model file names Models.txt wird gelesen und
+         string STRING;
+	ifstream infile;
+	infile.open (parameter.models_file,ios::out);
+       if(	infile.is_open())
+       {
+     
+	int i=0;
+	string ST;
+	getline(infile,ST);
+        std::vector<std::string> strs; 
+	boost::split(strs, ST, boost::is_any_of("\t "));
+        vector<int> len(strs.size());
+	vector<int> dif(strs.size());
+               vector<vector<string>> models(strs.size());
+			   //für was ist das gut?
+int mindiff=100000; //much to big
+int minindex=0; //the first index will indeed a possible minimum
+	for(int j=0;j<strs.size();j++)
+	{
+	 //cerr<<strs[j]<<endl;
+	 len[j]=stoi(strs[j]);
+	 //suche zuminest nach Modellen der Größe 35 
+	 int mm=abs(len[j]-35); //this should be search for a min difference to 35
+	 if (mindiff>mm)
+	 {mindiff=mm;
+	         minindex=j;}
+	          
+	}
+	//cerr<<"11"<<endl;
+	vector<vector<string>> mod(strs.size());
+	vector<string>line;
+        //cerr<<len.size()<<endl;
+        for(int b=0;b<len.size();b++)
+	for(int c=0; c<len[b];c++)
+	{           if(!infile.eof())
+	  {
+           getline(infile,STRING); // Saves the line in STRING.
+	   models[b].push_back(STRING);
+	   //cout<<STRING<<endl; // Prints our STRING.
+	  }
+	  else	; //nothing
+	}     
+	infile.close();
+Model model(data);
+	/// calculate single marker test (need for modelselection)
+	data.calculateIndividualTests();
+//for(int s=0;s<models.size();s++)
+int s=minindex; 
+{
+	 vector <string> SNPNames(models[s]);
+  vector< unsigned int> index;
+  data.findSNPIndex(SNPNames, index);
+  firstmodel.addManySNP(index);
+  Model model0( data );
+  Model smaller(data );
+  
+  model0.computeRegression();
+  data.setLL0M( model0.getMJC() );
+  firstmodel.computeRegression();
+  firstmodel.computeMSC(0); 
+  firstmodel.saveguardbackwardstep(smaller);
+  firstmodel.printModel(int2str(s),0,'_'+int2str(s));
+  firstmodel=model;
+  index.clear();
+}
+	return(0);
+
+       } //the file open
+}
+
 if (0==parameter.test)//eigentliche Studien
 {// calculate single marker test (needed for modelselection)
 	Model model(data);
 	/// calculate single marker test (need for modelselection)
 	data.calculateIndividualTests();
+//	exit(0); //check 
 //	data.printSNPs();vector<string> SNPNames ={ "SNP_A-2110024", "SNP_A-2237238", "SNP_A-4241915", "SNP_A-2047003"};
 
 
 	vector< unsigned int> index;
 		
-    Model model0( data );
+        Model model0( data );
 	model0.computeRegression();
 	data.setLL0M( model0.getMJC() );
-//	printLOG("check all SNPs");
-//	model0.checkallSNPS();	
-//	printLOG("checked all SNPs");
-//exit(0);//jetzt reichs fürs erste
 Model *modelin=&model0;
 
-modelin->printModel("we are before of select model");
-data.selectModel(modelin,parameter.PValueBorder,parameter.expected_causal_snps1);
+modelin->printModel("we are before select model",3);//3 ist mBIC
+data.selectModel(modelin,parameter.PValueBorder,parameter.expected_causal_snps1,35,3);//5 parameter takes 3 
+
 modelin->printModel("erstes Endergebnis");
-data.selectModel(modelin,5000,parameter.ms_ExpectedCausalSNPs);
-modelin->printModel("zweites Endergebnis");
+data.selectModel(modelin,5000,parameter.ms_ExpectedCausalSNPs);//3 parameter
+
+//modelin->printModel("zweites Endergebnis");
 //now search again with the weak criteria
-data.selectModel(modelin,parameter.PValueBorder,parameter.expected_causal_snps1,modelin->getModelSize()+10);
-modelin->printModel("drittes Endergebnis");
-data.selectModel(modelin,5000,parameter.ms_ExpectedCausalSNPs);
+//data.selectModel(modelin,parameter.PValueBorder,parameter.expected_causal_snps1,modelin->getModelSize()+10,3);
+//modelin->printModel("drittes Endergebnis",3);
+//data.selectModel(modelin,5000,parameter.ms_ExpectedCausalSNPs);
  }
 // these lines are from the original main
  try { printLOG("End");

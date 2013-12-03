@@ -47,6 +47,12 @@ public:
 	/** true = use extra file for covariables */
 	bool cov_extra_file;
 
+       /** model to read in a filename with first line length
+	* of models 
+	* and then every line a SNP name but nothing else, check 
+	* for errors!!
+	*/
+        string models_file;	
 //+++++++++++++
 // Parameters describing the Data
 
@@ -95,6 +101,8 @@ public:
 	int ms_ExpectedCausalSNPs;
 	/** Number of Expected SNPs, in the preselection _*/
 	int expected_causal_snps1;
+	int expected_causal_snps_MBIC;
+	int nSNPKriterium;
         int maximalModelSize;
 	/* *the maximal number of SNPs added in the Multi-Forward-Step */
 	int ms_MaximalSNPsMultiForwardStep;

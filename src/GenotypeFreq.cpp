@@ -23,7 +23,7 @@ GenotypeFreq::GenotypeFreq( const MData & mData, const int snp ) {
 	const Vector genotypes = const_cast<MData&>( mData ).getXcolumn( snp );
 	const Vector phenotypes = const_cast<MData&>( mData ).getY();
 	for ( int idv = 0; idv < n_; ++idv ) {
-		if ( 1.0 == phenotypes.get( idv ) ) {	// case
+		if ( parameter.case_value == phenotypes.get( idv ) ) {	// case_value should be 1 normally
 			switch( static_cast<int>( genotypes.get( idv ) ) ) {
 				case -1: ++r0_; break;
 				case 0: ++r1_; break;

@@ -18,6 +18,9 @@
 #include <stdlib.h>
 #include <sstream>  //for stringstream
 
+#include "Helpfull.hpp" //int2str und printLOG
+#include "Log.hpp" //printLOG
+
 using namespace std;
 using namespace parser;
 
@@ -31,7 +34,7 @@ Parameter::Parameter () {
 	declare( "input", "use_extra_covariables", cov_extra_file );
 	declare( "input", "control_value",control_value); //the control are normally 0
 	declare( "input", "case_value",case_value); //the case are normally 1
-
+        declare("input", "models_file",models_file);
 	// input data settings
 	declare( "data", "trait_position_in_yvm", in_values_int );
 	{
@@ -63,6 +66,9 @@ Parameter::Parameter () {
 	// model selection settings
 	declare( "model_selection", "expected_causal_snps", ms_ExpectedCausalSNPs );
 	declare( "model_selection", "expected_causal_snps1",expected_causal_snps1 );
+	declare( "model_selection", "expected_causal_snps_MBIC", expected_causal_snps_MBIC );
+	declare( "model_selection", "nSNPKriterium", nSNPKriterium);
+
 	declare( "model_selection", "maximalModelSize",maximalModelSize );
 	declare( "model_selection", "multi_forward_step_max", ms_MaximalSNPsMultiForwardStep );
 	declare( "model_selection", "multi_forward_pvalue_max", ms_MaximalPValueForwardStep );
@@ -134,6 +140,8 @@ void Parameter::setParameters ( const int argn, const char* argv[] ) {
 			exit( 255 );
 		}
 	}
+	//ED: Helpfull.hpp 
+	printLOG("y_value_extra_file="+int2str(y_value_extra_file)+",position "+int2str(in_values_int));
 //this creates an unique file for all yvm and of course also in the version without 
 //this has to be done before the number is added in the yvm case	
 singlefile=out_file_name; //this is for simulators which need in every run the genotyp file 
@@ -165,7 +173,9 @@ singlefile=out_file_name; //this is for simulators which need in every run the g
 		logrC_xconv=10e-3;
 
         if (0==expected_causal_snps1)
-        	expected_causal_snps1=2; //MBIC2 as the standart
+        	expected_causal_snps1=4; //MBIC2 as the standart
+        if (0==expected_causal_snps_MBIC)
+          expected_causal_snps_MBIC=2; //MBIC2 as the standart
 	if (0==maximalModelSize)
 		maximalModelSize=35;
 	if(0==control_value)

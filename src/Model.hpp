@@ -149,7 +149,7 @@ public:
 
 	// Output
 	/** outputs the Model information, string out is a title */
-	void printModel ( const std::string& out="", const std::string& filemodifier="" );
+	void printModel ( const std::string& out="", int criterion=0,const std::string& filemodifier="" );
 
 	/** TESTING: outputs the Model in a form readable by R */
 	void printModelInR () const;
@@ -167,7 +167,7 @@ bool replaceModelSNPbyNearCorrelated1(const int typeNr=0); //1 dimensional case
 bool replaceModelSNPbyNearCorrelated(const int typeNr=0);//2 dimensional case
 bool replaceModelSNPbyNearFromCAT( int currrentPosition, int PValueBorder,const int typeNr=0);
 bool replaceModelSNPbyNearFromSCORE( int currrentPosition, int PValueBorder, vector<int>SCORE, const int typeNr=0);
-bool replaceModelSNPSCORE(); //neuer Fall mit conditionalen scoretest für jedes model SNP removed
+bool replaceModelSNPSCORE(int criterium); //neuer Fall mit conditionalen scoretest für jedes model SNP removed
 	/** outputs for every SNP in the model SNPs with a correlation above const double threshold */
 	void printStronglyCorrelatedSnps ( const double threshold, string extra ="" ) const;
 	/**  printStronglyCorrelatedSnps2 is for  replaceModelSNPbyNearCorrelated when the second  variable should be checked against the original SNP */
@@ -177,8 +177,9 @@ bool replaceModelSNPSCORE(); //neuer Fall mit conditionalen scoretest für jedes
 	// change model Size
 	/** add SNP to Model, snp is absolute postion in MData::snps_ */
 	void addSNPtoModel ( const snp_index_t snp);
-        bool replaceSNPinModel ( const snp_index_t snp,  const snp_index_t  position );
-        void addManySNP ( std::vector<snp_index_t> selected );
+      bool replaceSNPinModel ( const snp_index_t snp,  const snp_index_t  position );
+      bool printXmat(const std::string& extra="");//extra is astring wich is eg the index of the model printed
+		void addManySNP ( std::vector<snp_index_t> selected );
 /**  This generates a Y vector
      Input is XMat_ $=:X$ and $\beta$/
      then $p=\frac{e^{A\beta}}{1+e^{A\beta}}$
@@ -199,36 +200,36 @@ bool replaceModelSNPSCORE(); //neuer Fall mit conditionalen scoretest für jedes
 	/** adds the SNPs minimzing the MSC.
 	* Model &biggerModel is the new model, boundSNP is a border on the SNPs to add
 	* @returns the absolut positon of the added SNP, or -1 on error */
-	int makeForwardStep ( Model &biggerModel, const int boundSNP );
+	int makeForwardStep ( Model &biggerModel, const int boundSNP, int criterium);
  
 	/** computes the Best Model with a SNP smaller,
 	* Model &smallerModel is the new model
 	* @returns the relativ position of the removed SNP, or -1 on error */
 	int makeBackwardStep ( Model &smallerModel );
 	/*special Version of the multiforward step*/
- bool  finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder,int *startIndex,vector<int> score);
+ bool  finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder,int *startIndex,vector<int> score,int criterium=0);
 
-        bool  finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder,int *startIndex);
-        bool  makeForwardStepLinear(Model *forwardModel, int JJ, double* bestMSC, int PValueBorder,int *startIndex);
+        bool  finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder,int *startIndex ,int criterium=0);
+        bool  makeForwardStepLinear(Model *forwardModel, int JJ, double* bestMSC, int PValueBorder,int *startIndex,int criterium=0);
 	/**  makeForwardStepLogistic replaces the code in selectModel*/
-	bool makeForwardStepLogistic(int JJ, double *bestMSC, int PValueBorder,int *startIndex);
+	bool makeForwardStepLogistic(int JJ, double *bestMSC, int PValueBorder,int *startIndex, int criterium=0 );
 /**makeForwardStepLogistic score version */
-	bool makeForwardStepLogistic(int, double*, int, int*, vector<int> score);
+	bool makeForwardStepLogistic(int, double*, int, int*, vector<int> score, int criterium=0);
 
         bool makeMFFS (int PValueBorder,int *startIndex); //with linear
-	bool makeMFFL (int PValueBorder,int *startIndex); //with logistic
-	bool makeMFFL (int PValueBorder,int *startIndex, vector<int> score); //with logistic+score
+	bool makeMFFL (int PValueBorder,int *startIndex,int criterium=0 ); //with logistic
+	bool makeMFFL (int PValueBorder,int *startIndex, vector<int> score,int criterium=0); //with logistic+score
 
         bool makeMultiForwardStepScore ( int PValueBorder, int selectionCriterium, int* startIndex, vector<int> scores);
         /** makeMultiForwardStep take the PValueBorder, an selection Criterium, the default Value is 1 for BIC in the initial ForwardStep and an  an exclusivedSNP set,*/ 
 	bool makeMultiForwardStep ( int PValueBorder = 0, int selectionCriterium =1, int *startIndex= NULL ,  std::set<snp_index_t> * exclusivedSNP = 0 );
 	bool makeMultiBackwardStep ();
-        bool saveguardbackwardstep(Model &smallerModel);
+        bool saveguardbackwardstep(Model &smallerModel,int criterium=0,int how_many_steps=4); //how many steps downward just for
 	/** makeBackwardStepED  a variation of makeBackwardStep
 	 */
-        int makeBackwardStepED ( Model &smallerModel );
+        int makeBackwardStepED ( Model &smallerModel,int criterium=0 );
 
-	bool selectModel(Model &startFromModel, int border=100, int maxModel=parameter.maximalModelSize);
+	bool selectModel(Model &startFromModel, int border=100, int maxModel=parameter.maximalModelSize,int criterium=0);
 	/** Compute Regression for Model.
 	* @returns false on error */
 	bool computeRegression ();

@@ -143,7 +143,7 @@ void Model::sortSNPsAccordingBetas () {
 	vector<size_t> SNP( getNoOfVariables(), 0 );
   SortVec sbetas(getNoOfVariables());
   vector<double> betas(getNoOfVariables(),0);
- for (int i=0;i<getNoOfVariables();i++) //this asumes that getNoOfVariables	
+ for (int i=0;i<getNoOfVariables();i++) //this assumes that getNoOfVariables	
  { betas[i]=getBeta(i);
    SNP[i] = modelSnps_[i];
  }
@@ -200,6 +200,80 @@ gsl_vector_set(NEWbetas_, getNoOfVariables() - 1,0);
 	}
 }
 
+bool Model::printXmat(const string& extra){}
+//  	char mat [data_->getIdvNo()][getModelSize()];
+// 	// genotype-data
+// 	for(int i=0;i<data_->getIdvNo();++i){
+//		const Vector genotypes = data_->getX().rowVector( i );
+//		for ( int j = 0; j < getModelSize(); ++j ) {
+//			mat[i][j+ parameter.dummy_covariables + parameter.covariables + 1]=
+//			   	genotypes.get( modelSnps_.at(j) );}
+//    //init of genotype matrix
+//}	cerr<<endl;
+////from h5 compress
+//    hid_t    file_id, dataset_id, dataspace_id; /* identifiers */
+//    hid_t    plist_id; 
+//
+//    size_t   nelmts;
+//    unsigned flags, filter_info;
+//    H5Z_filter_t filter_type;
+//
+//    herr_t   status;
+//    hsize_t  dims[2];
+//    hsize_t  cdims[2];
+// 
+//    int      idx;
+//    int      i,j, numfilt;
+//   // int      buf[DIM0][DIM1];
+//  // int      rbuf [DIM0][DIM1];
+//  /* Uncomment these variables to use SZIP compression 
+//    unsigned szip_options_mask;
+//    unsigned szip_pixels_per_block;
+//    */
+//
+//    /* Create a file.  */
+//string filename=	parameter.models_file+extra+".h5";
+//cerr<<filename<<endl;
+//file_id = H5Fcreate (filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+//
+//
+//    /* Create dataset "Compressed Data" in the group using absolute name. 
+//	   data->getIdvNo()][getModelSize()]*/
+//    dims[0] = data_->getIdvNo();
+//    dims[1] = getModelSize();
+//    dataspace_id = H5Screate_simple (2, dims, NULL); //2 ist der Rang
+//
+//    plist_id  = H5Pcreate (H5P_DATASET_CREATE);
+//
+//    /* Dataset must be chunked for compression */
+//    cdims[0] = 20;
+//    cdims[1] = getModelSize();
+//    status = H5Pset_chunk (plist_id, 2, cdims);
+//
+//    /* Set ZLIB / DEFLATE Compression using compression level 6.
+//     * To use SZIP Compression comment out these lines. 
+//    */ 
+//    status = H5Pset_deflate (plist_id, 6); 
+//
+//    /* Uncomment these lines to set SZIP Compression 
+//    szip_options_mask = H5_SZIP_NN_OPTION_MASK;
+//    szip_pixels_per_block = 16;
+//    status = H5Pset_szip (plist_id, szip_options_mask, szip_pixels_per_block);
+//    */
+//    /*nun nicht H5T_STD_I32BE sondern I8BE)*/
+//    dataset_id = H5Dcreate2 (file_id, "X", H5T_STD_I8BE, 
+//                            dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT); 
+//
+//    status = H5Dwrite (dataset_id, H5T_NATIVE_CHAR, H5S_ALL, H5S_ALL, H5P_DEFAULT, mat);
+//
+//    status = H5Sclose (dataspace_id);
+//    status = H5Dclose (dataset_id);
+//    status = H5Pclose (plist_id);
+//    status = H5Fclose (file_id);
+//
+//
+//}
+
 /** replaces replaceSNPinModel 
  * set snp at position  
  * position is the place where from 0 to  getNoOfVariables()
@@ -236,7 +310,7 @@ cerr<<endl;
 	// add the new column at the end
        // gsl_matrix_set_col(XMat_,position,data_->xMat.columnVector(snp));
 		const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( snp );
-		for ( int i = 0; i < data_->getIdvNo(); ++i )//statt position reset 
+		for ( int i = 0; i < data_->getIdvNo(); ++i )//instead position reset 
 			gsl_matrix_set( XMat_, i, reset, xVec.get( i ) );
 			gsl_vector_set(betas_,reset,0); //0 is relativ good for an unknow variable.
 		
@@ -545,7 +619,7 @@ for (int i=0;i<TVec->size;++i)
             //  printLOG( double2str(gsl_vector_get (TVec,  i)));
       }
      mean/=TVec->size;
-     //mean=0.5-mean; //this should do the trick, no longer the mean but the difference to the mean
+     //mean=0.5-mean; //this should do the trick, no longer the mean but the difference to the meansetting            setting
 printLOG("the mean should be near to 0.5 mean="+ double2str(mean));
 //   for (int i=0;i<TVec->size;++i)
 //{gsl_vector_set(TVec,i,gsl_vector_get(TVec,  i)+0);//mean);
@@ -670,13 +744,13 @@ void Model::printYvec ( const bool check ) {
 }
 
 //REM 
-void Model::printModel ( const string& out, const string& filemodifier ) {
+void Model::printModel ( const string& out, int type, const string& filemodifier ) {
 	stringstream ss; // to save output
 	ofstream OUT; // output model to file
 
 	// generate output
 	ss << out << endl;
-	ss << "ModelSize: " << getModelSize() << "\tMSC: "<< computeMSC() <<"\tMJC: "<< getMJC() << endl;
+	ss << "ModelSize: " << getModelSize() << "\tMSC: "<< computeMSC(type) <<"\tMJC: "<< getMJC() << endl;
 	ss << "Nr \tSNPId       \tChr \tPos   \tbeta    \tp-Value Single Marker Test" <<endl;
 
 	for ( int i = 0; i < getModelSize(); ++i ) {
@@ -771,7 +845,7 @@ bool  Model::replaceModelSNPbyNearCorrelated1(const int typeNr)
 			 printLOG("!!!!!!!!!!Better Model at position " + int2str(i+1) +" SNP= "
 			 +int2str( modelSnps_.at(i)) + " is replaced with " + int2str(zwischen[j])
 			 +" oldMSC="+ double2str(alt)+ " newMSC ="+ double2str(bestMSC));
-                         model0.printModel("Replaced_inter");
+                         model0.printModel("Replaced_inter",typeNr);
                         *this=model0;   model0.computeMSC(typeNr);
                          improve=true; 
                       }
@@ -780,7 +854,7 @@ bool  Model::replaceModelSNPbyNearCorrelated1(const int typeNr)
 	return improve;
 }
 /** replaceModelSNPbyNearCorrelate 
- * type Nr isa the Number of the sel criteria 
+ * type Nr is the Number of the sel criteria 
  * near is set by fenster
  * and correlated is set by threshold 
  * everything other should be fixed
@@ -819,7 +893,7 @@ bool Model::replaceModelSNPbyNearCorrelated(const int typeNr)
 	             if(val<1.0001*bestMSC)
 	              { bestMSC=val;			 
 		         printLOG("!!!!!!!!!!!!!!!!!!!Better Model for "+int2str(i)+" whith SNP "+int2str(zwischen[j])+" and SNP "+int2str( zwischen2[k]) +" new MSC"+double2str(bestMSC)+" "+double2str(val));
-	                         model0.printModel("Replaced_inter");
+	                         model0.printModel("Replaced_inter",typeNr);
 		        *this=model0;
 			
 	
@@ -884,7 +958,7 @@ void Model::printStronglyCorrelatedSnps ( const double threshold,  string extra 
 	stringstream 			ss; 			// to save output
 	ofstream 				OUT; 			// output model to file
 	multimap<double, int> 	StrongCor;		// to sort correlated SNPs
-        const int fenster=400; //left and right side of the fenster
+        const int fenster=400; //keine Fenster mehr left and right side of the fenster
         const int reserve=2*fenster+1; // if fenster=1 then there is the left and the right and the middle
 	double                  zwischen[2*reserve];  //only here for hdf5
 	const char                    *S[reserve]={NULL};
@@ -937,6 +1011,7 @@ for ( int i = 0; i < getModelSize(); ++i ) {
 //HDF5 
 //here all the dataset generation and closing afterwards
         dim[0]=count;//dim[1]=2;
+
 	fid=H5Screate_simple(2,dim,NULL);
 	/**Create  dataset 
 	 * take an name + number of selected SNP
@@ -945,11 +1020,12 @@ for ( int i = 0; i < getModelSize(); ++i ) {
 	name.str("");//in the other case you get very long names!
 	name<<"co"<<i; // 
 	//some more H5Pcreate 
+
 	 dataset = H5Dcreate2( file, name.str().c_str(), H5T_NATIVE_DOUBLE, fid, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );//name.str().c_str();
-	//ED funktioniert nicht; dataset = H5Dcreate( file, name.str().c_str(), H5T_NATIVE_DOUBLE, fid, H5P_DEFAULT );
-        /** write the data to the dataset
-	 *  and then close nothing because it works 
-	 */
+	// if (0>=dataset)
+	// { /** write the data to the dataset
+	// *  and then close nothing because it works 
+	// */
 	status=H5Dwrite(dataset,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,zwischen);
 	status=H5Dclose (dataset);
         status=H5Sclose (fid);
@@ -1053,7 +1129,7 @@ gsl_ran_shuffle (r, a->data, N, sizeof (size_t));//reference to data!!!
 for(int jo=0; jo<getModelSize(); jo++)
 { int j=gsl_permutation_get(a,jo);
 	//DEBUG cerr<<"a["<<jo<<"]="<<j<<endl;
-	for(snp_index_t i=0/*cu/rrrentPosition*/;i<min(max(PValueBorder+grace,1000),nSNP);++i) //saveguard against overrun of nSNP and only 500SNP in large Problems, with 1000 in most cases all relevant SNP will found
+	for(snp_index_t i=0/*curentPosition*/;i<min(max(PValueBorder+grace,1000),nSNP);++i) //saveguard against overrun of nSNP and only 500SNP in large Problems, with 1000 in most cases all relevant SNP will found
 	        { //cerr<<(abs(ref-data_-> getOrderedSNP(i))<50)<<",";
 		       	if (
 				abs( (int)modelSnps_.at(j) - (int) data_->getOrderedSNP(i) )<fenster
@@ -1077,8 +1153,9 @@ for(int jo=0; jo<getModelSize(); jo++)
 			 printLOG("!!!!!!!!!!!!!!!!!!!Better Model at position " + int2str(j) +" SNP= "
 			 +int2str( modelSnps_.at(j)) + " is replaced with " + int2str(data_-> getOrderedSNP(i))
 			 +" oldMSC="+ double2str(alt)+ " newMSC ="+ double2str(bestMSC));
-                         model0.printModel("Replaced_inter");
-                        *this=model0;   model0.computeMSC(typeNr);
+                         model0.printModel("Replaced_inter",typeNr);
+                        *this=model0;
+			computeMSC(typeNr);
                          improve=true; 
 		      }
                       }
@@ -1125,7 +1202,7 @@ bool Model::replaceModelSNPbyNearFromSCORE( int currrentPosition, int PValueBord
                           model0.computeRegression(); //regression should be calculated!
                           val= model0.computeMSC(typeNr);
 
-                  if(bestMSC>0?val>0.9999*bestMSC:val<1.0002*bestMSC)
+                  if(bestMSC>0?val<0.9999*bestMSC:val<1.0002*bestMSC)
 		       	//saveguard against rouning errors in logistic regression
 		       //2 versions for < and > 0 
                       { double  alt =bestMSC;
@@ -1133,7 +1210,7 @@ bool Model::replaceModelSNPbyNearFromSCORE( int currrentPosition, int PValueBord
 			 printLOG("!!!!!!!!!!!!!!!!!!!Better Model at position " + int2str(j) +" SNP= "
 			 +int2str( modelSnps_.at(j)) + " is replaced with " + int2str(data_-> getOrderedSNP(SCORE[i]))
 			 +" oldMSC="+ double2str(alt)+ " newMSC ="+ double2str(bestMSC));
-                         model0.printModel("Replaced_inter");
+                         model0.printModel("Replaced_inter",typeNr);
                         *this=model0;   model0.computeMSC(typeNr);
                          improve=true; 
 		      }
@@ -1143,8 +1220,8 @@ return improve;
 
 
 }//replaceModelSNPbyNearFromCAT ends
-bool Model::replaceModelSNPSCORE( ) //vector<int> SCORE,const int typeNr)
-{cerr<<"NEW"<<"NEW"<<"NEW"<<"NEW"<<"NEW"<<"NEW"<<"NEW"<<"NEW"<<endl;
+bool Model::replaceModelSNPSCORE(int criterium ) //vector<int> SCORE,const int typeNr)
+{cerr<<"replaceModelSNPSCORE"<<endl;
  bool improve=false; //we don't know weather we could improve
  int fenster=50; //be bold
  const int grace=5000;
@@ -1166,16 +1243,16 @@ bool Model::replaceModelSNPSCORE( ) //vector<int> SCORE,const int typeNr)
 
 	                double val=DBL_MAX;
                           model0.computeRegression(); //regression should be calculated!
-                          val= model0.computeMSC(0);  //should be mBIC2
+                          val= model0.computeMSC(criterium);  //should be mBIC2
        //                 cerr<<" mBIC="<<val<<endl;
                 
-			if(bestMSC>0?val>0.9999*bestMSC:val<1.0002*bestMSC)
+			if(bestMSC>0?val<0.9999*bestMSC:val<1.0002*bestMSC)
 	                      { double  alt =bestMSC;
 				 bestMSC=val;
 				 printLOG("!!!!!!!!!!!!!!!!!!!Better Model at Modelposition " + int2str(j) + " SCOREPostition=" +int2str(i) +" SNP= "
 				 +int2str( modelSnps_.at(j)) + " is replaced with " + int2str(score.getId(i))
 				 +" oldMSC="+ double2str(alt)+ " newMSC ="+ double2str(bestMSC));
-	                         model0.printModel("Replaced_inter");
+	                         model0.printModel("Replaced_inter",criterium);
 	                         *this=model0;   
 	                         improve=true; 
 			      }
@@ -1280,22 +1357,22 @@ double Model::oraculateOptimalLinearBackwardStep( snp_index_t *snp ) const {
 /** finalizeModelSelection()
  *   finalization work call some function and quit
  */
-bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder, int *startIndex, vector<int> score)
+bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder, int *startIndex, vector<int> score,int criterium)
 {
   if (false==improvment)      
-  { printModel( "no improvment");
+  { printModel( "no improvment",criterium);
     int dummy=0; *startIndex=dummy;
     if(!parameter.affection_status_phenotype)//quantitative
       { cout<<"not implemented"<<endl;backwardModel=*this;
- improvment=saveguardbackwardstep( backwardModel);//not use makeMFFL in this case 
+ improvment=saveguardbackwardstep( backwardModel,criterium);//not use makeMFFL in this case 
 	} else {
-		makeMFFL(min(500, PValueBorder),startIndex,score);
+		makeMFFL(max(parameter.reset, PValueBorder),startIndex,score,criterium); //sollte
 	}
     //don't set to an explicit value because of memory leaks when the number of variables is very small!
     JJ++;
 	   //REMOVED FOR SPEED    printModelInMatlab(int2str(JJ)); 
 	   backwardModel=*this;
-	      improvment= saveguardbackwardstep( backwardModel);
+	      improvment= saveguardbackwardstep( backwardModel,criterium);
 	      //what when improvement? set return stop =false
 	      if(improvment==true)
 	      {	printLOG("finalizeModelSelection");
@@ -1305,7 +1382,7 @@ bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment,
 	      }
 
 	       
-               printModel( "final model");
+               printModel( "final model",criterium);
 	      //REMOVED FOR SPEED printStronglyCorrelatedSnps( 0.99, int2str(parameter.in_values_int) + "the_result" );
 	      // printYvec(true);
 	     //REMOVED FOR SPEED if(parameter.affection_status_phenotype)
@@ -1315,26 +1392,25 @@ bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment,
 else
 
 { 	printLOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!after forward step");
-//	cerr<<addedSNP<<endl<<"MSC"<<forwardModel->computeMSC();
 	return false;
 	}
 }// finalizeModelSelection()
 
 
-bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder, int *startIndex)
+bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder, int *startIndex, int criterium)
 
 {
   if (false==improvment)      
-  { printModel( "no improvment");
+  { printModel( "no improvment",criterium);
     int dummy=0; *startIndex=dummy;
     if(!parameter.affection_status_phenotype)//quantitative
       { cout<<"not implemented"<<endl;backwardModel=*this;
- improvment=saveguardbackwardstep( backwardModel);//not use makeMFFL in this case 
+ improvment=saveguardbackwardstep( backwardModel,criterium);//not use makeMFFL in this case 
 	} else {
 		//diese Schritte sind eigentlich nur einmal nötig da, man sicher nichts
   //  gewinnt wenn man die ersten paar SNP oft und oft wiederholt
    printLOG("finalizeModelSelection last run with min of  parameter.PValueBorder or parameter.reset ");
-	   makeMFFL(min(PValueBorder, parameter.reset),startIndex);
+	   makeMFFL(min(PValueBorder, parameter.reset),startIndex,criterium);
 	}
 
   //  don't set to an explicit value because of memory leaks when the number 
@@ -1343,14 +1419,14 @@ bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment,
  
 	   //REMOVED FOR SPEED    printModelInMatlab(int2str(JJ)); 
 	   backwardModel=*this;
-	      improvment= saveguardbackwardstep( backwardModel);
+	      improvment= saveguardbackwardstep( backwardModel,criterium);
 	      //what when improvement? set return stop =false
 	      if(improvment==true)
 	      {	printLOG("improvment after newstart forward step");
 		return true  ; //if only 1 snp was added and the backward step was succesfull than this is anerror
 		//but if let
 		*this=backwardModel;
-		printModel( "final model");
+		printModel( "final model",criterium);
 	      }
 
 	       
@@ -1371,7 +1447,7 @@ else
 }// finalizeModelSelection()
 //makeForwardStepLinear the currentModle ist this
 //
-bool  Model::makeForwardStepLinear(Model *forwardModel, int JJ, double* bestMSC, int PValueBorder,int *startIndex)
+bool  Model::makeForwardStepLinear(Model *forwardModel, int JJ, double* bestMSC, int PValueBorder,int *startIndex, int criterium)
 {bool improvment=false; //we don't know from an succes up to now.
 	  cerr<<"linear regression______________________";
 
@@ -1380,7 +1456,7 @@ bool  Model::makeForwardStepLinear(Model *forwardModel, int JJ, double* bestMSC,
  forwardModel=this;
  for(int ii=0;ii<20;ii++) //parameter 
         {	
-int	 addedSNP = makeForwardStep( *forwardModel, PValueBorder );
+int	 addedSNP = makeForwardStep( *forwardModel, PValueBorder, criterium );
 
 	double locMSC=forwardModel->getMSC();
 //	 swapHelper=forwardModel;
@@ -1404,9 +1480,9 @@ return improvment;
  *  *this is forwardModel
  *
  */
-bool  Model::makeForwardStepLogistic(int JJ, double* bestMSC, int PValueBorder,int *startIndex, vector<int> score)
+bool  Model::makeForwardStepLogistic(int JJ, double* bestMSC, int PValueBorder,int *startIndex, vector<int> score, int criterium)
 { bool improvment=false;
-  printLOG("par--------------------------------------");  //DEBUG
+ // printLOG("par--------------------------------------");  //DEBUG
 int dummy= *startIndex;
 //cout<<"dummy="<<dummy<<endl;
  if( dummy<parameter.reset)//ERICH wenn man 100 als Grenze nimmt sollte man das hier auch herabsetzen 
@@ -1414,7 +1490,7 @@ int dummy= *startIndex;
 	 // also docg eher PValueBorder/6
  { //cerr<<"startIndex="<<*startIndex<< "but 0 is used"<<endl;
    dummy=0;*startIndex=dummy;
-   makeMFFL( PValueBorder,startIndex,score);JJ++;
+   makeMFFL( PValueBorder,startIndex,score,criterium);JJ++;
    //REMOVED FOR SPEED printModelInMatlab(int2str(JJ));
  }
  else if (dummy>=parameter.reset) //these values are only guesses
@@ -1422,7 +1498,7 @@ int dummy= *startIndex;
 	 //daher 30 für 100
  {  dummy=max(0,dummy-parameter.jump_back);*startIndex=dummy; //better 500 (?)
      //    cerr<<"StartIndex= "<<*startIndex<<" is used"<<endl;
-    makeMFFL( PValueBorder,startIndex,score);JJ++;
+    makeMFFL( PValueBorder,startIndex,score,criterium);JJ++;
 //REMOVED FOR SPEED    printModelInMatlab(int2str(JJ));
  } 
 //REMOVED FOR SPEED  scoreTest();//more scoreTests
@@ -1439,7 +1515,7 @@ int dummy= *startIndex;
  *  *this is forwardModel
  *
  */
-bool  Model::makeForwardStepLogistic(int JJ, double* bestMSC, int PValueBorder,int *startIndex)
+bool  Model::makeForwardStepLogistic(int JJ, double* bestMSC, int PValueBorder,int *startIndex, int criterium)
 { bool improvment=false;
   printLOG("pValue ordered--------------------------------------");  //DEBUG
 int dummy= *startIndex;
@@ -1447,14 +1523,14 @@ int dummy= *startIndex;
  if( dummy< parameter.reset) //500 
  { printLOG("startIndex="+int2str(*startIndex)+ "but 0 is used");
    dummy=0;*startIndex=dummy;
-   makeMFFL( PValueBorder,startIndex);JJ++;
+   makeMFFL( PValueBorder,startIndex, criterium);JJ++;
   //DEBUG  printModelInMatlab(int2str(JJ));
  }
  else if (dummy>= parameter.reset) //these values are only guesses
 
  {  dummy=max(0,dummy-parameter.jump_back);*startIndex=dummy; //min because nothing prevents to be jump_back to be bigger than reset!
          printLOG("StartIndex= "+int2str(*startIndex)+" is used, with jump_back="+int2str(parameter.jump_back));
-    makeMFFL( PValueBorder,startIndex);JJ++;
+    makeMFFL( PValueBorder,startIndex,criterium);JJ++;
 //REMOVED FOR SPEED    printModelInMatlab(int2str(JJ));
  } 
 //REMOVED FOR SPEED 
@@ -1487,9 +1563,9 @@ makeMultiForwardStep ( PValueBorder,selectionCriterium, startIndex);
  return true;
 }
 //and now with score test 
-bool Model::makeMFFL(int PValueBorder, int* startIndex, vector<int> score)
+bool Model::makeMFFL(int PValueBorder, int* startIndex, vector<int> score, int selectionCriterium)
 {       
-	int selectionCriterium=0;
+//	int selectionCriterium=0;
          //MultipleForward is needed locally!	
    //     bool oldValue= parameter.ms_FastMultipleForwardStep;
         //parameter.ms_FastMultipleForwardStep=true;
@@ -1505,9 +1581,9 @@ cout<<"MFFL startIndex SCORE"<<*startIndex<<"Model Size="<<altSize<<endl;
 
 /**  makeMFFL make Fast Forward local but without changing to fast search*/
 
-bool Model::makeMFFL(int PValueBorder, int* startIndex)
+bool Model::makeMFFL(int PValueBorder, int* startIndex, int selectionCriterium )
 {       
-	int selectionCriterium=0;
+//	int selectionCriterium=0;
          //MultipleForward is needed locally!	
    //     bool oldValue= parameter.ms_FastMultipleForwardStep;
         //parameter.ms_FastMultipleForwardStep=true;
@@ -1539,7 +1615,7 @@ if(NULL==startIndex)
    startIndex=&dummy;
   }
   int returnIndex=*startIndex;
-  printLOG( "Start Multiple-Forward-Step" );
+  printLOG( "Start Multiple-Forward-Step SCORE" );
   if (0==PValueBorder)
   {
    PValueBorder=data_->getSnpNo(); 
@@ -1550,7 +1626,7 @@ if(NULL==startIndex)
 int startSize=getModelSize();
 int newSNP=0;
 
-  cout<<"ModelSize before MultiForwardStep="<<startSize<<endl;
+  cout<<"ModelSize ="<<startSize<<endl;
 
   if(1!=selectionCriterium && 0<startSize)
 		  {cout<<"new usage of Fastforward"<<endl;
@@ -1584,7 +1660,7 @@ int newSNP=0;
       ++i
     ) {
       // progress checking
-      if (0==i%20 )
+      if (0==i%200 )
       {printf ("\rDone %3.5f%%...", i / (data_->getSnpNo()/100.0));
       fflush (stdout);}
 	
@@ -1823,6 +1899,7 @@ int newSNP=0;
         oldBIC = newBIC;
 	if ( ::isinf( oldBIC ) && oldBIC < 0.0 ) {
    		printLOG( "model fully explains observations" );
+		// a miracle has happened
 		break;
 	}
       } else {
@@ -1903,7 +1980,7 @@ int Model::makeBackwardStep ( Model &smallerModel ) {
 * From the models with one SNP more, 
 * the model with the lowest MJC is selected.
 */
-int Model::makeForwardStep ( Model &biggerModel, const int boundSNP ) {
+int Model::makeForwardStep ( Model &biggerModel, const int boundSNP, int criterium ) {
 	double compareMSC =   getMSC(); // DBL_MAX;	// arbitrarily large number
 	Model NMax( *data_ );
 	int addedSNP=-1;
@@ -1930,9 +2007,9 @@ int Model::makeForwardStep ( Model &biggerModel, const int boundSNP ) {
 		
 		// check if Regression works, else try next SNP
 		if ( NTest.computeRegression() ) {
-			if ( NTest.computeMSC(0) < compareMSC ) {
+			if ( NTest.computeMSC(criterium) < compareMSC ) {
 				NMax = NTest;
-				compareMSC= NTest.computeMSC(0);//there was a 2 mBic instead of mBIC2
+				compareMSC= NTest.computeMSC(criterium);//there was a 2 mBic instead of mBIC2
 double compareMSC1= NTest.computeMSC(1);
 double compareMSC2= NTest.computeMSC(2);
 			        cerr<<"makeForwardStep compareMSC="<<	compareMSC<<","<<compareMSC1<<compareMSC1<<compareMSC2<<","<<compareMSC2<<endl;
@@ -1951,9 +2028,8 @@ double compareMSC2= NTest.computeMSC(2);
 
 /** here a saveguarded backward step when 2 consecutive backwardsteps dosent improve the model stop the procedure this will save time by backward of big probems
   */
-bool Model::saveguardbackwardstep(Model &smallerModel)//model3, Model currentModel, Model backwardModel, Model swapHelper)
-{//cerr<<"saveguardbackwardstep"<<endl;
-  printModel("saveguardbackwardstep");
+bool Model::saveguardbackwardstep(Model &smallerModel, int criterium, int how_many_steps)//model3, Model currentModel, Model backwardModel, Model swapHelper)
+{ // printModel("saveguardbackwardstep",criterium);//memory leak here!
 //reset parameter.expected_causal_snps1
 //bool reset=false;
 //int reset_causal_snps_=parameter.expected_causal_snps;
@@ -1964,7 +2040,6 @@ bool Model::saveguardbackwardstep(Model &smallerModel)//model3, Model currentMod
 //else
 //{reset=true;
 //	 parameter.expected_causal_snps=2;
-//	computeMSC();//calulate the new MSC value for the model
 //}
 //init of model
 Model backwardModel(*data_);
@@ -1977,7 +2052,7 @@ Model *swapHelper=this;
 Model currentModel(*data_);
 currentModel=*this;
 double bestMSC=getMSC(); //from
-printLOG(" bestMSC="+double2str(getMSC()));
+printLOG(" bestMSC="+double2str(bestMSC));
 int breakfor=0;
 bool improvment=false;
  // compute steps
@@ -1985,7 +2060,7 @@ bool improvment=false;
  for (int ii=getModelSize();ii>1;ii--)//currentModel to sm
  { //reset
  	
- int	removedSNP = makeBackwardStepED( backwardModel );
+ int	removedSNP = makeBackwardStepED( backwardModel, criterium );
  	*this=backwardModel;//wird ja auch in den Schritten verkleinert
  	//die nichts bringen werden
  double	locMSC=backwardModel.getMSC();
@@ -2009,15 +2084,21 @@ bool improvment=false;
  }
  //else set the counter up and copy the backwardModel to *this
  else
- {breakfor++;
-  if (breakfor>=2)
+ {//what if the criterion is positive?
+	 if (bestMSC>0)
+		; //do nothing this is worse, and should only happen, when you start modelselection again with 
+		 //a stronger criterion
+	 else	 
+	 {breakfor++;
+  if (breakfor>=4) //here one could set any value %the number here was 2
  	{break; }
+	 }
        
  }
  }
 //after the fullbackward
       smallerModel=model3;
- if(improvment)     smallerModel.printModel("best Model after FullBackward"); //print only if improved
+ if(improvment)     smallerModel.printModel("best Model after FullBackward",criterium); //print only if improved
 		       
 //
 //
@@ -2028,7 +2109,7 @@ bool improvment=false;
 * From the models with one SNP less, 
 * the model with the lowest MJC is selected.
 */
-int Model::makeBackwardStepED ( Model &smallerModel ) {
+int Model::makeBackwardStepED ( Model &smallerModel,int criterium ) {
 //       printLOG("BackwardStep ED");
 	double 	compareMSC = DBL_MAX,returnVal=DBL_MAX; // arbitrary large number
 	double   local=0;
@@ -2060,7 +2141,7 @@ int Model::makeBackwardStepED ( Model &smallerModel ) {
 //	  cerr<<"removed SNP="<<i<<endl;	
 		// check if Regression works, else try next SNP
 		if ( NTest.computeRegression() ) {
-                                 local=NTest.computeMSC();
+                                 local=NTest.computeMSC(criterium);
 	//ED DEBUG 	    cerr<<" SNP("<< modelSnps_[i]<<")="<<local<<endl;
 			if (local < compareMSC)
 		{ 
@@ -2535,15 +2616,15 @@ double Model::computeMSC ( const int typeNr, double mjc ) {
 	}
 
 	int n = data_->getIdvNo();
-	int p = data_->getSnpNo();
+	int p = parameter.nSNPKriterium; // data_->getSnpNo(); das ist original
 	//int p = 780675; // p as magic number
 	int q = getModelSize();
 	//double d = -2 * log( parameter.ms_ExpectedCausalSNPs );
-	
+
 	// choose the likelihood part depending if the Data is quantitative or affection
-	double LRT;
+	double LRT,d;
 	if ( parameter.affection_status_phenotype ) {
-		LRT = (-2.0)*( mjc - data_->getLL0M()); // LRT = -2 log (likelihood(0-model)/likelihood(model))
+		LRT = (-2.0)*( mjc - data_->getLL0M()); // LRT = -2 log (likelihood(0-model)/likelihood(model)) the inverse is the right 
 	}
 	else
 	{
@@ -2563,9 +2644,16 @@ double Model::computeMSC ( const int typeNr, double mjc ) {
 		        msc = LRT;
 			return msc;
 		break;
-
+               
+		case 3: /*mBIC*/
+		 // cerr<<"MBIC"<<parameter.expected_causal_snps_MBIC<<";";
+		       d = -2 * log( parameter.expected_causal_snps_MBIC);
+                       msc = LRT + q*(log(n) + 2* log(p) + d );
+                       return msc;
+		       break;
 		default: /*mBIC2*/
-		        double d = -2 * log( parameter.ms_ExpectedCausalSNPs );
+                 // cerr<<"MBIC2:"<<parameter.ms_ExpectedCausalSNPs<<";";
+		        d = -2 * log( parameter.ms_ExpectedCausalSNPs );
 		//	cout<<"q"<<q<<"p="<<p<<"d="<<d<<"LRT="<<LRT<<endl;
 
 		        msc = LRT + q*(log(n) + 2* log(p) + d ) - 2*(log_factorial(q));	
@@ -2748,9 +2836,7 @@ double Model::computeMSCfalseRegression(const int typeNr, vector<snp_index_t> &r
 {
   if (computeRegression() == false)
   {
-    //cout << "try computeMSC for model: " << *this << "modelel size: " << modelSnps_.size() << endl;
     removedSnps.push_back(modelSnps_[modelSnps_.size() - 1]);
-    //cout << "remove snp: " << modelSnps_.size() - 1 << endl;;
     if (removeSNPfromModel(modelSnps_.size() - 1) == false)
       cout << "removeSNPfromModel failed!" << endl;
     //cout << "try computeMSC for model (-1): " << *this << endl;
@@ -2779,113 +2865,51 @@ double Model::computeMSCfalseRegression(const int typeNr, vector<snp_index_t> &r
     return computeMSC(typeNr);
   }
 }
-bool Model::selectModel(Model &startFromModel,int  PValueBorder,int maxModel)
+//diese sollen jetzt auch noch das Kriterium manipulieren können manipulieren können
+bool Model::selectModel(Model &startFromModel,int  PValueBorder,int maxModel,int type)
 {
 printLOG("SCORE SCORE SELECT MODEL");
 if(getModelSize()>parameter.maximalModelSize)
 	return false; //nothing will be done, when ModelSize is >49
-cerr<<"S1"<<endl;
+
 	double best= getMSC();
+	//if best is bigger than 0
+	//than a smaller model is better or at least the 0 model which is empty
 	 Model 	*backwardModel;
 	 backwardModel=this;
 //ORIGINAL value is now default   int PValueBorder =100,
 	int *startIndex;
  	int dummy=0;
-	    startIndex=&dummy;
-	    PValueBorder =2000; //override to high PValueBorders !!!
+	startIndex=&dummy;
+	PValueBorder =min(PValueBorder,400); //override to high PValueBorders !!!
  	double bestMSC=getMSC(); //this one is the best up to now!
 
  ScoreTestShortcut stsc( *data_);
  	int size=data_->getSnpNo(),JJ=0;
-	bool improvment=true,improvment2=true, stop=false;
+	bool improvment=true,improvment2=true,improvment3=true, stop=false;
 	SortVec score(size);
  this->computeRegression();//for SCORE maybe not calculated?
         stsc.ScoreTestShortcut::scoreTests ( *this, score );
  vector<int> Score(size);
         for(int i=0;i<=size-getNoOfVariables();i++)
  		Score[i]= score.getId(i);	
-cerr<<"S2"<<endl;
-	while (improvment&&!(getModelSize()>min(parameter.maximalModelSize,maxModel))) //||improvment
- {cerr<<getModelSize()<<endl;
-   while(improvment=makeForwardStepLogistic(JJ, &bestMSC,  PValueBorder, startIndex,Score))
+
+//	while (improvment&&!(getModelSize()>min(parameter.maximalModelSize,maxModel))) //||improvment
+ //{
+   while(improvment=makeForwardStepLogistic(JJ, &bestMSC,  PValueBorder, startIndex,Score,type)||improvment2||improvment3 )
    { if(getModelSize()>min(parameter.maximalModelSize,maxModel)) break;
 	   startFromModel=*this; //see //startFromModel is the inputvariable
-	   	 if (getModelSize()>min(parameter.maximalModelSize,maxModel))
-		 break;
 	  //replaceModelSNPbyNearFromSCORE(*startIndex , PValueBorder,Score);
-          replaceModelSNPSCORE();
-   improvment2=saveguardbackwardstep( startFromModel );
+        improvment2=  replaceModelSNPSCORE(type);
+   improvment3=saveguardbackwardstep( startFromModel,type );
    *this=startFromModel;//if improvment2
    }
 
- } 
-  stop=finalizeModelSelection( *backwardModel, JJ,  improvment||improvment2,  PValueBorder,  startIndex,Score);
+ //} 
+  stop=finalizeModelSelection( *backwardModel, JJ,  improvment||improvment2,  PValueBorder,  startIndex,Score,type);
   if( getMSC()<best)
 	 return true;
   else 
 	 return false; 
  
 }
-
-void Model::checkallSNPS ()
-{       cerr<<"WARNUNG NUR EIN SPEZIALFALL FUNKTIONIERT MIT DIESER FUNKTION"<<endl;
-	Model model0(*data_);
-	model0=*this;
-	int nSNPs=	data_->getSnpNo();
-	vector<int> snps( nSNPs );//SCORE
-        vector<double> scores( nSNPs);//SCORE
-
-        snp_index_t orderedSnpIndex =50505;// data_-> getOrderedSNP( 0 );
-//snps[0]=orderedSnpIndex;
-model0.addSNPtoModel(orderedSnpIndex);
-model0.addSNPtoModel(53580);
-//Erich maybe score need a Regression ??,
-if (  model0.computeRegression() ) 
-          model0.computeMSC(0);
-	ScoreTestShortcut stsc( *data_);//SCORE
-
-	SortVec score(nSNPs);//SCORE
-stsc.ScoreTestShortcut::scoreTests ( model0, score );//SCORE
-	 vector<int> Score(nSNPs);//SCORE
-        for(int i=0;i<=nSNPs-model0.getNoOfVariables();i++)//SCORE/
- 		Score[i]= score.getId(i);//SCORE
-	int sModel=model0.getModelSize()-1;
-orderedSnpIndex = data_-> getOrderedSNP( 1 );
-model0.addSNPtoModel(orderedSnpIndex);
-sModel=model0.getModelSize()-1;
-//dies soll die Auswirkung der Richtigen SNPS auf position 1 des Model
-//relativ zum an und für sich gewählten den data_-> getOrderedSNP( 0)
-//sichtbar machen
-snps[0]=orderedSnpIndex;
- // check if regression works properly, else try next SNP
-         if (  model0.computeRegression() ) 
-            scores[0] = model0.computeMSC(0);
-
-for (int i=2;i<1000/*nSNPs*/;i++)
-{
-	orderedSnpIndex = data_-> getOrderedSNP( i );
-	snps[i-1]=orderedSnpIndex;
-	model0.replaceSNPinModel(orderedSnpIndex,sModel);
-    if (  model0.computeRegression() ) 
-            scores[i-1] = model0.computeMSC(0);
-//cerr<<snps[i]<<" "<<scores[i]<<endl;
-}
-//SortVec(sModel,&snps[0],&scores[0],false);
- ofstream Y;
-cerr<< parameter.out_file_name + "1Models"<<endl;
-	Y.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
-	try {Y.open( ( parameter.out_file_name + "1Models" ).c_str(), fstream::out );}
-		catch  ( ofstream::failure e/*xception*/ ){
-		cerr <<"Could not  write 1 Model file file " << (parameter.out_file_name + "1Models"  ).c_str()<< endl; }
- 
-			for(int i=0;i<2000/*nSNPs*/;i++)
-			{//cerr<<i;
-			Y<<snps[i]<<"\t"<<scores[i]<<"\t"<<Score[i]<<endl;
-			}
-	
-
- try{Y.close();}
-    catch ( ofstream::failure e/*xception*/ ) {
-		cerr << "Could not close 1 Model file file  " << (parameter.out_file_name + "1Models"  ).c_str()<< endl;}
-		}
-
