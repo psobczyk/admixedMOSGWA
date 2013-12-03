@@ -1,6 +1,6 @@
 Prerequisites:
 
-To build MOSGWA, use:
+To build MOSGWA, your compile environment should provide:
 • git
 • CMake
 • make
@@ -10,6 +10,9 @@ MOSGWA relies on the following of external libraries.
 • BLAS (building MOSGWA has been tested with ATLAS and OpenBLAS or with CBLAS)
 • Gnu Scientific Library (GSL)
 • HDF5
+• gomp
+• zlib
+• pthread
 • unit++ (optional for testing)
 Install these together with their developer packages (…-dev).
 
