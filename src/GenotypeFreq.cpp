@@ -157,6 +157,7 @@ double GenotypeFreq::calculateCATT () const {
 			( SumDenS - SSumDen2 )
 		);
 	if ( Zx != Zx ) {	// checks if NaN is returned in case of 0/0; TODO<BB> check this idiom
+		                // look at: http://stackoverflow.com/questions/570669/checking-if-a-double-or-float-is-nan-in-c
 		return 1.0;
 	}
 
