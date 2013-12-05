@@ -41,7 +41,7 @@ public:
 	*/
 	std::string in_file_hdf5;
 
-	/** position of trait in .yvm file */
+	/** position of trait in .fam plus .yvm file, starting in .fam with 0, continuing to .yvm */
 	int in_values_int;
 
 	/** true = use extra file for covariables */

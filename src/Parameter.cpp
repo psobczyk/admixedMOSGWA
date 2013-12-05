@@ -36,7 +36,7 @@ Parameter::Parameter () {
 	declare( "input", "case_value",case_value); //the case are normally 1
         declare("input", "models_file",models_file);
 	// input data settings
-	declare( "data", "trait_position_in_yvm", in_values_int );
+	declare( "data", "trait_index", in_values_int );
 	{
 		map< const string, int > choice;
 		choice[ "recessive" ] = 1;
