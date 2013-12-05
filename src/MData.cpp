@@ -85,7 +85,7 @@ MData::MData ( io::Input *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
 	for ( size_t idv = 0; idv < idvs; ++idv ) {
 		idvList.push_back( idvArray[ idv ] );
 	}
-	input->retrievePhenotypeVector( Parameter::in_values_int, yVec );
+	input->retrievePhenotypeVector( parameter.in_values_int, yVec );
 	const std::string * covariates = input->getCovariates();
 	for ( size_t cov = 0; cov < covs; ++cov ) {
 		covNames.push_back( covariates[ cov ] );
