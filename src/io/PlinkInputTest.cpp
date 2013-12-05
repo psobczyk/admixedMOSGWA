@@ -16,6 +16,7 @@
 #include "PlinkInput.hpp"
 #include "../TestSuite.hpp"
 #include "../Exception.hpp"
+#include "../linalg/AutoVector.hpp"
 #include <unistd.h>	// for rmdir(char[])
 #include <cstdlib>	// for mkdtemp(char[])
 #include <cstring>
@@ -42,22 +43,30 @@ namespace test {
 			* const snpListFileExtension,
 			* const individualListFileExtension,
 			* const genotypeMatrixFileExtension,
-			* const covariateMatrixFileExtension;
+			* const covariateMatrixFileExtension,
+			* const phenotypeMatrixFileExtension;
 
 		/** Prepare test setup.
 		* @param snpMajour determines whether SNP majour mode should be used. Else Individual majour mode.
 		* @returns name of the test directory.
 		*/
-		string setUp ( const bool snpMajour, const bool withCovariates );
+		string setUp ( const bool snpMajour, const bool withCovariates, const bool withExtraPhenotypes );
 
 		/** Remove test setup. */
-		void tearDown ( const string& testDirname, const bool withCovariates );
+		void tearDown (
+			const string& testDirname,
+			const bool withCovariates,
+			const bool withExtraPhenotypes
+		 );
 
 		/** Test {@link io::Input} interface methods. */
 		void testRead ();
 
 		/** Test {@link io::InputCo} interface extension methods. */
 		void testCovariates ();
+
+		/** Test {@link io::InputCo} interface extension methods. */
+		void testExtraPhenotypes ();
 
 		/** Test {@link io::InputCo} interface extension methods error reporting for unknown individuals. */
 		void testUnknownIndividuals ();
@@ -81,17 +90,23 @@ namespace test {
 		* const PlinkInputTest::snpListFileExtension = "bim",
 		* const PlinkInputTest::individualListFileExtension = "fam",
 		* const PlinkInputTest::genotypeMatrixFileExtension = "bed",
-		* const PlinkInputTest::covariateMatrixFileExtension = "cov";
+		* const PlinkInputTest::covariateMatrixFileExtension = "cov",
+		* const PlinkInputTest::phenotypeMatrixFileExtension = "yvm";
 
 	PlinkInputTest::PlinkInputTest () : TestSuite( "PlinkInputTest" ) {
 		addTestMethod( "PlinkInputTest::testRead", this, &PlinkInputTest::testRead );
 		addTestMethod( "PlinkInputTest::testCovariates", this, &PlinkInputTest::testCovariates );
+		addTestMethod( "PlinkInputTest::testExtraPhenotypes", this, &PlinkInputTest::testExtraPhenotypes );
 		addTestMethod( "PlinkInputTest::testUnknownIndividuals", this, &PlinkInputTest::testUnknownIndividuals );
 		addTestMethod( "PlinkInputTest::testDuplicateIndividuals", this, &PlinkInputTest::testDuplicateIndividuals );
 		addTestMethod( "PlinkInputTest::testIncompleteCovariates", this, &PlinkInputTest::testIncompleteCovariates );
 	}
 
-	string PlinkInputTest::setUp ( const bool snpMajour, const bool withCovariates ) {
+	string PlinkInputTest::setUp (
+		const bool snpMajour,
+		const bool withCovariates,
+		const bool withExtraPhenotypes
+	) {
 		vector<char> tmpDirname( strlen( tmpDirnameTemplate ) + 1 );	// +1 for trailing 0
 		strcpy( tmpDirname.data(), tmpDirnameTemplate );
 		assert_true( "Create test directory failed", NULL != mkdtemp( tmpDirname.data() ) );
@@ -160,22 +175,39 @@ namespace test {
 		if ( withCovariates ) {
 			const string covFilename( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension );
 			ofstream covStream( covFilename.c_str() );
-			covStream << "FID IID\tAge Salary" << endl;		// space+tab mix
+			covStream << "FID IID\tAge Salary" << endl;	// space+tab mix
 			covStream << "Skala Esra 1.5e-1 -1.3" << endl;	// space instead tab
 			covStream << "Grün\tGeorg\t10\t2e7" << endl;
 			// Flo missing
 			covStream.close();
 		}
 
+		if ( withExtraPhenotypes ) {
+			const string yvmFilename( testDirname + "/" + filenameTrunc + "." + phenotypeMatrixFileExtension );
+			ofstream yvmStream( yvmFilename.c_str() );
+			yvmStream << "FID\tIID third_nosehole\tbaldness" << endl;	// space+tab mix
+			yvmStream << "Skala Esra - -1.3e-2" << endl;	// space instead tab
+			yvmStream << "Fohliks\tFlo - -\t" << endl;	// two missing
+			// Georg missing
+			yvmStream.close();
+		}
+
 		return testDirname;
 	}
 
-	void PlinkInputTest::tearDown ( const string& testDirname, const bool withCovariates ) {
+	void PlinkInputTest::tearDown (
+		const string& testDirname,
+		const bool withCovariates,
+		const bool withExtraPhenotypes
+	) {
 		assert_eq( "Remove test SNP file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + snpListFileExtension ).c_str() ) );
 		assert_eq( "Remove test Individual file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + individualListFileExtension ).c_str() ) );
 		assert_eq( "Remove test genome file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + genotypeMatrixFileExtension ).c_str() ) );
 		if ( withCovariates ) {
 			assert_eq( "Remove test covariate file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension ).c_str() ) );
+		}
+		if ( withExtraPhenotypes ) {
+			assert_eq( "Remove test extra phenotype file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + phenotypeMatrixFileExtension ).c_str() ) );
 		}
 		assert_eq( "Remove test directory failed", 0, rmdir( testDirname.c_str() ) );
 	}
@@ -183,7 +215,7 @@ namespace test {
 	void PlinkInputTest::testRead () {
 		// Test both arrangements for PLink genotype data.
 		for ( int snpMajour = 0; snpMajour < 2; ++snpMajour ) {
-			const string testDirname( setUp( 0 < snpMajour, false ) );
+			const string testDirname( setUp( 0 < snpMajour, false, false ) );
 			const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
 			const char * const tft = testFilenameTrunc.c_str();
 			PlinkInput plinkInput( tft );
@@ -274,7 +306,7 @@ namespace test {
 			}
 
 			{
-				plinkInput.retrievePhenotypeVector( vector );
+				plinkInput.retrievePhenotypeVector( 0, vector );
 				assert_eq( "phenotypeVector[0]", -0.1, vector.get( 0 ) );
 				assert_eq( "phenotypeVector[1]", 200.0, vector.get( 1 ) );
 				assert_eq( "phenotypeVector[2]", 7.0, vector.get( 2 ) );
@@ -282,12 +314,12 @@ namespace test {
 
 			assert_eq( "No covariates", 0, plinkInput.countCovariates() );
 
-			tearDown( testDirname, false );
+			tearDown( testDirname, false, false );
 		}
 	}
 
 	void PlinkInputTest::testCovariates () {
-		const string testDirname( setUp( false, true ) );
+		const string testDirname( setUp( false, true, false ) );
 		const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
 		const char * const tft = testFilenameTrunc.c_str();
 		PlinkInput plinkInput( tft );
@@ -315,11 +347,51 @@ namespace test {
 			assert_eq( "covariateMatrixNontransposed[2,1]", -1.3, vector.get( 2 ) );
 		}
 
-		tearDown( testDirname, true );
+		tearDown( testDirname, true, false );
+	}
+
+	void PlinkInputTest::testExtraPhenotypes () {
+		const string testDirname( setUp( false, false, true ) );
+		const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
+		const char * const tft = testFilenameTrunc.c_str();
+		PlinkInput plinkInput( tft );
+		assert_eq( "One normal and two extra phenotypes", 3, plinkInput.countTraits() );
+		AutoVector vector( plinkInput.countIndividuals() );
+
+		{
+			const string * trait = plinkInput.getTraits();
+
+			assert_eq( "trait[0].name from FAM file", string( "" ), trait[0] );
+			assert_eq( "trait[1].name", string( "third_nosehole" ), trait[1] );
+			assert_eq( "trait[2].name", string( "baldness" ), trait[2] );
+		}
+
+		{
+			plinkInput.retrievePhenotypeVector( 0, vector );
+			assert_eq( "phenotypeVector[0][0]", -0.1, vector.get( 0 ) );
+			assert_eq( "phenotypeVector[0][1]", 200.0, vector.get( 1 ) );
+			assert_eq( "phenotypeVector[0][2]", 7.0, vector.get( 2 ) );
+		}
+
+		{
+			plinkInput.retrievePhenotypeVector( 1, vector );
+			assert_true( "phenotypeVector[1][0] NaN", ::isnan( vector.get( 0 ) ) );
+			assert_true( "phenotypeVector[1][1] NaN", ::isnan( vector.get( 1 ) ) );
+			assert_true( "phenotypeVector[1][2] NaN", ::isnan( vector.get( 2 ) ) );
+		}
+
+		{
+			plinkInput.retrievePhenotypeVector( 2, vector );
+			assert_true( "phenotypeVector[2][0] NaN", ::isnan( vector.get( 0 ) ) );
+			assert_true( "phenotypeVector[2][1] NaN", ::isnan( vector.get( 1 ) ) );
+			assert_eq( "phenotypeVector[2][2]", -0.013, vector.get( 2 ) );
+		}
+
+		tearDown( testDirname, false, true );
 	}
 
 	void PlinkInputTest::testUnknownIndividuals () {
-		const string testDirname( setUp( false, true ) );
+		const string testDirname( setUp( false, true, true ) );
 		const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
 		const string covFilename( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension );
 		ofstream covStream( covFilename.c_str(), ios::app );
@@ -333,11 +405,11 @@ namespace test {
 		} catch ( Exception e ) {
 		}
 
-		tearDown( testDirname, true );
+		tearDown( testDirname, true, true );
 	}
 
 	void PlinkInputTest::testDuplicateIndividuals () {
-		const string testDirname( setUp( false, true ) );
+		const string testDirname( setUp( false, true, true ) );
 		const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
 		const string covFilename( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension );
 		ofstream covStream( covFilename.c_str(), ios::app );
@@ -351,11 +423,11 @@ namespace test {
 		} catch ( Exception e ) {
 		}
 
-		tearDown( testDirname, true );
+		tearDown( testDirname, true, true );
 	}
 
 	void PlinkInputTest::testIncompleteCovariates () {
-		const string testDirname( setUp( false, true ) );
+		const string testDirname( setUp( false, true, false ) );
 		const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
 		const string covFilename( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension );
 		ofstream covStream( covFilename.c_str(), ios::app );
@@ -369,7 +441,7 @@ namespace test {
 		} catch ( Exception e ) {
 		}
 
-		tearDown( testDirname, true );
+		tearDown( testDirname, true, false );
 	}
 
 }

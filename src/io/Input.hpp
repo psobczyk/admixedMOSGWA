@@ -37,9 +37,6 @@ namespace io {
 		*/
 		virtual const Individual* getIndividuals () const = 0;
 
-		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
-		virtual void retrievePhenotypeVector ( linalg::Vector& v ) = 0;
-
 		/** Return the number of SNPs in the data. */
 		virtual size_t countSnps () const = 0;
 
@@ -63,6 +60,18 @@ namespace io {
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
 		virtual void retrieveCovariateVector ( const size_t covIndex, linalg::Vector& v ) = 0;
+
+		/** Return the number of traits i.e. phenotype vectors in the data. */
+		virtual size_t countTraits () const = 0;
+
+		/** Retrieve the names of the traits.
+		* The pointer returned points into the <code>Input</code> object
+		* and must not be used after the lifetime of <code>this</code>.
+		*/
+		virtual const std::string* getTraits () const = 0;
+
+		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
+		virtual void retrievePhenotypeVector ( const size_t traitIndex, linalg::Vector& v ) = 0;
 
 		/** Declare access to be finished, release all resources. */
 		virtual ~Input ();

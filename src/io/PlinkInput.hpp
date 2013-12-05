@@ -17,8 +17,8 @@
 #define IO_PLINKINPUT_HPP
 
 #include "InputAdapter.hpp"
-#include "../linalg/AutoVector.hpp"
 #include "../linalg/AutoMatrix.hpp"
+#include <map>
 
 namespace io {
 
@@ -30,7 +30,8 @@ namespace io {
 			* const snpListExtension,
 			* const individualListExtension,
 			* const genotypeMatrixExtension,
-			* const covariateMatrixExtension;
+			* const covariateMatrixExtension,
+			* const phenotypeMatrixExtension;
 
 		/** Translation table from two genome bits to the number for the regression matrix entry. */
 		static const double genotypeTranslation[];
@@ -43,14 +44,23 @@ namespace io {
 		*/
 		linalg::AutoMatrix genotypeMatrixTransposed;
 
-		/** Phenotype data vector. */
-		linalg::AutoVector phenotypeVector;
+		/** Phenotype data vectors for all traits. */
+		linalg::AutoMatrix phenotypeMatrixTransposed;
 
 		/** Covariate matrix.
 		* Similar to {@link #genomeMatrixTransposed},
 		* it is stored as transposed matrix in order to optimise memory access.
 		*/
 		linalg::AutoMatrix covariateMatrixTransposed;
+
+		/** Reads covariate and additional phenotype (yvm) files. */
+		void readExtraFile (
+			const char * const topic,
+			const std::string& filename,
+			const std::map<const std::string,size_t>& idvIndex,
+			std::vector<std::string>& names,
+			linalg::AutoMatrix& matrixTransposed
+		);
 
 		public:
 
@@ -61,7 +71,7 @@ namespace io {
 		virtual void retrieveGenotypeVector ( const size_t snpIndex, linalg::Vector& vector );
 
 		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
-		virtual void retrievePhenotypeVector ( linalg::Vector& vector );
+		virtual void retrievePhenotypeVector ( const size_t traitIndex, linalg::Vector& vector );
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
 		virtual void retrieveCovariateVector ( const size_t covIndex, linalg::Vector& vector );

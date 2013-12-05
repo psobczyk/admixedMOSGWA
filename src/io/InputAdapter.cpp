@@ -24,12 +24,14 @@ namespace io {
 	InputAdapter::InputAdapter (
 		const vector<Individual>& individuals,
 		const vector<SNP>& snps,
-		const vector<string>& covariates
+		const vector<string>& covariates,
+		const vector<string>& traits
 	)
 	:
 	individuals( individuals ),
 	snps( snps ),
-	covariates( covariates )
+	covariates( covariates ),
+	traits( traits )
 	{}
 
 	size_t InputAdapter::countIndividuals () const {
@@ -54,6 +56,14 @@ namespace io {
 
 	const string * InputAdapter::getCovariates () const {
 		return covariates.data();
+	}
+
+	size_t InputAdapter::countTraits () const {
+		return traits.size();
+	}
+
+	const string * InputAdapter::getTraits () const {
+		return traits.data();
 	}
 
 	InputAdapter::~InputAdapter () {}

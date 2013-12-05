@@ -35,8 +35,11 @@ namespace io {
 		/** Holds SNP information. */
 		std::vector<SNP> snps;
 
-		/** Holds SNP information. */
+		/** Holds covariate information. */
 		std::vector<std::string> covariates;
+
+		/** Holds trait information. */
+		std::vector<std::string> traits;
 
 		/** Construct without descriptor information.
 		* That information must be added later using the protected fields.
@@ -49,26 +52,33 @@ namespace io {
 		InputAdapter (
 			const std::vector<Individual>& individuals,
 			const std::vector<SNP>& snps,
-			const std::vector<std::string>& covariates
+			const std::vector<std::string>& covariates,
+			const std::vector<std::string>& traits
 		);
 
 		/** Return the number of individuals in the data. */
 		virtual size_t countIndividuals () const;
 
-		/** Retrieve the data for the given individual. */
+		/** Retrieve the descriptions of all individuals. */
 		virtual const Individual * getIndividuals () const;
 
 		/** Return the number of SNPs in the data. */
 		virtual size_t countSnps () const;
 
-		/** Retrieve the data for the given SNP. */
+		/** Retrieve the descriptions of all SNPs. */
 		virtual const SNP * getSnps () const;
 
 		/** Return the number of covariate vectors in the data. */
 		virtual size_t countCovariates () const;
 
-		/** Get the name of the given covariate. */
+		/** Retrieve the names of all covariates. */
 		virtual const std::string * getCovariates () const;
+
+		/** Return the number of traits,  i.e. phenotype vectors in the data. */
+		virtual size_t countTraits () const;
+
+		/** Retrieve the names of all traits. */
+		virtual const std::string * getTraits () const;
 
 		/** Declare access to be finished, release all allocated resources. */
 		virtual ~InputAdapter ();
