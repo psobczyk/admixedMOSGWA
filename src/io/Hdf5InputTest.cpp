@@ -284,7 +284,7 @@ namespace test {
 			}
 
 			{
-				hdf5Input.retrievePhenotypeVector( vector );
+				hdf5Input.retrievePhenotypeVector( 0, vector );
 				// Mind that in the test data, phenotype has been stored from a float array.
 				assert_eq( "phenotypeVector[0]", -0.0f, vector.get( 0 ) );
 				assert_true( "phenotypeVector[1] is NaN", ::isnan( vector.get( 1 ) ) );

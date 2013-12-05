@@ -184,7 +184,8 @@ namespace io {
 		v.fill( array.data() );
 	}
 
-	void Hdf5Input::retrievePhenotypeVector ( Vector& v ) {
+	void Hdf5Input::retrievePhenotypeVector ( const size_t traitIndex, Vector& v ) {
+		assert( 0 == traitIndex );	// others not yet implemented
 		const size_t dims = phenotypes.countDimensions();	// equals rows
 		assert( dims == v.countDimensions() );
 		vector<double> array( dims );

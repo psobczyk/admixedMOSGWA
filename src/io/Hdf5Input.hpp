@@ -48,14 +48,14 @@ namespace io {
 		*/
 		Hdf5Input ( const char * const filename, const bool useCovariates = false );
 
-		/** Copy the {@link countIndividuals} sized vector of phenotype information into the given vector. */
-		virtual void retrievePhenotypeVector ( linalg::Vector& v );
-
 		/** Copy the {@link countIndividuals} sized vector of genotype information for the given SNP into the given vector. */
 		virtual void retrieveGenotypeVector ( const size_t snpIndex, linalg::Vector& v );
 
 		/** Copy the {@link countIndividuals} sized vector of covariate information for the given covariate into the given vector. */
 		virtual void retrieveCovariateVector ( const size_t covIndex, linalg::Vector& v );
+
+		/** Copy a {@link countIndividuals} sized vector of phenotype information into the given vector. */
+		virtual void retrievePhenotypeVector ( const size_t traitIndex, linalg::Vector& v );
 
 		/** Declare access to be finished, release all resources. */
 		virtual ~Hdf5Input ();
