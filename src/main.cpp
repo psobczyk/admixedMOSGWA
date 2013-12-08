@@ -46,7 +46,19 @@ int main ( const int argc, const char *argv[] ) {
 	data.calculateIndividualTests();
 
 	// complete model selection process
-	data.selectModel();
+	//OLD data.selectModel();
+
+	Model model0( data );
+	Model firstmodel(data);
+	model0.computeRegression();
+	data.setLL0M( model0.getMJC() );
+        Model *modelin=&model0;
+        modelin->printModel("we are before select model",3);//3 is mBIC
+        data.selectModel(modelin,parameter.PValueBorder,parameter.expected_causal_snps1,35,3);//5. parameter takes 3 
+
+        modelin->printModel("erstes Endergebnis");
+        data.selectModel(modelin,5000,parameter.ms_ExpectedCausalSNPs);//3 parameter
+
 
 	try {
 		printLOG("End");
