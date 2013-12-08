@@ -43,7 +43,7 @@
 using namespace std;
 using namespace linalg;
 using namespace lookup;
-bool DEBUG=false,DEBUG2=false;
+bool DEBUG=false,DEBUG2=false,DEBUG3=false;
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //  class Model
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -2057,7 +2057,9 @@ int breakfor=0;
 bool improvment=false;
  // compute steps
  // improvment=false;
- for (int ii=getModelSize();ii>1;ii--)//currentModel to sm
+ for (int ii=getModelSize();ii>0;ii--)//0 has MSC 0 but this is for me easier
+	 //than to implement the 0 case
+	 //with an explicit 0 model
  { //reset
  	
  int	removedSNP = makeBackwardStepED( backwardModel, criterium );
@@ -2086,11 +2088,11 @@ bool improvment=false;
  else
  {//what if the criterion is positive?
 	 if (bestMSC>0)
-		; //do nothing this is worse, and should only happen, when you start modelselection again with 
+		; //do nothing this could happen when you change from mBIC with 45 to mBIC2/, and should only happen, when you start modelselection again with 
 		 //a stronger criterion
 	 else	 
 	 {breakfor++;
-  if (breakfor>=4) //here one could set any value %the number here was 2
+  if (breakfor>=parameter.saveguardsteps) //here one could set any value %the number here was 2
  	{break; }
 	 }
        
@@ -2348,7 +2350,7 @@ Model intermediateModel(*data_);
 	if (55<getModelSize ())
 		fenster=1;
 	const size_t
-		size=data_->getSnpNo(),
+		size=data_->getSnpNo()-1,//otherwise 1 to big 
 		start = modelSnps_[position] > fenster ? modelSnps_[position] - fenster : 0u,
 		stop = min( modelSnps_[position] + fenster, size ),
 		nscore = stsc.scoreTests( intermediateModel, score, start, stop );
@@ -2604,19 +2606,26 @@ double Model::computeSingleLogRegressorTest ( const snp_index_t snp ) {
 }
 
 double Model::computeMSC ( const int typeNr  ) {
-if(DEBUG)	cerr<<"MSC variant="<< typeNr<<endl;
+if(DEBUG3)	cerr<<"MSC variant="<< typeNr<<endl;
 	return computeMSC( typeNr, getMJC() );
 }
 
 double Model::computeMSC ( const int typeNr, double mjc ) {
-//	cout<<"typeNr"<<typeNr<<endl;
+	if(DEBUG) cout<<"typeNr"<<typeNr<<endl;
 	if ( !upToDateBetas_ ) // check if betas_ and therefor also MJC is up-to-date, otherwise update
 	{
 		computeRegression();
 	}
 
 	int n = data_->getIdvNo();
-	int p = parameter.nSNPKriterium; // data_->getSnpNo(); das ist original
+	int p=0; //should be bigger
+//now in MData in line 65 after PlinkInput call
+//	if ( parameter.nSNPKriterium>0) 
+//
+	 p = parameter.nSNPKriterium; // data_->getSnpNo(); das ist original
+//	else
+//		 p =data_->getSnpNo();
+	
 	//int p = 780675; // p as magic number
 	int q = getModelSize();
 	//double d = -2 * log( parameter.ms_ExpectedCausalSNPs );
@@ -2631,7 +2640,7 @@ double Model::computeMSC ( const int typeNr, double mjc ) {
 		LRT = n*log( mjc ) ;  // n * log(RSS)
 	}
 	
-
+if(DEBUG) cerr<<"LRT="<<LRT<<endl;
 	// compute the modelselection criterion
 	switch (typeNr)
 	{
@@ -2646,17 +2655,21 @@ double Model::computeMSC ( const int typeNr, double mjc ) {
 		break;
                
 		case 3: /*mBIC*/
-		 // cerr<<"MBIC"<<parameter.expected_causal_snps_MBIC<<";";
+if(DEBUG3)		  cerr<<"MBIC "<<parameter.expected_causal_snps_MBIC<<";"<<endl;
+if(DEBUG3)		  cerr<<"n="<<n<<"p="<<p<<"d="<<d<<"q="<<q<<"LRT="<<LRT<<endl<<"mjc"<<mjc<<endl;
 		       d = -2 * log( parameter.expected_causal_snps_MBIC);
                        msc = LRT + q*(log(n) + 2* log(p) + d );
+if(DEBUG3)             cerr<<"MSC"<<msc<<endl;		       
                        return msc;
 		       break;
 		default: /*mBIC2*/
-                 // cerr<<"MBIC2:"<<parameter.ms_ExpectedCausalSNPs<<";";
+ if(DEBUG3)                 cerr<<"MBIC2:"<<parameter.ms_ExpectedCausalSNPs<<";";
 		        d = -2 * log( parameter.ms_ExpectedCausalSNPs );
-		//	cout<<"q"<<q<<"p="<<p<<"d="<<d<<"LRT="<<LRT<<endl;
+if(DEBUG3)		cout<<"q"<<q<<"p="<<p<<"d="<<d<<"LRT="<<LRT<<endl;
 
 		        msc = LRT + q*(log(n) + 2* log(p) + d ) - 2*(log_factorial(q));	
+if(DEBUG3)		cout<<"q"<<q<<"p="<<p<<"d="<<d<<"LRT="<<LRT<<endl<<"MSC="<<msc<<endl;
+
 			return  msc;
 		break;
 	}	
