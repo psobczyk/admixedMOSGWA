@@ -72,6 +72,9 @@ MData::MData ( io::Input *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
 		snps = input->countSnps(),
 		idvs = input->countIndividuals(),
 		covs = input->countCovariates();
+	        //ED setting default Value for nSNPKriterium when not set 
+	        if(0==parameter.nSNPKriterium)
+                  parameter.nSNPKriterium=snps;
 	xMat.exactSize( idvs, snps );
 	yVec.exactSize( idvs );
 	covMat.exactSize( idvs, covs );
@@ -193,14 +196,18 @@ void MData::checkYValues()
 		{
 			if ( indPheno == parameter.case_value) // was set 1 check affection status
 			{
+                         //yVec.set(idv,1); //internally a case ist 1
+
 				caseNo_++;
 			}
 			else if ( indPheno == parameter.control_value)  //was set 0
 			{
+			 //yVec.set(idv,0); //internally a control ist 0	
 				contNo_++;
+
 			}
 			else // some other number than 0/1 detected, phenotype must be qua
-			{ //cerr<<"i="<<i<<" indPheno="<<indPheno<<endl;
+			{ cerr<<"i="<<idv<<" indPheno="<<indPheno<<endl;
 				parameter.affection_status_phenotype = false;
 			}
 		}
