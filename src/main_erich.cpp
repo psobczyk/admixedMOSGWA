@@ -542,8 +542,6 @@ if (0==parameter.test)//eigentliche Studien
 	Model model(data);
 	/// calculate single marker test (need for modelselection)
 	data.calculateIndividualTests();
-//	exit(0); //check 
-//	data.printSNPs();vector<string> SNPNames ={ "SNP_A-2110024", "SNP_A-2237238", "SNP_A-4241915", "SNP_A-2047003"};
 
 
 	vector< unsigned int> index;
@@ -559,11 +557,6 @@ data.selectModel(modelin,parameter.PValueBorder,parameter.expected_causal_snps1,
 modelin->printModel("erstes Endergebnis");
 data.selectModel(modelin,5000,parameter.ms_ExpectedCausalSNPs);//3 parameter
 
-//modelin->printModel("zweites Endergebnis");
-//now search again with the weak criteria
-//data.selectModel(modelin,parameter.PValueBorder,parameter.expected_causal_snps1,modelin->getModelSize()+10,3);
-//modelin->printModel("drittes Endergebnis",3);
-//data.selectModel(modelin,5000,parameter.ms_ExpectedCausalSNPs);
  }
 // these lines are from the original main
  try { printLOG("End");
