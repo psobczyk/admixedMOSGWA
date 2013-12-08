@@ -74,10 +74,10 @@ Parameter::Parameter () {
 	declare( "model_selection", "multi_forward_pvalue_max", ms_MaximalPValueForwardStep );
         declare( "model_selection", "forward_step_max",ms_forward_step_max);
 	declare( "model_selection", "fast_multi_forward",  ms_FastMultipleForwardStep );
-        declare( "model_selection","PValueBorder",PValueBorder);
-	declare( "model_selection","reset",reset);
-        declare( "model_selection","jump_back",jump_back);
-
+	declare( "model_selection", "PValueBorder", PValueBorder );
+	declare( "model_selection", "reset", reset );
+	declare( "model_selection", "jump_back", jump_back );
+	declare( "model_selection", "saveguardsteps", saveguardsteps );
 	// log_regression settings
 	declare( "log_regression", "max_it", logrC_maxit );
 	declare( "log_regression", "max_hs", logrC_maxhs );
@@ -175,9 +175,15 @@ singlefile=out_file_name; //this is for simulators which need in every run the g
         if (0==expected_causal_snps1)
         	expected_causal_snps1=4; //MBIC2 as the standart
         if (0==expected_causal_snps_MBIC)
-          expected_causal_snps_MBIC=2; //MBIC2 as the standart
+          expected_causal_snps_MBIC=2; //MBIC 2 as the standart
 	if (0==maximalModelSize)
 		maximalModelSize=35;
+	if (0==nSNPKriterium)
+			//this is ok, because we want in this case the number of SNPs instead
+			//we have to wait until this information is available, this is in MData after the call to PlinkInput an line 65 (or so).
+	if (0==saveguardsteps)
+	   {cerr<<"WARNING: parameter.saveguardsteps used in saveguardbackwarsstep will be set to 2"<<endl;
+	    saveguardsteps=2;}	
 	if(0==control_value)
 	;	//this is ok
         if (0==case_value)

@@ -102,7 +102,7 @@ public:
 	/** Number of Expected SNPs, in the preselection _*/
 	int expected_causal_snps1;
 	int expected_causal_snps_MBIC;
-	int nSNPKriterium;
+	int nSNPKriterium=0;
         int maximalModelSize;
 	/* *the maximal number of SNPs added in the Multi-Forward-Step */
 	int ms_MaximalSNPsMultiForwardStep;
@@ -116,7 +116,7 @@ public:
         int     PValueBorder;
 	int     reset;
 	int	jump_back;
-
+        int     saveguardsteps=2;
 //++++++++++++
 // Parameters for Affection/Case-Control
 
