@@ -54,6 +54,6 @@ void printStartScreen () {
 	cout << "|     |     |   __|   __| | | |  _  |\tModel Selection" << endl;
 	cout << "| | | |  |  |__   |  |  | | | |     |\tfor Genome-wide" << endl;
 	cout << "|_|_|_|_____|_____|_____|_____|__|__|\tAssociations" << endl;
-	cout << "Build time: " << buildinfo::timestamp << endl;
+	//cout << "Build time: " << buildinfo::timestamp << endl;
 	cout << endl;
 }
