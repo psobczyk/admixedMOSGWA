@@ -1,9 +1,28 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
+#include "buildinfo.hpp"
 #include "Parameter.hpp"
 #include "Helpfull.hpp"
 #include "Log.hpp"
 #include "MData.hpp"
 #include "Model.hpp"
 #include "GA.hpp"
+#include <string>
+
+using namespace std;
 
 /** global variable for logfile */
 ofstream LOG;
@@ -24,8 +43,14 @@ int main ( const int argc, const char *argv[] ) {
 	string logFileName( parameter.out_file_name + ".log" );
 
 	try {
-		printLOG( "Start: open log to file \"" + logFileName + "\"" );
 		LOG.open( logFileName.c_str(), fstream::out );
+		printLOG( "Start: open log to file \"" + logFileName + "\"" );
+		printLOG( "Program version: " + string( buildinfo::version ) );
+		printLOG( "Program timestamp: " + string( buildinfo::timestamp ) );
+		printLOG( "Program call arguments:" );
+		for ( int i = 0; i < argc; ++i ) {
+			printLOG( argv[i] );
+		}
 	} catch ( ofstream::failure e ) {
 		cerr << "Could not open logfile \"" + logFileName + "\"" <<endl;
 	}
