@@ -305,7 +305,7 @@ cerr<<endl;
 	const snp_index_t reset = 1 + data_->getCovNo() + position;		//position 0 is the first 
  //cout<<"reset="<<reset<<endl;
  upToDateXMat_= false;
- modelSnps_[reset-1]= snp;//
+	modelSnps_.at( position ) = snp;
 // cerr<<"reset="<<reset;
 	// add the new column at the end
        // gsl_matrix_set_col(XMat_,position,data_->xMat.columnVector(snp));
