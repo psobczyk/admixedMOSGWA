@@ -193,7 +193,7 @@ namespace io {
 		v.fill( array.data() );
 	}
 
-	void Hdf5Input::retrieveCovariateVector ( const size_t covIndex, linalg::Vector& v ) {
+	void Hdf5Input::retrieveCovariateVector ( const size_t covIndex, Vector& v ) {
 		const size_t
 			rows = covariatesTransposedPtr->countColumns(), // equals rows
 			covs = covariatesTransposedPtr->countRows();	// equals covs
