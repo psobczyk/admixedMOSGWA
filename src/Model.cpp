@@ -293,9 +293,9 @@ if(DEBUG2)
 {
 	cerr<<"XMat_->size1="<< XMat_->size1<<endl
         <<"XMat_->size2="<<XMat_->size2<<endl<<"getNoOfVariables="<<getNoOfVariables()<<endl;
-	for (int j=0;j<100;j++)
+	for (int j=0;j<30;j++)
 {cerr<<"XMat"<<j<<" ";
-	for ( int i = 1 + data_->getCovNo(); i < getNoOfVariables(); ++i ) {
+	for ( int i = 0/*1 + data_->getCovNo()*/; i < getNoOfVariables(); ++i ) {
 	cerr<<gsl_matrix_get(XMat_,j,i)<<" ";
 	}
 cerr<<endl;
@@ -318,7 +318,7 @@ if(DEBUG2)
 {cerr<<"XMat_->size1="<< XMat_->size1<<endl
 <<"XMat_->size2="<<XMat_->size2<<endl<<"getNoOfVariables("<<getNoOfVariables()<<endl;
 
-for (int j=0;j<100;j++)
+for (int j=0;j<30;j++)
 {cerr<<"XMat"<<j<<" ";
 	for ( int i = 1 + data_->getCovNo(); i < getNoOfVariables(); ++i ) {
 	cerr<<gsl_matrix_get(XMat_,j,i)<<" ";
