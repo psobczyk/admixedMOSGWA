@@ -171,15 +171,22 @@ singlefile=out_file_name; //this is for simulators which need in every run the g
 		logrC_gconv=10e-3;  
         if (0==logrC_xconv)
 		logrC_xconv=10e-3;
+//algorithmic standart values	
+        if(0==PValueBorder)
+	        PValueBorder=350;
+        if(0==reset) 
+	        reset=350;
+        if(0==jump_back)
+                jump_back=350;
 
         if (0==expected_causal_snps1)
         	expected_causal_snps1=4; //MBIC2 as the standart
         if (0==expected_causal_snps_MBIC)
-          expected_causal_snps_MBIC=2; //MBIC 2 as the standart
+          expected_causal_snps_MBIC=2; //MBIC 2 as the standart as an normal not the weak criterion
 	if (0==maximalModelSize)
-		maximalModelSize=35;
+		maximalModelSize=35; //maximum model for my computer, the faster the computer the bigger the number, or when you have much time.
 	if (0==nSNPKriterium)
-			//this is ok, because we want in this case the number of SNPs instead
+			//this is ok here, because we want in this case the number of SNPs instead
 			//we have to wait until this information is available, this is in MData after the call to PlinkInput an line 65 (or so).
 	if (0==saveguardsteps)
 	   {cerr<<"WARNING: parameter.saveguardsteps used in saveguardbackwarsstep will be set to 2"<<endl;
