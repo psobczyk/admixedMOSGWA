@@ -13,24 +13,10 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#include "InputAdapter.hpp"
-
-using namespace std;
+#include "DescriptorInput.hpp"
 
 namespace io {
 
-	InputAdapter::InputAdapter () {}
-
-	InputAdapter::InputAdapter (
-		const vector<Individual>& individuals,
-		const vector<SNP>& snps,
-		const vector<string>& covariates,
-		const vector<string>& traits
-	)
-	:
-	IOHelper( individuals, snps, covariates, traits )
-	{}
-
-	InputAdapter::~InputAdapter () {}
+	DescriptorInput::~DescriptorInput () {}
 
 }

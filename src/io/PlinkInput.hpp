@@ -25,17 +25,6 @@ namespace io {
 	/** Reads input data from PLink BIM, FAM and BED formatted files. */
 	class PlinkInput : public InputAdapter {
 
-		/** File extensions for the Plink files for SNPs, Individuals and genome. */
-		static const char
-			* const snpListExtension,
-			* const individualListExtension,
-			* const genotypeMatrixExtension,
-			* const covariateMatrixExtension,
-			* const phenotypeMatrixExtension;
-
-		/** Translation table from two genome bits to the number for the regression matrix entry. */
-		static const double genotypeTranslation[];
-
 		/** Genome data matrix.
 		* It is stored as transposed matrix in order to optimise memory access.
 		* The vectors holding all individuals' data for one SNP should be in a contiguous piece of memory

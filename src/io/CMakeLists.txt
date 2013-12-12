@@ -1,1 +1,28 @@
-add_library( io OBJECT Hdf5Constants.cpp Hdf5Constants.hpp Hdf5Input.cpp Hdf5Input.hpp Hdf5Output.cpp Hdf5Output.hpp InputAdapter.cpp InputAdapter.hpp Input.cpp Input.hpp Output.cpp Output.hpp PlinkInput.cpp PlinkInput.hpp )
+add_library( io OBJECT
+	DescriptorInput.hpp
+	DescriptorInput.cpp
+	Input.hpp
+	DescriptorOutput.hpp
+	DescriptorOutput.cpp
+	Output.hpp
+	IOHelper.hpp
+	IOHelper.cpp
+	InputAdapter.hpp
+	InputAdapter.cpp
+	OutputAdapter.hpp
+	OutputAdapter.cpp
+	RandomInput.hpp
+	RandomInput.cpp
+	PlinkConstants.hpp
+	PlinkConstants.cpp
+	PlinkInput.hpp
+	PlinkInput.cpp
+	PlinkOutput.hpp
+	PlinkOutput.cpp
+	Hdf5Constants.cpp
+	Hdf5Constants.hpp
+	Hdf5Input.hpp
+	Hdf5Input.cpp
+	Hdf5Output.hpp
+	Hdf5Output.cpp
+)

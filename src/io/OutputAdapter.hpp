@@ -13,39 +13,43 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#ifndef IO_INPUTADAPTER_HPP
-#define IO_INPUTADAPTER_HPP
+#ifndef IO_OUTPUTADAPTER_HPP
+#define IO_OUTPUTADAPTER_HPP
 
-#include "Input.hpp"
+#include "Output.hpp"
 #include "IOHelper.hpp"
 
 namespace io {
 
-	/** Provides some shared functionality to implement {@link Input} classes.
-	* Use it if you want to program a new {@link Input} class.
+	/** Provides some shared functionality to implement {@link Output} classes.
+	* Use it if you want to program a new {@link Output} class.
 	*/
-	class InputAdapter : public Input, protected IOHelper {
+	class OutputAdapter : public Output, protected IOHelper {
 
 		protected:
 
 		/** Construct without descriptor information.
 		* That information must be added later using the protected fields.
 		*/
-		InputAdapter ();
+		OutputAdapter ();
 
 		public:
 
-		using IOHelper::countIndividuals;
-		using IOHelper::getIndividuals;
-		using IOHelper::countSnps;
-		using IOHelper::getSnps;
-		using IOHelper::countCovariates;
-		using IOHelper::getCovariates;
-		using IOHelper::countTraits;
-		using IOHelper::getTraits;
+		using IOHelper::setIndividuals;
+		using IOHelper::setSnps;
+		using IOHelper::setCovariates;
+		using IOHelper::setTraits;
+
+		/** Construct with the necessary dimension information. */
+		OutputAdapter (
+			const size_t individuals,
+			const size_t snps,
+			const size_t covariates,
+			const size_t traits
+		);
 
 		/** Construct with the necessary descriptor information. */
-		InputAdapter (
+		OutputAdapter (
 			const std::vector<Individual>& individuals,
 			const std::vector<SNP>& snps,
 			const std::vector<std::string>& covariates,
@@ -53,9 +57,9 @@ namespace io {
 		);
 
 		/** Declare access to be finished, release all allocated resources. */
-		virtual ~InputAdapter ();
+		virtual ~OutputAdapter ();
 	};
 
 }
 
-#endif	/* IO_INPUTADAPTER_HPP */
+#endif	/* IO_OUTPUTADAPTER_HPP */

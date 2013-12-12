@@ -13,24 +13,34 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#include "InputAdapter.hpp"
+#include "OutputAdapter.hpp"
 
 using namespace std;
 
 namespace io {
 
-	InputAdapter::InputAdapter () {}
+	OutputAdapter::OutputAdapter () {}
 
-	InputAdapter::InputAdapter (
+	OutputAdapter::OutputAdapter (
+		const size_t individualCount,
+		const size_t snpCount,
+		const size_t covariateCount,
+		const size_t traitCount
+	)
+	:
+		IOHelper( individualCount, snpCount, covariateCount, traitCount )
+	{}
+
+	OutputAdapter::OutputAdapter (
 		const vector<Individual>& individuals,
 		const vector<SNP>& snps,
 		const vector<string>& covariates,
 		const vector<string>& traits
 	)
 	:
-	IOHelper( individuals, snps, covariates, traits )
+		IOHelper( individuals, snps, covariates, traits )
 	{}
 
-	InputAdapter::~InputAdapter () {}
+	OutputAdapter::~OutputAdapter () {}
 
 }

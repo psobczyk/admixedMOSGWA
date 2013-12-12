@@ -14,8 +14,8 @@
  ********************************************************************************/
 
 #include "PlinkInput.hpp"
+#include "PlinkConstants.hpp"
 #include "../Exception.hpp"
-#include <string>
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
@@ -25,6 +25,7 @@
 
 using namespace std;
 using namespace linalg;
+using namespace io::PlinkConstants;
 
 namespace io {
 
@@ -43,24 +44,6 @@ namespace io {
 		const double value = strtod( text, const_cast<char**>( cursor ) );
 		return value;
 	}
-
-	const char
-		* const PlinkInput::snpListExtension = ".bim",
-		* const PlinkInput::individualListExtension = ".fam",
-		* const PlinkInput::genotypeMatrixExtension = ".bed",
-		* const PlinkInput::covariateMatrixExtension = ".cov",
-		* const PlinkInput::phenotypeMatrixExtension = ".yvm";
-
-	/** Mind http://pngu.mgh.harvard.edu/~purcell/plink/binary.shtml specifies in the long translation example that the bits are swapped.
-	* E.g. 10 is stored with LSB 1! Therefore <code>genotypeTranslation[1]</code> yields <code>NaN</code>, not <code>genotypeTranslation[2]</code>!
-	*/
-	const double PlinkInput::genotypeTranslation[] = {
-		-1.0,	// 00 homocygote
-		::nan( "missing" ),	// 10 missing
-		0.0,	// 01 heterocygote
-		+1.0	// 11 homocygote
-	};
-
 
 	PlinkInput::PlinkInput ( const char* const filenameTrunc )
 		:

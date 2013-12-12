@@ -16,8 +16,7 @@
 #ifndef IO_OUTPUT_HPP
 #define IO_OUTPUT_HPP
 
-#include "../SNP.hpp"
-#include "../Individual.hpp"
+#include "DescriptorOutput.hpp"
 #include "../linalg/Vector.hpp"
 
 namespace io {
@@ -25,34 +24,16 @@ namespace io {
 	/** Interface to store regression data.
 	* @see io::Input
 	*/
-	struct Output {
+	struct Output : public virtual DescriptorOutput {
 
-		/** Store the data for the individuals.
-		* Note: The constructor should set the expected number of individuals.
-		*/
-		virtual void setIndividuals ( const Individual * individuals ) = 0;
-
-		/** Store the <code>individualCount</code> sized vector of phenotype information. */
-		virtual void storePhenotypeVector ( const linalg::Vector& v ) = 0;
-
-		/** Store the data for the SNPs.
-		* Note: The constructor should set the expected number of SNPs.
-		*/
-		virtual void setSnps ( const SNP * snps ) = 0;
-
-		/** Store the <code>individualCount</code> sized vector of genotype information for the given SNP. */
+		/** Store the <code>snpCount</code> sized vector of genotype information for the given SNP. */
 		virtual void storeGenotypeVector ( const size_t snpIndex, const linalg::Vector& v ) = 0;
 
-		/** Set the names of the covariates.
-		* Note: The constructor should set the expected number of covariates.
-		*/
-		virtual void setCovariates ( const std::string * covariates ) = 0;
-
-		/** Copy the <code>individualCount</code> sized vector of covariate information for the given covariate. */
+		/** Copy the <code>covariateCount</code> sized vector of covariate information for the given covariate. */
 		virtual void storeCovariateVector ( const size_t covIndex, const linalg::Vector& v ) = 0;
 
-		/** Declare access to be finished, release all resources. */
-		virtual ~Output ();
+		/** Store the <code>individualCount</code> sized vector of phenotype information for the given trait. */
+		virtual void storePhenotypeVector ( const size_t traitIndex, const linalg::Vector& v ) = 0;
 	};
 
 }
