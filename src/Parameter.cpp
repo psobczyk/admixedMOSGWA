@@ -178,7 +178,8 @@ singlefile=out_file_name; //this is for simulators which need in every run the g
 	        reset=350;
         if(0==jump_back)
                 jump_back=350;
-
+        if (0==ms_ExpectedCausalSNPs)
+		ms_ExpectedCausalSNPs=4;
         if (0==expected_causal_snps1)
         	expected_causal_snps1=4; //MBIC2 as the standart
         if (0==expected_causal_snps_MBIC)
