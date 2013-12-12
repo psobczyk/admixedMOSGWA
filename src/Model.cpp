@@ -140,7 +140,7 @@ string 	Model::getSNPId ( const snp_index_t i ) const {
 }
 
 void Model::sortSNPsAccordingBetas () {
-	vector<size_t> SNP( getNoOfVariables(), 0 );
+  vector<size_t> SNP( getNoOfVariables(), 0 );
   SortVec sbetas(getNoOfVariables());
   vector<double> betas(getNoOfVariables(),0);
  for (int i=0;i<getNoOfVariables();i++) //this assumes that getNoOfVariables	
@@ -295,7 +295,7 @@ if(DEBUG2)
         <<"XMat_->size2="<<XMat_->size2<<endl<<"getNoOfVariables="<<getNoOfVariables()<<endl;
 	for (int j=0;j<30;j++)
 {cerr<<"XMat"<<j<<" ";
-	for ( int i = 0/*1 + data_->getCovNo()*/; i < getNoOfVariables(); ++i ) {
+	for ( int i = 1 + data_->getCovNo(); i < getNoOfVariables(); ++i ) {
 	cerr<<gsl_matrix_get(XMat_,j,i)<<" ";
 	}
 cerr<<endl;
@@ -890,7 +890,7 @@ bool Model::replaceModelSNPbyNearCorrelated(const int typeNr)
 		    model0.computeRegression(); //regression should be calculated!
 		     val= model0.computeMSC(typeNr);
                        //cerr<<"val="<<val<<" "<< zwischen[j]<<","<<zwischen2[k]<<endl;
-	             if(val<1.0001*bestMSC)
+	             if(val<bestMSC-0.00001) //even very small improvments  
 	              { bestMSC=val;			 
 		         printLOG("!!!!!!!!!!!!!!!!!!!Better Model for "+int2str(i)+" whith SNP "+int2str(zwischen[j])+" and SNP "+int2str( zwischen2[k]) +" new MSC"+double2str(bestMSC)+" "+double2str(val));
 	                         model0.printModel("Replaced_inter",typeNr);
@@ -1105,8 +1105,6 @@ bool Model::replaceModelSNPbyNearFromCAT( int currrentPosition, int PValueBorder
 	double bestMSC=getMSC(); //the msc in the current model is the best one up to now
 	Model model0(*data_);
 	const unsigned int ref=data_-> getOrderedSNP( currrentPosition );
-	//cerr<<"ref"<<ref<<endl;
-//	cerr<<"getModelSize(="<<getModelSize()<<endl;
 /*random permutation
  */
 	const size_t N=getModelSize();
@@ -1121,7 +1119,6 @@ bool Model::replaceModelSNPbyNearFromCAT( int currrentPosition, int PValueBorder
 	gsl_rng_env_setup();
  T = gsl_rng_default;
  r = gsl_rng_alloc (T);
-// gsl_permutation_init(a);
 gsl_ran_shuffle (r, a->data, N, sizeof (size_t));//reference to data!!!
 
 //gsl_permutation_fprintf (stdout, a, " %u");
@@ -1144,10 +1141,8 @@ for(int jo=0; jo<getModelSize(); jo++)
                           val= model0.computeMSC(typeNr);
                     //  printLOG("ModelSNP="+ int2str(j) + "POS="+ int2str(data_-> getOrderedSNP(i))+"val=" +double2str(val));
 
-                  if(bestMSC>0?val<0.9999*bestMSC:val<1.0002*bestMSC)
+                  if(val<bestMSC-0.0001)
 		       	//saveguard against rouning errors in logistic regression
-		       //2 versions for < and > 0 
-			// REMARK<BB>: To me something like ( val < bestMSC - 0.001 ) would make more sense.
                       { double  alt =bestMSC;
 			 bestMSC=val;
 			 printLOG("!!!!!!!!!!!!!!!!!!!Better Model at position " + int2str(j) +" SNP= "
@@ -1193,10 +1188,9 @@ bool Model::replaceModelSNPbyNearFromSCORE( int currrentPosition, int PValueBord
 					&&
 					data_->getOrderedSNP(SCORE[i])!=(int)modelSnps_.at(j))
 					//alle die im Fenster sind werden 
-			{// cerr<<endl<<(data_-> getOrderedSNP(i))<<",";
+			{
 				model0=*this;
-//				cerr<<data_-> getOrderedSNP(SCORE[i])<<endl;
-//					cerr<<SCORE[i]<<endl;
+				
 			  model0.replaceSNPinModel (data_-> getOrderedSNP(SCORE[i]) ,  j ); //counting from 0
        	                  double val=DBL_MAX;
                           model0.computeRegression(); //regression should be calculated!
@@ -1227,24 +1221,18 @@ bool Model::replaceModelSNPSCORE(int criterium ) //vector<int> SCORE,const int t
  const int grace=5000;
  const int nSNP=data_->getSnpNo();
  double bestMSC=getMSC(); //the msc in the current model is the best one up to now
- //cerr<<"bestMSC="<<bestMSC<<endl;
  Model model0(*data_);
  SortVec score(200); //Warning 50+50+1 that should be variable
  	for(int j=getModelSize()-1; j >=0; j--)
 	{//replace
-//		  cerr<<modelSnps_[j]<<endl;
 	int nscores=	scoreTestWithOneSNPless(j, score);
-//	cerr<<"num_of_scores="<<nscores<<endl;
-
 		for(snp_index_t i=0;i<nscores;++i) 
 		{       model0=*this;
-//       		cerr<<"SNP="<<score.getId(i);
                         model0.replaceSNPinModel (score.getId(i) ,  j );
 
 	                double val=DBL_MAX;
                           model0.computeRegression(); //regression should be calculated!
                           val= model0.computeMSC(criterium);  //should be mBIC2
-       //                 cerr<<" mBIC="<<val<<endl;
                 
 			if(bestMSC>0?val<0.9999*bestMSC:val<1.0002*bestMSC)
 	                      { double  alt =bestMSC;
@@ -1812,7 +1800,6 @@ int newSNP=0;
       // check if regression works properly, else try next SNP
          if (  NewModel.computeRegression() ) {
             newBIC = NewModel.computeMSC(selectionCriterium);
-        
          // check if SNP is added to the Model
           if ( newBIC < oldBIC ) {
 		  printLOG("improvement of new model is :" +double2str((oldBIC-newBIC)/oldBIC));
