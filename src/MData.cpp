@@ -95,6 +95,7 @@ MData::MData ( io::Input *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
 		Vector covVec = covMat.columnVector( cov );
 		input->retrieveCovariateVector( cov, covVec );
 	}
+	Y_name_ = input->getTraits()[parameter.in_values_int];
 	if ( allocateInput ) {
 		delete input;
 		input = NULL;
