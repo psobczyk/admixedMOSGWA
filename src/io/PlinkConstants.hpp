@@ -30,7 +30,7 @@ namespace io {
 			* const phenotypeMatrixExtension;
 
 		/** Translation table from two genome bits to the number for the regression matrix entry. */
-		extern const double genotypeTranslation[];
+		extern const double genotypeTranslation[4];
 
 		/** Binary genotype file magic numbers. */
 		extern const char bedFileMagic[3];

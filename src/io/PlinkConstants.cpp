@@ -28,7 +28,7 @@ namespace io {
 	/** Mind http://pngu.mgh.harvard.edu/~purcell/plink/binary.shtml specifies in the long translation example that the bits are swapped.
 	* E.g. 10 is stored with LSB 1! Therefore <code>genotypeTranslation[1]</code> yields <code>NaN</code>, not <code>genotypeTranslation[2]</code>!
 	*/
-	const double PlinkConstants::genotypeTranslation[] = {
+	const double PlinkConstants::genotypeTranslation[4] = {
 		-1.0,	// 00 homocygote
 		::nan( "missing" ),	// 10 missing
 		0.0,	// 01 heterocygote

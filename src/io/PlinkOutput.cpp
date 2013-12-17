@@ -27,7 +27,7 @@ using namespace io::PlinkConstants;
 namespace io {
 
 	const char PlinkOutput::fillBytes[] = {
-		0, 0x2, 0xa, 0x2a, 0xaa
+		0, 0x1, 0x5, 0x15, 0x55
 	};
 
 	PlinkOutput::PlinkOutput (
@@ -98,15 +98,16 @@ namespace io {
 		for ( size_t idv = 0; idv < idvCount; ++idv ) {
 			const double x = v.get( idv );
 			unsigned int pattern;
-			if ( -1.0 == x ) {
-				pattern = 0x0;
-			} else if ( 0.0 == x ) {
-				pattern = 0x1;
-			} else if ( 1.0 == x ) {
-				pattern = 0x3;
-			} else if ( ::isnan( x ) ) {
-				pattern = 0x2;
-			} else {
+			for (
+				pattern = 0;
+				pattern < sizeof( genotypeTranslation ) / sizeof( genotypeTranslation[0] );
+				++pattern
+			) {
+				if ( genotypeTranslation[pattern] == x ) {
+					break;
+				}
+			}
+			if ( sizeof( genotypeTranslation ) / sizeof( genotypeTranslation[0] ) <= pattern ) {
 				throw Exception(
 					"Cannot convert genotype for individual %u and SNP %u"
 					" value of %f to BED file."
