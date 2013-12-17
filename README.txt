@@ -68,7 +68,7 @@ The [output] section specifies where log- and other output files will be written
 
 files = "random_out"
 
-This string will be used as prefix for the destinations.
+This string will be used as prefix for the output filenames.
 
 For fine-tuning model selection, the section [model_selection] contains options
 
@@ -85,3 +85,12 @@ maximalModelSize	integer		limits the search to models of size up to the given; s
 PValueBorder		integer		only so many SNPs are considered in multi-forward steps, ranked by p-value
 forward_step_max	integer		bounds the numer of SNPs in the forward step from the empty model
 fast_multi_forward	integer		bounds the numer of SNPs in the forward step from nonempty models
+
+Upon successful run, you will find (assuming output filename prefix "random_out") files with the names
+
+random_out_IT.txt			results from individual SNP tests
+random_outYvecout			states the phenotype vector used
+random_out.mod				describes the chosen model
+random_out.log				log file from the search
+random_out_0the_result_Corr.txt		information about SNPs which are highly correlated to those in the model
+random_out0the_resultCorr.h5		similar, but in HDF5 format
