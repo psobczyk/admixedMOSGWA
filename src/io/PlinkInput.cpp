@@ -255,12 +255,12 @@ namespace io {
 			ifstream bed( genFilename.c_str(), ifstream::binary );
 			char byte;
 			// check PLink magic number
-			bed.read( &byte, 1 );
+			bed.read( &byte, sizeof( byte ) );
 			assert( 0x6c == byte );		// prevent non-PLink or out-of-date PLink
-			bed.read( &byte, 1 );
+			bed.read( &byte, sizeof( byte ) );
 			assert( 0x1b == byte );		// prevent non-PLink or out-of-date PLink
 			// read SNP<->Individual transpose flag
-			bed.read( &byte, 1 );
+			bed.read( &byte, sizeof( byte ) );
 			assert( 0 == byte || 1 == byte );
 			// Loop, if flag==1 by SNP, Individual; else by Individual, SNP.
 			const size_t
@@ -280,7 +280,7 @@ namespace io {
 				int nextBit = 8;	// position of the next bit to be processed; read next byte if >= 8
 				for ( innerLoopVariable = 0; innerLoopVariable < innerLoopLimit; ++innerLoopVariable ) {
 					if ( 8 <= nextBit ) {
-						bed.read( &byte, 1 );
+						bed.read( &byte, sizeof( byte ) );
 						if ( bed.eof() ) {
 							assert( snps == snp + 1 && idvs == idv + 1 );
 						}
@@ -294,7 +294,7 @@ namespace io {
 				}
 				assert( 0 == ( byte & 0xff ) >> nextBit );		// Expect null bits trailer, if any
 			}
-			bed.read( &byte, 1 );
+			bed.read( &byte, sizeof( byte ) );
 			assert( bed.eof() );
 			bed.close();
 		}
