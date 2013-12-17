@@ -24,7 +24,7 @@ namespace io {
 	class RandomInput : public InputAdapter {
 
 		/** Prefix plus index. */
-		static std::string prefixedString ( const char * prefix, const size_t i );
+		static std::string prefixedString ( const char prefix, const size_t i, const size_t upperBound );
 
 		/** Generate a random vector of integers. */
 		void retrieveVector (

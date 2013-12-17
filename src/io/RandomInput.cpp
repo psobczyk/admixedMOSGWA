@@ -15,18 +15,33 @@
 
 #include "RandomInput.hpp"
 #include <cstdlib>
-#include <sstream>
+#include <cstdio>
 #include <cassert>
+#include <vector>
 
 using namespace std;
 using namespace linalg;
 
 namespace io {
 
-	string RandomInput::prefixedString ( const char * prefix, const size_t i ) {
-		stringstream s;
-		s << prefix << i;
-		return s.str();
+	string RandomInput::prefixedString ( const char prefix, const size_t i, const size_t upperBound ) {
+		assert( i < upperBound );
+		// determine maximum label length for memory allocation
+		size_t length = 0;
+		for (
+			size_t digits = upperBound - 1;		// -1 gives maximum for i
+			0 < digits;
+			++length
+		) {
+			digits /= 10;
+		}
+		if ( 0 >= length ) {
+			length = 1;	// 0 is printed as "0", not "".
+		}
+		vector<char> label( length+2 );		// +2 for prefix and \0
+
+		snprintf( label.data(), label.size(), "%c%0*u", prefix, length, i );
+		return string( label.data() );
 	}
 
 	RandomInput::RandomInput (
@@ -37,18 +52,18 @@ namespace io {
 	)
 	{
 		const char
-			*idvPrefix = "I",
-			*famPrefix = "F",
-			*snpPrefix = "S",
-			*covPrefix = "C",
-			*traitPrefix = "T";
+			idvPrefix = 'I',
+			famPrefix = 'F',
+			snpPrefix = 'S',
+			covPrefix = 'C',
+			traitPrefix = 'T';
 
 		// Generate individuals
 		individuals.reserve( individualCount );
 		for ( size_t idvIndex = 0; idvIndex < individualCount; ++idvIndex ) {
 			const Individual individual(
-				prefixedString( famPrefix, idvIndex ),
-				prefixedString( idvPrefix, idvIndex ),
+				prefixedString( famPrefix, idvIndex, individualCount ),
+				prefixedString( idvPrefix, idvIndex, individualCount ),
 				"Dad",
 				"Mom",
 				Individual::MISSING
@@ -61,7 +76,7 @@ namespace io {
 		for ( size_t snpIndex = 0; snpIndex < snpCount; ++snpIndex ) {
 			const SNP snp(
 				"1",
-				prefixedString( snpPrefix, snpIndex ),
+				prefixedString( snpPrefix, snpIndex, snpCount ),
 				snpIndex,
 				snpIndex,
 				'A',
@@ -74,7 +89,7 @@ namespace io {
 		covariates.reserve( covariateCount );
 		for ( size_t covIndex = 0; covIndex < covariateCount; ++covIndex ) {
 			const string covariate(
-				prefixedString( covPrefix, covIndex )
+				prefixedString( covPrefix, covIndex, covariateCount )
 			);
 			covariates.push_back( covariate );
 		}
@@ -83,7 +98,7 @@ namespace io {
 		traits.reserve( traitCount );
 		for ( size_t traitIndex = 0; traitIndex < traitCount; ++traitIndex ) {
 			const string trait(
-				prefixedString( traitPrefix, traitIndex )
+				prefixedString( traitPrefix, traitIndex, traitCount )
 			);
 			traits.push_back( trait );
 		}
