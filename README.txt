@@ -6,6 +6,7 @@ It is planned to make it compile on other operating systems.
 In the top directory, you see:
 README.txt	This overview information
 INSTALL.txt	Build instructions
+CHANGES.txt	Change log
 COPYING.txt	GNU General Public License, which applies to this software
 CMakeLists.txt	Top level configuration file for build with the cmake tool
 src		Contains the C++ source and header files and a suitable makefile
