@@ -56,7 +56,7 @@ random.cov	if existing	contains additional covariates if there are any
 random.yvm	if existing	contains phenotypes for additional traits if there are any
 
 Concerning the file formats see:
-http://pngu.mgh.harvard.edu/~purcell/plink/index.shtml
+http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml#bed
 
 The [data] section
 
