@@ -27,7 +27,6 @@ set( core_libraries
 	main.cpp
 	Pool.cpp
 	Pool.hpp
-	GA.cpp
 	GA.hpp
 	buildinfo.cpp
 	buildinfo.hpp
