@@ -26,29 +26,30 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
 
-
-
-using namespace std;
-
+#include <bitset> 
 
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // helpful functions
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+const int bitsSize = 2000000;      // AG: maximal number of SNPs
+typedef std::bitset<bitsSize> TBitset;  // AG: for an initial population of GA
+
+
 /** computes */
 int populationVector ( const int VecPos, const int Individum );
 
 /** convert string to integer */
-int str2int (const string &str);
+int str2int ( const std::string &str );
 
 /** convert integer to string */
-string int2str ( const int n );
+std::string int2str ( const int n );
 
 /** convert double to string */
-string double2str ( const double x );
+std::string double2str ( const double x );
 
 /** convert integer to a formated string (of a given width with filling in the character fillwith) */
-string int2strPadWith ( const int n, const int width, const char fillwith );
+std::string int2strPadWith ( const int n, const int width, const char fillwith );
 
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // mathematical functions
