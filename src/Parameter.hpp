@@ -52,7 +52,7 @@ public:
 	* and then every line a SNP name but nothing else, check 
 	* for errors!!
 	*/
-        string models_file;	
+        std::string models_file;	
 //+++++++++++++
 // Parameters describing the Data
 
@@ -137,13 +137,15 @@ public:
 // Genetic algorithm
   int modelsNo;
   int maxNoProgressIter;
+  int B;
   double pCross;
   double pMutation;
   int tournamentSize;
   double correlationThreshold;
   int correlationRange;
+  std::string causalModelFilename; // a file name where a causal model is written. Only in case of simulations
   
-	
+
 // TEST 
 	int test;
 	bool binary;

@@ -32,9 +32,9 @@ Parameter::Parameter () {
 	declare( "input", "hdf5_file", in_file_hdf5 );
 	declare( "input", "use_extra_yvalues", y_value_extra_file );
 	declare( "input", "use_extra_covariables", cov_extra_file );
-	declare( "input", "control_value",control_value); //the control are normally 0
-	declare( "input", "case_value",case_value); //the case are normally 1
-        declare("input", "models_file",models_file);
+	declare( "input", "control_value", control_value); //the control are normally 0
+	declare( "input", "case_value", case_value); //the case are normally 1
+	declare( "input", "models_file", models_file);
 	// input data settings
 	declare( "data", "trait_index", in_values_int );
 	{
@@ -47,7 +47,7 @@ Parameter::Parameter () {
 
 	// output file settings
 	declare( "output", "files", out_file_name );
-	declare( "output", "singlefile",singlefile);//for creating the Hlasso genotyp file only once
+	declare( "output", "singlefile", singlefile);//for creating the Hlasso genotyp file only once
 
 
 	// log settings
@@ -55,9 +55,9 @@ Parameter::Parameter () {
 	declare( "log", "detailed", detailed_selction );
 
 	// imputation settings
-	declare( "imputation", "data_is_imputated",  imp_is_imputated );
+	declare( "imputation", "data_is_imputated", imp_is_imputated );
 	declare( "imputation", "consider_n_neighbours", imp_Neighbours_No );
-	declare( "imputation", "consider_n_close_snps",	 imp_Best_SNPs_No );
+	declare( "imputation", "consider_n_close_snps", imp_Best_SNPs_No );
 
 	// single marker test settings
 	declare( "single_marker", "chi_square", cc_SingleMarkerTest_ChiSq );
@@ -65,15 +65,15 @@ Parameter::Parameter () {
 
 	// model selection settings
 	declare( "model_selection", "expected_causal_snps", ms_ExpectedCausalSNPs );
-	declare( "model_selection", "expected_causal_snps1",expected_causal_snps1 );
+	declare( "model_selection", "expected_causal_snps1", expected_causal_snps1 );
 	declare( "model_selection", "expected_causal_snps_MBIC", expected_causal_snps_MBIC );
 	declare( "model_selection", "nSNPKriterium", nSNPKriterium);
 
 	declare( "model_selection", "maximalModelSize",maximalModelSize );
 	declare( "model_selection", "multi_forward_step_max", ms_MaximalSNPsMultiForwardStep );
 	declare( "model_selection", "multi_forward_pvalue_max", ms_MaximalPValueForwardStep );
-        declare( "model_selection", "forward_step_max",ms_forward_step_max);
-	declare( "model_selection", "fast_multi_forward",  ms_FastMultipleForwardStep );
+	declare( "model_selection", "forward_step_max", ms_forward_step_max );
+	declare( "model_selection", "fast_multi_forward", ms_FastMultipleForwardStep );
 	declare( "model_selection", "PValueBorder", PValueBorder );
 	declare( "model_selection", "reset", reset );
 	declare( "model_selection", "jump_back", jump_back );
@@ -89,11 +89,13 @@ Parameter::Parameter () {
 // genetics algorithm settings
   declare( "genetic_algorithm", "modelsNo", modelsNo);
   declare( "genetic_algorithm", "maxNoProgressIter", maxNoProgressIter);
+  declare( "genetic_algorithm", "B", B );
   declare( "genetic_algorithm", "pCross", pCross);
   declare( "genetic_algorithm", "pMutation", pMutation);
   declare( "genetic_algorithm", "tournamentSize", tournamentSize);
   declare( "genetic_algorithm", "correlationThreshold", correlationThreshold);
   declare( "genetic_algorithm", "correlationRange", correlationRange);
+  declare( "genetic_algorithm", "causalModelFilename", causalModelFilename);
   
 //Erichs testcase gearatator  
 declare( "TESTING", "test", test );
