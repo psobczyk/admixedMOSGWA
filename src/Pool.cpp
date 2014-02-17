@@ -18,14 +18,16 @@
 #include <iomanip>
 #include <iostream>
 
-using namespace std;
 
+using namespace std;
 
 
 ostream& operator << ( ostream &out, const PoolItem &p )
 {
   vector <snp_index_t>::const_iterator it = p.snps.begin();
-  out << "[";
+  out << p.char_id << "\t" << p.id << "\t";
+  out << "msc:\t" << setprecision(12) << p.msc << "\tsize\t" << p.getModelSize() << "\th2_M\t" << setprecision(12) << p.heriatability;
+  out << "\t[";
   if (p.snps.size() > 0)
   {
     out << *it;
@@ -33,12 +35,12 @@ ostream& operator << ( ostream &out, const PoolItem &p )
   }  
   for (; it != p.snps.end(); it++)
     out << ", " << *it;
-  return out << "], msc = " << setprecision(10) << p.msc;
+  return out << "]";
 }
 
 //-----------------------------------------------------------------------------------------------
-PoolItem::PoolItem(vector <snp_index_t> &snp_, double msc)
-:msc(msc)
+PoolItem::PoolItem(vector <snp_index_t> &snp_, long double msc, long double h, unsigned int id, char char_id)
+:msc(msc), heriatability(h), id(id), char_id(char_id)
 {
    snps.insert(snps.begin(), snp_.begin(), snp_.end());
    sort(snps.begin(), snps.end());
@@ -46,8 +48,8 @@ PoolItem::PoolItem(vector <snp_index_t> &snp_, double msc)
 
 //-----------------------------------------------------------------------------------------------
 PoolItem::PoolItem(const PoolItem &p)
-:msc(p.msc)
-{
+:msc(p.msc), heriatability(p.heriatability), id(p.id), char_id(p.char_id)
+ {
    snps.insert(snps.begin(), p.snps.begin(), p.snps.end());
 }
 
@@ -59,6 +61,9 @@ PoolItem & PoolItem::operator= (const PoolItem &p)
     snps.clear();
     snps.insert(snps.begin(), p.snps.begin(), p.snps.end());
     msc = p.msc;
+    heriatability = p.heriatability;
+    id = p.id;
+    char_id = p.char_id;
   }
   return *this;
 }
@@ -66,12 +71,7 @@ PoolItem & PoolItem::operator= (const PoolItem &p)
 //-----------------------------------------------------------------------------------------------
 bool PoolItem::operator < (const PoolItem &p) const
 {
-/*  if (snps.size() <= 0)
-  {
-    cerr << "operator <, snp.size <= 0!, Press any key" << endl;
-    exit(-1);
-  }
-  */
+  // the order: first model size, then snps id 
   if (snps.size() == p.snps.size())
   {
     for (unsigned int i = 0; i < snps.size(); i++)
@@ -79,15 +79,10 @@ bool PoolItem::operator < (const PoolItem &p) const
       if (snps[i] != p.snps[i])
         return snps[i] < p.snps[i];
     }
-    if (msc == p.msc)
-      return false;
-    else 
-		{
-     //cout << "!!!!!!!!!!" << endl; char c; cout << *this << endl << p << endl << "wciśnij "; cin >> c;
-     return msc < p.msc;
-		}	
+    return false;
   }
   return snps.size() < p.snps.size();
+  
 }
 //-----------------------------------------------------------------------------------------------
 bool PoolItem::findSns(snp_index_t snp)
