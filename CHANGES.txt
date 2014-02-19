@@ -1,3 +1,13 @@
-Version 1.0.0
+Version 1.0.2
+-------------
+Improved error output for Plink input.
 
+
+Version 1.0.1
+-------------
+Improved default values.
+
+
+Version 1.0.0
+-------------
 This is the first release version.
