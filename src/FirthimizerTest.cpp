@@ -1,6 +1,23 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "Firthimizer.hpp"
+#include "linalg/package.hpp"
 #include "TestSuite.hpp"
 #include <math.h>
+#include <stdio.h>
 
 using namespace std;
 using namespace linalg;
@@ -9,7 +26,7 @@ using namespace unitpp;
 
 namespace test {
 
-	/** Trivial superclass to make protected methods of {@link Firthimizer} public for testing. */
+	/** Trivial subclass to make protected methods of {@link Firthimizer} public for testing. */
 	struct TestFirthimizer : public Firthimizer {
 
 		/** Construct an instance. */
@@ -39,6 +56,12 @@ namespace test {
 		/** Test {@link minimization::Minimizable} interface methods. */
 		void testMinimizable ();
 
+		/** Test {@link Firthimizer::calculateDerivative}.
+		* This is also done in {@link FirthimizerTest::testMinimizable},
+		* but here a large regression matrix with random numbers ist tested.
+		*/
+		void testDerivative ();
+
 		/** Test {@link Firthimizer::calculateLogLikelihood} and {@link Firthimizer::calculateCoefficients}. */
 		void testRegression ();
 
@@ -49,6 +72,7 @@ namespace test {
 
 		FirthimizerTest () : TestSuite( "FirthimizerTest" ) {
 			addTestMethod( "FirthimizerTest::testMinimizable", this, &FirthimizerTest::testMinimizable );
+			addTestMethod( "FirthimizerTest::testDerivative", this, &FirthimizerTest::testDerivative );
 			addTestMethod( "FirthimizerTest::testRegression", this, &FirthimizerTest::testRegression );
 			addTestMethod( "FirthimizerTest::testScoreTest", this, &FirthimizerTest::testScoreTest );
 		}
@@ -228,6 +252,63 @@ namespace test {
 			assert_true( "Numerical after exchange same min", fabs( f0 - f ) < epsilon );
 			assert_true( "Numerical after exchange df[0]", fabs( df0.get( 0 ) - df.get( 1 ) ) < epsilon );
 			assert_true( "Numerical after exchange df[1]", fabs( df0.get( 1 ) - df.get( 0 ) ) < epsilon );
+		}
+	}
+
+	void FirthimizerTest::testDerivative () {
+		const int
+			columns = 100,
+			rows = 1000;
+		const double
+			delta = 0.0001,
+			epsilon = 0.0001;
+		srand48( -2083648846L );		// some seed value to make it reproducible
+		AutoMatrix x( rows, columns );
+		AutoVector
+			y( rows ),
+			beta( columns ),
+			betaDelta( columns ),
+			gradient( columns ),
+			gradientApprox( columns );
+		TestFirthimizer firthimizer( y );
+
+		for ( int row = 0; row < rows; ++row ) {
+			for ( int column = 0; column < columns; ++column ) {
+				x.set( row, column, 0.2 * drand48() );
+			}
+			y.set( row, 0.6 + 0.0 * drand48() );	// eigenartig: kaum Einfluss
+		}
+		for ( int column = 0; column < columns; ++column ) {
+			beta.set( column, 1.0 - 0.01 * column + 0.0 * drand48() );	// eigenartig: kaum Einfluss
+			firthimizer.insertColumn( column, x.columnVector( column ) );
+		}
+
+		firthimizer.calculateDerivative( beta, gradient );
+
+		for ( int column = 0; column < columns; ++column ) {
+			double fMinus, fPlus;
+			betaDelta.copy( beta );
+			betaDelta.set( column, beta.get( column ) - delta );
+			firthimizer.calculateFunction( betaDelta, fMinus );
+			betaDelta.set( column, beta.get( column ) + delta );
+			firthimizer.calculateFunction( betaDelta, fPlus );
+			gradientApprox.set( column, ( fPlus - fMinus ) / ( 2.0 * delta ) );
+		}
+
+		printf( "Gradient:\n" );
+		printVector( gradient );
+		printf( "GradientApprox:\n" );
+		printVector( gradientApprox );
+
+		for ( int column = 0; column < columns; ++column ) {
+			char buffer[255];
+			sprintf( buffer, "Gradient[%u]", column );
+			assert_close(
+				buffer,
+				gradientApprox.get( column ),
+				gradient.get( column ),
+				1e-6 * fabs( gradientApprox.get( column ) )
+			);
 		}
 	}
 
