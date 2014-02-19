@@ -1,3 +1,18 @@
+/********************************************************************************
+ *	This file is part of the MOSGWA program code.				*
+ *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *										*
+ *	This program is free software; you can redistribute it and/or modify	*
+ *	it under the terms of the GNU General Public License as published by	*
+ *	the Free Software Foundation; either version 3 of the License, or	*
+ *	(at your option) any later version.					*
+ *										*
+ *	This program is distributed in the hope that it will be useful,		*
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
+ *	See the GNU General Public License for more details.			*
+ ********************************************************************************/
+
 #include "Firthimizer.hpp"
 #include <assert.h>
 #include <math.h>
@@ -114,7 +129,7 @@ void Firthimizer::setCoefficients ( const Vector& coefficients ) {
 	// copy correlation coefficients
 	coefficientVec.copy( coefficients );
 
-	// prepare to calculate priorVec distribution pi, sqrt(W)X and log-likelihood
+	// prepare to calculate priorVec distribution p, sqrt(W)X and log-likelihood
 	priorVec.gemv( -1.0, xMat, false, coefficientVec, 0.0 );	// -1 due to exp(-Xt) in logistic regression in loop below
 
 	// prepare to calculate swxMat = sqrt(W)X
@@ -125,10 +140,10 @@ void Firthimizer::setCoefficients ( const Vector& coefficients ) {
 
 	// calculation loop
 	for ( size_t i = 0; i < rows; ++i ) {
-		const double pi = 1.0 / ( 1.0 + exp( priorVec.get( i ) ) );
-		priorVec.set( i, pi );	// only now priorVec[i] is the approximate priorVec value
+		const double p = 1.0 / ( 1.0 + exp( priorVec.get( i ) ) );
+		priorVec.set( i, p );	// only now priorVec[i] is the approximate priorVec value
 
-		const double swii = sqrt( pi * ( 1.0 - pi ) );
+		const double swii = sqrt( p * ( 1.0 - p ) );
 		swDiag.set( i, swii );
 
 		const Vector xi = xMat.rowVector( i );
@@ -136,14 +151,14 @@ void Firthimizer::setCoefficients ( const Vector& coefficients ) {
 		swxi.axpy( swii, xi );
 
 		const double yi = yVec.get( i );
-		// possible optimisation would be: calculate log of products of e.g. groups of 10 terms
+		// possible optimisation would be: calculate log of products of e.g. groups of 10 terms, but danger of float under/overflow
 		if ( 0.0 == yi ) {
-			logLikelihood += log( 1.0 - pi );
+			logLikelihood += log( 1.0 - p );
 		} else if ( 1.0 == yi ) {
-			logLikelihood += log( pi );
+			logLikelihood += log( p );
 		} else {
 			// cout << "error: invalid y vector entry " << yi << endl;
-			logLikelihood += yi * log( pi ) + ( 1.0 - yi ) * log( 1.0 - pi );
+			logLikelihood += yi * log( p ) + ( 1.0 - yi ) * log( 1.0 - p );
 		}
 	}
 
