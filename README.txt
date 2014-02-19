@@ -11,6 +11,9 @@ COPYING.txt	GNU General Public License, which applies to this software
 CMakeLists.txt	Top level configuration file for build with the cmake tool
 src		Contains the C++ source and header files and a suitable makefile
 
+Installation:
+Follow the steps described in INSTALL.txt.
+
 Running:
 MOSGWA takes its configuration from files given on the command line.
 You run MOSGWA with the command syntax:
@@ -31,8 +34,8 @@ files = "random_out"
 [single_marker]
 cochran_armitage = true 
 [model_selection]
-nSNPKriterium = 5
-expected_causal_snps_MBIC = 45
+nSNPKriterium = 5000
+expected_causal_snps_MBIC = 25
 fast_multi_forward = false
 
 You see the sections of the file headed by section headings, which are enclosed in square brackets [].
@@ -87,6 +90,8 @@ maximalModelSize	integer		limits the search to models of size up to the given; s
 PValueBorder		integer		only so many SNPs are considered in multi-forward steps, ranked by p-value
 forward_step_max	integer		bounds the numer of SNPs in the forward step from the empty model
 fast_multi_forward	integer		bounds the numer of SNPs in the forward step from nonempty models
+nSNPKriterium		integer		useful for running with a subset of top-ranking SNPs: the original number of SNPs, to be used by mBIC 
+expected_causal_snps_MBIC	integer	indication to the initial search with mBIC (not mBIC2!) how many SNPs to expect. The decisive second run with mBIC2 does not need this parameter.
 
 Upon successful run, you will find (assuming output filename prefix "random_out") files with the names
 
