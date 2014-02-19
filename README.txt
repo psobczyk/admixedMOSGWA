@@ -60,8 +60,8 @@ random.cov	if existing	contains additional covariates if there are any
 random.yvm	if existing	contains phenotypes for additional traits if there are any
 
 Concerning the file formats see:
-• http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml#bed
-• http://pngu.mgh.harvard.edu/~purcell/plink/binary.shtml
+* http://pngu.mgh.harvard.edu/~purcell/plink/data.shtml#bed
+* http://pngu.mgh.harvard.edu/~purcell/plink/binary.shtml
 
 The [data] section
 
@@ -82,7 +82,7 @@ expected_causal_snps_MBIC	lets the first step with the relaxed selection criteri
 Further useful options:
 
 [single_marker]
-chi_square		boolean		whether to use χ²-test in the single marker phase
+chi_square		boolean		whether to use chi square-test in the single marker phase
 cochran_armitage	boolean		whether to use Cochran-Armitage test in the single marker phase
 
 [model_selection]
