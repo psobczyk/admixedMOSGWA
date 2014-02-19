@@ -21,6 +21,8 @@
 #include <cstdlib>
 #include <cassert>
 #include <cmath>	// for nan(...)
+#include <cstring>
+#include <cerrno>
 #include <map>
 
 using namespace std;
@@ -58,6 +60,14 @@ namespace io {
 			string snpFilename( filenameTrunc );
 			snpFilename += snpListExtension;
 			ifstream bim( snpFilename.c_str() );
+			if ( ! bim.good() ) {
+				throw Exception(
+					"SNP file \"%s\""
+					" open failed: \"%s\".",
+					snpFilename.c_str(),
+					strerror( errno )	// not perfectly threadsafe
+				);
+			}
 			while ( !bim.eof() )  {
 				getline( bim, line );
 				if ( bim.eof() ) break;
@@ -150,6 +160,14 @@ namespace io {
 		idvFilename += individualListExtension;
 		{
 			ifstream fam( idvFilename.c_str() );
+			if ( ! fam.good() ) {
+				throw Exception(
+					"Individuals file \"%s\""
+					" open failed: \"%s\".",
+					idvFilename.c_str(),
+					strerror( errno )	// not perfectly threadsafe
+				);
+			}
 			while ( !fam.eof() )  {
 				getline( fam, line );
 				if ( fam.eof() ) break;
@@ -253,6 +271,14 @@ namespace io {
 			string genFilename( filenameTrunc );
 			genFilename += genotypeMatrixExtension;
 			ifstream bed( genFilename.c_str(), ifstream::binary );
+			if ( ! bed.good() ) {
+				throw Exception(
+					"Genotype file \"%s\""
+					" open failed: \"%s\".",
+					genFilename.c_str(),
+					strerror( errno )	// not perfectly threadsafe
+				);
+			}
 			char byte;
 			// check PLink magic number
 			bed.read( &byte, sizeof( byte ) );
