@@ -1348,7 +1348,7 @@ double Model::oraculateOptimalLinearBackwardStep( snp_index_t *snp ) const {
 bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder, int *startIndex, vector<int> score,int criterium)
 {
   if (false==improvment)      
-  { printModel( "no improvment",criterium);
+	{ printModel("no improvement",criterium);
     int dummy=0; *startIndex=dummy;
     if(!parameter.affection_status_phenotype)//quantitative
       { cout<<"not implemented"<<endl;backwardModel=*this;
@@ -1389,7 +1389,7 @@ bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment,
 
 {
   if (false==improvment)      
-  { printModel( "no improvment",criterium);
+  { printModel( "no improvement",criterium);
     int dummy=0; *startIndex=dummy;
     if(!parameter.affection_status_phenotype)//quantitative
       { cout<<"not implemented"<<endl;backwardModel=*this;
@@ -1410,7 +1410,7 @@ bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment,
 	      improvment= saveguardbackwardstep( backwardModel,criterium);
 	      //what when improvement? set return stop =false
 	      if(improvment==true)
-	      {	printLOG("improvment after newstart forward step");
+		{ printLOG("improvement after newstart forward step");
 		return true  ; //if only 1 snp was added and the backward step was succesfull than this is anerror
 		//but if let
 		*this=backwardModel;
