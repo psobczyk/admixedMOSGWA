@@ -1286,7 +1286,6 @@ size_t MData::calculatePValueBorder () const {
 bool MData::selectModel( Model *currentModel, size_t PValueBorder, int ExpectedCausalSNPs /*no effect */, int maxModel, int criterium ) {
 	int JJ=0;
 	printLOG("Model Selection started: ");
-        bool forgetreplaceonce=false;	
 	bool 	stop = false;
 //	int     removedSNP=-1;
 	int *startIndex; //start at the begin 
@@ -1303,7 +1302,7 @@ PValueBorder=min(getSnpNo()-1,PValueBorder);
 	
 	model0.computeRegression();
         model0.printYvec(true);
-	setLL0M( model0.getMJC() );
+	setLL0M( model0.getMJC() );	// REMARK<BB>: functionality seems redundant with that in main.cpp
 	Model model1( *this ), model2( *this );
         //Mod
 	// Using pointers to avoid expensive copying of Model objects
@@ -1311,12 +1310,8 @@ PValueBorder=min(getSnpNo()-1,PValueBorder);
         //	*currentModel,// = &model0, //,original 
 		*forwardModel = &model1,
 		*backwardModel = &model2;
-//	int backup_for_causal_snps=parameter.ms_ExpectedCausalSNPs;
        
-//	forgetreplaceonce=true;
-//	parameter.ms_ExpectedCausalSNPs= ExpectedCausalSNPs;
 //	schreibt es in die Variable für mBIC2 auch wenn man mBIC haben will
-//        cerr<<parameter.ms_ExpectedCausalSNPs<<endl; //this is for mBIC2
 if (currentModel->getModelSize()>0)
 {if (currentModel->computeMSC(criterium)>0.000001)
 	//only here a backwardstep makes sense
@@ -1325,13 +1320,7 @@ if (currentModel->getModelSize()>0)
 
 	currentModel->makeMultiForwardStep(PValueBorder,criterium,startIndex);
 	currentModel->computeRegression();
-       // best=currentModel;
-	// TODO<BB>: Apply a memory scheme to avoid duplicate calculation of Models
-	// which have been calculated in a previous search step.
-	// I.e. need a central registry of calculated Models.
-	// But these with empty caches to sayum remove yum-packagekitve Memory.
-	// Effectively a map from subsets of SNP-indices to MSC values.
-       
+
 	printLOG( "Start stepwise selection" );
 double bestMSC= currentModel->getMSC();
 //currentModel->replaceModelSNPbyNearCorrelated(0);
@@ -1354,7 +1343,6 @@ bool improvment=false;
 		  cerr<<" not linear nor logistic, this should not happen"<<endl;
 	stop = currentModel->finalizeModelSelection( *backwardModel, JJ, improvment, PValueBorder, startIndex, criterium );
 }//while
-cerr<<parameter.ms_ExpectedCausalSNPs<<endl;
 size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs case below.
 	if( parameter.affection_status_phenotype)
       {if (350>getSnpNo()-1) reference=getSnpNo()-1;
@@ -1376,12 +1364,6 @@ size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs 
 currentModel->printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "the_result" );
 
 currentModel->printModel("finalModel",criterium);
-//reset the .ms_ExpectedCausalSNPs
-cerr<<parameter.ms_ExpectedCausalSNPs<<endl;
-
-//if(forgetreplaceonce)
-//	parameter.ms_ExpectedCausalSNPs=backup_for_causal_snps;
-cerr<<parameter.ms_ExpectedCausalSNPs<<endl;
 
 return true ; 
 }
@@ -1430,12 +1412,6 @@ if(parameter.expected_causal_snps1>parameter.ms_ExpectedCausalSNPs)
 //Achtung hier soll wieder alles beim alten sein
 	currentModel->computeRegression();
        // best=currentModel;
-	// TODO<BB>: Apply a memory scheme to avoid duplicate calculation of Models
-	// which have been calculated in a previous search step.
-	// I.e. need a central registry of calculated Models.
-	// But these with empty caches to sayum remove yum-packagekitve Memory.
-	// Effectively a map from subsets of SNP-indices to MSC values.
-  //      currentModel->printModel("");
 	printLOG( "Start stepwise selection " );
         currentModel->computeMSC(0);
         //currentModel->printModel("check1");
