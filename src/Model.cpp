@@ -1447,8 +1447,6 @@ bool  Model::makeForwardStepLinear(Model *forwardModel, int JJ, double* bestMSC,
 int	 addedSNP = makeForwardStep( *forwardModel, PValueBorder, criterium );
 
 	double locMSC=forwardModel->getMSC();
-//	 swapHelper=forwardModel;
-	 //*this =swapHelper; //currentModel in the caller gets the local information of swapHelper ?
 	   if(locMSC<*bestMSC)
 	     {       	
 		improvment=true;
@@ -1459,7 +1457,6 @@ int	 addedSNP = makeForwardStep( *forwardModel, PValueBorder, criterium );
 	     }
 	   else
 	     break;
-	//currentModel=&model3;
         }
  *this =model3; //when something is updated in the loop then we will see it
 return improvment;
@@ -2015,29 +2012,12 @@ double compareMSC2= NTest.computeMSC(2);
 
 /** here a saveguarded backward step when 2 consecutive backwardsteps dosent improve the model stop the procedure this will save time by backward of big probems
   */
-bool Model::saveguardbackwardstep(Model &smallerModel, int criterium, int how_many_steps)//model3, Model currentModel, Model backwardModel, Model swapHelper)
-{ // printModel("saveguardbackwardstep",criterium);//memory leak here!
-//reset parameter.expected_causal_snps1
-//bool reset=false;
-//int reset_causal_snps_=parameter.expected_causal_snps;
-//  if(2==parameter.expected_causal_snps)
-//{//everthing is ok
-//
-//}
-//else
-//{reset=true;
-//	 parameter.expected_causal_snps=2;
-//}
-//init of model
+bool Model::saveguardbackwardstep ( Model &smallerModel, int criterium, int how_many_steps ) {
 Model backwardModel(*data_);
-Model model1(*data_);	
 Model model3(*data_);
 model3=*this;
 
-Model *swapHelper=this;
 //this is for giving back the original model instead of the smallest one
-Model currentModel(*data_);
-currentModel=*this;
 double bestMSC=getMSC(); //from
 printLOG(" bestMSC="+double2str(bestMSC));
 int breakfor=0;
@@ -2053,8 +2033,6 @@ bool improvment=false;
  	*this=backwardModel;//wird ja auch in den Schritten verkleinert
  	//die nichts bringen werden
  double	locMSC=backwardModel.getMSC();
-         swapHelper = &backwardModel;
-        // *this =*swapHelper;
  	printLOG("Modelsize="+int2str(backwardModel.getModelSize())
  	     +" SNP("+ int2str(removedSNP+1) +")=[] "
      	     +"MSC()=" +double2str(locMSC));
@@ -2067,7 +2045,6 @@ bool improvment=false;
  		printLOG("Better Model");
   	model3 = backwardModel;
          *this=model3; 
-        // best =	swapHelper;
 // model3.printModel();
  
  }
