@@ -162,7 +162,7 @@ void Firthimizer::setCoefficients ( const Vector& coefficients ) {
 		}
 	}
 
-	// Write D=swxMat and note that the matrix P=D(D^TD)D^T is an orthogonal projection.
+	// Write D=swxMat and note that the matrix P=D(D^TD)^{-1}D^T is an orthogonal projection.
 	// Using QR decomposition D=QR, where Q=(Q_1,Q_0) meaningfully,
 	// it is an easy exercise to see P=Q_1 Q_1^T, i.e. projects onto range(Q_1)=range(D).
 	// Hence, perform QR-factorisation of swxMat into (tauVec,swxMat).
