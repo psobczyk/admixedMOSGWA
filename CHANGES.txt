@@ -1,3 +1,9 @@
+Version 1.0.3
+-------------
+Some code cleanup.
+In particular the experimental config parameters for "expected causal SNPs" for mBIC2 have been removed.
+
+
 Version 1.0.2
 -------------
 Improved error output for Plink input.
