@@ -97,10 +97,7 @@ public:
 //++++++++++++
 //ModelSelection:
 
-	/** Number of Expected Causal SNPs, used in Model-Selction Criterias */
-	int ms_ExpectedCausalSNPs;
-	/** Number of Expected SNPs, in the preselection _*/
-	int expected_causal_snps1;
+	/** Number of Expected SNPs, in the preselection with mBIC */
 	int expected_causal_snps_MBIC;
 	int nSNPKriterium=0;
         int maximalModelSize;

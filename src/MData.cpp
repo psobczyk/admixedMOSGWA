@@ -1219,12 +1219,6 @@ void MData::calculateIndividualTests()
 	auto_ptr<double> TestStat( new double[ getSnpNo() ] ); // to store information for SortVec snp_order_
 // return allways  1 when asking for omp_get_num_threads()
 	cerr<<"!parameter.affection_status_phenotype="<<!parameter.affection_status_phenotype<<endl;
-	int ont=omp_get_num_threads();
-	//cerr<<"omp_get_num_threads()"<<ont<<endl;
-	//if(0==parameter.affection_status_phenotype)
-	//{cerr<<"reel"<<endl;	omp_set_num_threads(1);}
-	//else
-	//{cerr<<"1"<<endl;   omp_set_num_threads(1);}
 cerr<<"omp_get_num_threads()"<<omp_get_num_threads()<<endl;
 //
 	#pragma omp parallel for
@@ -1283,7 +1277,7 @@ size_t MData::calculatePValueBorder () const {
 	}
 	return PValueBorder;
 }
-bool MData::selectModel( Model *currentModel, size_t PValueBorder, int ExpectedCausalSNPs /*no effect */, int maxModel, int criterium ) {
+bool MData::selectModel ( Model *currentModel, size_t PValueBorder, int maxModel, int criterium ) {
 	int JJ=0;
 	printLOG("Model Selection started: ");
 	bool 	stop = false;
@@ -1403,13 +1397,7 @@ bool MData::selectModel()
 		*currentModel = &model0,
 		*forwardModel = &model1,
 		*backwardModel = &model2;
-int backup_for_causal_snps=parameter.ms_ExpectedCausalSNPs;
-if(parameter.expected_causal_snps1>parameter.ms_ExpectedCausalSNPs)
-parameter.ms_ExpectedCausalSNPs=parameter.expected_causal_snps1;
 	currentModel->makeMultiForwardStep(PValueBorder,1,startIndex);
-if(parameter.expected_causal_snps1>parameter.ms_ExpectedCausalSNPs)
-	parameter.ms_ExpectedCausalSNPs=backup_for_causal_snps;
-//Achtung hier soll wieder alles beim alten sein
 	currentModel->computeRegression();
        // best=currentModel;
 	printLOG( "Start stepwise selection " );
@@ -1454,7 +1442,6 @@ bool improvment=false;
 currentModel->printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "the_result" );
 
 currentModel->printModel("finalModel");
-cerr<<parameter.ms_ExpectedCausalSNPs<<endl;
 
 return true;
 }

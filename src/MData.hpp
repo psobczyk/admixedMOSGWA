@@ -209,7 +209,7 @@ public:
 	*  ExpectedCausalSNPs (this is a variable used with mBIC2
 	*/
 	DEPRECATED( bool selectModel() );
-	bool  selectModel ( Model * inputModel, size_t PValueBorder, int ExpectedCausalSNPs, int maxModel=parameter.maximalModelSize, int criterium=0 );
+	bool selectModel ( Model * inputModel, size_t PValueBorder, int maxModel=parameter.maximalModelSize, int criterium=0 );
 	//+++++++++++++
 	// methods for testing CAUTION using print_____ on big datasets
 	/** TESTING // screen-output of the informations stored for the SNPs */

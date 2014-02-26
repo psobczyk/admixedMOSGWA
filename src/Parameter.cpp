@@ -64,8 +64,6 @@ Parameter::Parameter () {
 	declare( "single_marker", "cochran_armitage", cc_SingleMarkerTest_CATT );
 
 	// model selection settings
-	declare( "model_selection", "expected_causal_snps", ms_ExpectedCausalSNPs );
-	declare( "model_selection", "expected_causal_snps1", expected_causal_snps1 );
 	declare( "model_selection", "expected_causal_snps_MBIC", expected_causal_snps_MBIC );
 	declare( "model_selection", "nSNPKriterium", nSNPKriterium);
 
@@ -180,12 +178,8 @@ singlefile=out_file_name; //this is for simulators which need in every run the g
 	        reset=350;
         if(0==jump_back)
                 jump_back=350;
-        if (0==ms_ExpectedCausalSNPs)
-		ms_ExpectedCausalSNPs=4;
-        if (0==expected_causal_snps1)
-        	expected_causal_snps1=4; //MBIC2 as the standart
         if (0==expected_causal_snps_MBIC)
-          expected_causal_snps_MBIC=2; //MBIC 2 as the standart as an normal not the weak criterion
+		expected_causal_snps_MBIC = 20;
 	if (0==maximalModelSize)
 		maximalModelSize=35; //maximum model for my computer, the faster the computer the bigger the number, or when you have much time.
 	if (0==nSNPKriterium)

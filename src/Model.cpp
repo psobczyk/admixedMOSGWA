@@ -2627,8 +2627,7 @@ if(DEBUG3)             cerr<<"MSC"<<msc<<endl;
                        return msc;
 		       break;
 		default: /*mBIC2*/
- if(DEBUG3)                 cerr<<"MBIC2:"<<parameter.ms_ExpectedCausalSNPs<<";";
-		        d = -2 * log( parameter.ms_ExpectedCausalSNPs );
+			d = -2 * log( 4 );
 if(DEBUG3)		cout<<"q"<<q<<"p="<<p<<"d="<<d<<"LRT="<<LRT<<endl;
 
 		        msc = LRT + q*(log(n) + 2* log(p) + d ) - 2*(log_factorial(q));	
@@ -2827,7 +2826,7 @@ double Model::computeMSCfalseRegression(const int typeNr, vector<snp_index_t> &r
     int n = data_->getIdvNo();
     int p = data_->getSnpNo();
     int q = getModelSize() + 1;   // + 1 for additional corelated snp
-    double d = -2 * log( parameter.ms_ExpectedCausalSNPs );
+	double d = -2 * log( 4 );
     // !!!!!!1
     // czy tak obliczamy tylko dla mBIC2, czy dla wsszystkich?
     // czy d też ma bstyć w tym wzorze?
