@@ -207,14 +207,13 @@ bool replaceModelSNPSCORE(int criterium); //neuer Fall mit conditionalen scorete
 	* @returns the relativ position of the removed SNP, or -1 on error */
 	int makeBackwardStep ( Model &smallerModel );
 	/*special Version of the multiforward step*/
- bool  finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder,int *startIndex,vector<int> score,int criterium=0);
-
-        bool  finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder,int *startIndex ,int criterium=0);
-        bool  makeForwardStepLinear(Model *forwardModel, int JJ, double* bestMSC, int PValueBorder,int *startIndex,int criterium=0);
+	bool finalizeModelSelection ( Model &backwardModel, bool improvment, int PValueBorder, int *startIndex, vector<int> score, int criterium = 0 );
+        bool finalizeModelSelection ( Model &backwardModel, bool improvment, int PValueBorder, int *startIndex ,int criterium = 0 );
+        bool makeForwardStepLinear ( Model *forwardModel, double* bestMSC, int PValueBorder, int *startIndex, int criterium = 0 );
 	/**  makeForwardStepLogistic replaces the code in selectModel*/
-	bool makeForwardStepLogistic(int JJ, double *bestMSC, int PValueBorder,int *startIndex, int criterium=0 );
+	bool makeForwardStepLogistic ( double *bestMSC, int PValueBorder, int *startIndex, int criterium = 0 );
 /**makeForwardStepLogistic score version */
-	bool makeForwardStepLogistic(int, double*, int, int*, vector<int> score, int criterium=0);
+	bool makeForwardStepLogistic ( double *bestMSC, int PValueBorder, int *startIndex, vector<int> score, int criterium = 0 );
 
         bool makeMFFS (int PValueBorder,int *startIndex); //with linear
 	bool makeMFFL (int PValueBorder,int *startIndex,int criterium=0 ); //with logistic

@@ -1278,7 +1278,6 @@ size_t MData::calculatePValueBorder () const {
 	return PValueBorder;
 }
 bool MData::selectModel ( Model *currentModel, size_t PValueBorder, int maxModel, int criterium ) {
-	int JJ=0;
 	printLOG("Model Selection started: ");
 	bool 	stop = false;
 //	int     removedSNP=-1;
@@ -1330,12 +1329,12 @@ bool improvment=false;
         /* linear case normal forward step
          */
           if (!parameter.affection_status_phenotype)//quantitative
-		improvment = currentModel->makeForwardStepLinear( forwardModel, JJ, &bestMSC, PValueBorder, startIndex );
+			improvment = currentModel->makeForwardStepLinear( forwardModel, &bestMSC, PValueBorder, startIndex );
           else if (parameter.affection_status_phenotype)/*PRÄSELECTION nur bis Revision 274*/
-        	improvment = currentModel->makeForwardStepLogistic( JJ, &bestMSC, PValueBorder, startIndex, criterium );	  
+			improvment = currentModel->makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex, criterium );
           else 
 		  cerr<<" not linear nor logistic, this should not happen"<<endl;
-	stop = currentModel->finalizeModelSelection( *backwardModel, JJ, improvment, PValueBorder, startIndex, criterium );
+		stop = currentModel->finalizeModelSelection( *backwardModel, improvment, PValueBorder, startIndex, criterium );
 }//while
 size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs case below.
 	if( parameter.affection_status_phenotype)
@@ -1366,7 +1365,6 @@ return true ;
 //selectModel ohne Argument
 bool MData::selectModel()
 {
-       int JJ=0;
 	printLOG("OLD Model Selection started: ");
 	Model SelectedModel( *this ); 
 	Model Forward( *this );
@@ -1419,12 +1417,11 @@ bool improvment=false;
         /* linear case normal forward step
          */
          if (!parameter.affection_status_phenotype)//quantitative
-	      improvment=currentModel->makeForwardStepLinear( forwardModel,  JJ,  &bestMSC,
-		                                	 PValueBorder, startIndex);
+			improvment = currentModel->makeForwardStepLinear( forwardModel, &bestMSC, PValueBorder, startIndex);
           else if (parameter.affection_status_phenotype)/*PRÄSELECTION nur bis Revision 274*/
-              improvment=currentModel->makeForwardStepLogistic(JJ, &bestMSC,  PValueBorder, startIndex);	  
+			improvment = currentModel->makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex );
           else cerr<<" not linear nor logistic, this should not happen"<<endl;
-	  stop=currentModel->finalizeModelSelection( *backwardModel, JJ,  improvment,  PValueBorder,  startIndex);
+		stop = currentModel->finalizeModelSelection( *backwardModel, improvment, PValueBorder, startIndex );
 	}//while
 	size_t reference = 350;	// REMARK<BB>: Where does 350 come from?
 	if( parameter.affection_status_phenotype)

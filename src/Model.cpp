@@ -1345,8 +1345,7 @@ double Model::oraculateOptimalLinearBackwardStep( snp_index_t *snp ) const {
 /** finalizeModelSelection()
  *   finalization work call some function and quit
  */
-bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder, int *startIndex, vector<int> score,int criterium)
-{
+bool Model::finalizeModelSelection ( Model &backwardModel, bool improvment, int PValueBorder, int *startIndex, vector<int> score, int criterium ) {
   if (false==improvment)      
 	{ printModel("no improvement",criterium);
     int dummy=0; *startIndex=dummy;
@@ -1357,8 +1356,6 @@ bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment,
 		makeMFFL(max(parameter.reset, PValueBorder),startIndex,score,criterium); //sollte
 	}
     //don't set to an explicit value because of memory leaks when the number of variables is very small!
-    JJ++;
-	   //REMOVED FOR SPEED    printModelInMatlab(int2str(JJ)); 
 	   backwardModel=*this;
 	      improvment= saveguardbackwardstep( backwardModel,criterium);
 	      //what when improvement? set return stop =false
@@ -1385,9 +1382,7 @@ else
 }// finalizeModelSelection()
 
 
-bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment, int PValueBorder, int *startIndex, int criterium)
-
-{
+bool Model::finalizeModelSelection ( Model &backwardModel, bool improvment, int PValueBorder, int *startIndex, int criterium ) {
   if (false==improvment)      
   { printModel( "no improvement",criterium);
     int dummy=0; *startIndex=dummy;
@@ -1403,9 +1398,6 @@ bool Model::finalizeModelSelection(Model &backwardModel,int JJ, bool improvment,
 
   //  don't set to an explicit value because of memory leaks when the number 
   // of variables is very small!
-  //  JJ;
- 
-	   //REMOVED FOR SPEED    printModelInMatlab(int2str(JJ)); 
 	   backwardModel=*this;
 	      improvment= saveguardbackwardstep( backwardModel,criterium);
 	      //what when improvement? set return stop =false
@@ -1435,9 +1427,8 @@ else
 }// finalizeModelSelection()
 //makeForwardStepLinear the currentModle ist this
 //
-bool  Model::makeForwardStepLinear(Model *forwardModel, int JJ, double* bestMSC, int PValueBorder,int *startIndex, int criterium)
-{bool improvment=false; //we don't know from an succes up to now.
-	  cerr<<"linear regression______________________";
+bool  Model::makeForwardStepLinear ( Model *forwardModel, double* bestMSC, int PValueBorder, int *startIndex, int criterium ) {
+	bool improvment = false;
 
  Model model3(*data_);
  model3=*this;//when everthing fails this remains as result
@@ -1465,9 +1456,8 @@ return improvment;
  *  *this is forwardModel
  *
  */
-bool  Model::makeForwardStepLogistic(int JJ, double* bestMSC, int PValueBorder,int *startIndex, vector<int> score, int criterium)
-{ bool improvment=false;
- // printLOG("par--------------------------------------");  //DEBUG
+bool  Model::makeForwardStepLogistic ( double* bestMSC, int PValueBorder,int *startIndex, vector<int> score, int criterium ) {
+	bool improvment = false;
 int dummy= *startIndex;
 //cout<<"dummy="<<dummy<<endl;
  if( dummy<parameter.reset)//ERICH wenn man 100 als Grenze nimmt sollte man das hier auch herabsetzen 
@@ -1475,16 +1465,13 @@ int dummy= *startIndex;
 	 // also docg eher PValueBorder/6
  { //cerr<<"startIndex="<<*startIndex<< "but 0 is used"<<endl;
    dummy=0;*startIndex=dummy;
-   makeMFFL( PValueBorder,startIndex,score,criterium);JJ++;
-   //REMOVED FOR SPEED printModelInMatlab(int2str(JJ));
+		makeMFFL( PValueBorder, startIndex, score, criterium );
  }
  else if (dummy>=parameter.reset) //these values are only guesses
 	 //da auch 300 für 3000 
 	 //daher 30 für 100
  {  dummy=max(0,dummy-parameter.jump_back);*startIndex=dummy; //better 500 (?)
-     //    cerr<<"StartIndex= "<<*startIndex<<" is used"<<endl;
-    makeMFFL( PValueBorder,startIndex,score,criterium);JJ++;
-//REMOVED FOR SPEED    printModelInMatlab(int2str(JJ));
+		makeMFFL( PValueBorder, startIndex, score, criterium );
  } 
 //REMOVED FOR SPEED  scoreTest();//more scoreTests
 
@@ -1500,23 +1487,20 @@ int dummy= *startIndex;
  *  *this is forwardModel
  *
  */
-bool  Model::makeForwardStepLogistic(int JJ, double* bestMSC, int PValueBorder,int *startIndex, int criterium)
-{ bool improvment=false;
-  printLOG("pValue ordered--------------------------------------");  //DEBUG
+bool Model::makeForwardStepLogistic( double* bestMSC, int PValueBorder,int *startIndex, int criterium ) {
+	bool improvment = false;
 int dummy= *startIndex;
 //cout<<"dummy="<<dummy<<endl;
  if( dummy< parameter.reset) //500 
  { printLOG("startIndex="+int2str(*startIndex)+ "but 0 is used");
    dummy=0;*startIndex=dummy;
-   makeMFFL( PValueBorder,startIndex, criterium);JJ++;
-  //DEBUG  printModelInMatlab(int2str(JJ));
+		makeMFFL( PValueBorder, startIndex, criterium );
  }
  else if (dummy>= parameter.reset) //these values are only guesses
 
  {  dummy=max(0,dummy-parameter.jump_back);*startIndex=dummy; //min because nothing prevents to be jump_back to be bigger than reset!
          printLOG("StartIndex= "+int2str(*startIndex)+" is used, with jump_back="+int2str(parameter.jump_back));
-    makeMFFL( PValueBorder,startIndex,criterium);JJ++;
-//REMOVED FOR SPEED    printModelInMatlab(int2str(JJ));
+		makeMFFL( PValueBorder, startIndex, criterium);
  } 
 //REMOVED FOR SPEED 
 // scoreTest();//more scoreTests
@@ -2861,7 +2845,7 @@ if(getModelSize()>parameter.maximalModelSize)
  	double bestMSC=getMSC(); //this one is the best up to now!
 
  ScoreTestShortcut stsc( *data_);
- 	int size=data_->getSnpNo(),JJ=0;
+ 	int size = data_->getSnpNo();
 	bool improvment=true,improvment2=true,improvment3=true, stop=false;
 	SortVec score(size);
  this->computeRegression();//for SCORE maybe not calculated?
@@ -2872,7 +2856,11 @@ if(getModelSize()>parameter.maximalModelSize)
 
 //	while (improvment&&!(getModelSize()>min(parameter.maximalModelSize,maxModel))) //||improvment
  //{
-   while(improvment=makeForwardStepLogistic(JJ, &bestMSC,  PValueBorder, startIndex,Score,type)||improvment2||improvment3 )
+		while(
+			( improvment = makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex, Score, type ) )
+			|| improvment2
+			|| improvment3
+		)
    { if(getModelSize()>min(parameter.maximalModelSize,maxModel)) break;
 	   startFromModel=*this; //see //startFromModel is the inputvariable
 	  //replaceModelSNPbyNearFromSCORE(*startIndex , PValueBorder,Score);
@@ -2880,9 +2868,7 @@ if(getModelSize()>parameter.maximalModelSize)
    improvment3=saveguardbackwardstep( startFromModel,type );
    *this=startFromModel;//if improvment2
    }
-
- //} 
-  stop=finalizeModelSelection( *backwardModel, JJ,  improvment||improvment2,  PValueBorder,  startIndex,Score,type);
+		stop = finalizeModelSelection( *backwardModel, improvment || improvment2, PValueBorder, startIndex, Score, type );
   if( getMSC()<best)
 	 return true;
   else 
