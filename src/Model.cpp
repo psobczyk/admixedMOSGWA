@@ -2500,8 +2500,13 @@ if(DEBUG) cerr<<"LRT="<<LRT<<endl;
 			msc = LRT + q * log(n);
 			return msc;
 
+		case Parameter::selectionCriterium_mBIC_firstRound:
 		case Parameter::selectionCriterium_mBIC:
-			d = -2 * log( parameter.expected_causal_snps_MBIC );
+			d = -2 * log(
+				Parameter::selectionCriterium_mBIC_firstRound == selectionCriterium
+				? parameter.mBIC_firstRound_expectedCausalSNPs
+				: parameter.mBIC_expectedCausalSNPs
+			);
 			msc = LRT + q * ( log(n) + 2 * log(p) + d );
 			return msc;
 
@@ -2722,11 +2727,14 @@ double Model::computeMSCfalseRegression (
   }
 }
 //diese sollen jetzt auch noch das Kriterium manipulieren können manipulieren können
-bool Model::selectModel(Model &startFromModel,int  PValueBorder,int maxModel,int type)
-{
-printLOG("SCORE SCORE SELECT MODEL");
-if(getModelSize()>parameter.maximalModelSize)
-	return false; //nothing will be done, when ModelSize is >49
+bool Model::selectModel (
+	Model &startFromModel,
+	int PValueBorder,
+	const int maxModel,
+	const int selectionCriterium
+) {
+	printLOG( "Score select model" );
+	if ( getModelSize() > parameter.maximalModelSize ) return false;
 
 	double best= getMSC();
 	//if best is bigger than 0
@@ -2742,7 +2750,7 @@ if(getModelSize()>parameter.maximalModelSize)
 
  ScoreTestShortcut stsc( *data_);
  	int size = data_->getSnpNo();
-	bool improvment=true,improvment2=true,improvment3=true, stop=false;
+	bool improvement = true, improvement2 = true, improvement3 = true;
 	SortVec score(size);
  this->computeRegression();//for SCORE maybe not calculated?
         stsc.ScoreTestShortcut::scoreTests ( *this, score );
@@ -2750,24 +2758,24 @@ if(getModelSize()>parameter.maximalModelSize)
         for(int i=0;i<=size-getNoOfVariables();i++)
  		Score[i]= score.getId(i);	
 
-//	while (improvment&&!(getModelSize()>min(parameter.maximalModelSize,maxModel))) //||improvment
- //{
-		while(
-			( improvment = makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex, Score, type ) )
-			|| improvment2
-			|| improvment3
-		)
-   { if(getModelSize()>min(parameter.maximalModelSize,maxModel)) break;
-	   startFromModel=*this; //see //startFromModel is the inputvariable
-	  //replaceModelSNPbyNearFromSCORE(*startIndex , PValueBorder,Score);
-        improvment2=  replaceModelSNPSCORE(type);
-   improvment3=saveguardbackwardstep( startFromModel,type );
-   *this=startFromModel;//if improvment2
-   }
-		stop = finalizeModelSelection( *backwardModel, improvment || improvment2, PValueBorder, startIndex, Score, type );
-  if( getMSC()<best)
-	 return true;
-  else 
-	 return false; 
- 
+	while(
+		( improvement = makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex, Score, selectionCriterium ) )
+		|| improvement2
+		|| improvement3
+	) {
+		if( getModelSize() > maxModel ) break;
+		startFromModel = *this;
+		improvement2 = replaceModelSNPSCORE( selectionCriterium );
+		improvement3 = saveguardbackwardstep( startFromModel, selectionCriterium );
+		*this=startFromModel;
+	}
+	finalizeModelSelection(
+		*backwardModel,
+		improvement || improvement2,
+		PValueBorder,
+		startIndex,
+		Score,
+		selectionCriterium
+	);
+	return getMSC() < best;
 }

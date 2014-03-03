@@ -102,12 +102,14 @@ public:
 		selectionCriterium_BIC = 1,
 		selectionCriterium_EBIC = 2,
 		selectionCriterium_mBIC = 3,
+		selectionCriterium_mBIC_firstRound = -3,	// uses different expected_causal_SNPs
 		selectionCriterium_mBIC2 = 4;
 	/** Which criterium to use. */
 	int selectionCriterium;
 
 	/** Number of Expected SNPs, in the preselection with mBIC */
-	int expected_causal_snps_MBIC;
+	int mBIC_expectedCausalSNPs;
+	int mBIC_firstRound_expectedCausalSNPs;
 	int nSNPKriterium=0;
         int maximalModelSize;
 	/* *the maximal number of SNPs added in the Multi-Forward-Step */

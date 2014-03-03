@@ -74,17 +74,18 @@ int main ( const int argc, const char *argv[] ) {
 		model0.computeRegression();
 		data.setLL0M( model0.getMJC() );
 		Model *modelin=&model0;
-		//modelin->printModel("we are before select model",3);//3 is mBIC
 		data.selectModel(
 			modelin,
 			parameter.PValueBorder,
 			parameter.maximalModelSize,
-			Parameter::selectionCriterium_mBIC
+			Parameter::selectionCriterium_mBIC_firstRound
 		);
-		modelin->printModel("first result");
+		modelin->printModel( "First round result" );
 		data.selectModel(
 			modelin,
-			5000
+			5000,
+			parameter.maximalModelSize,
+			parameter.selectionCriterium
 		);
 	} catch ( const Exception e ) {
 		printLOG( e.what() );

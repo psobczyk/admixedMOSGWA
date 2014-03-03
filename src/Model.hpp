@@ -204,23 +204,57 @@ public:
 	/** adds the SNPs minimzing the MSC.
 	* Model &biggerModel is the new model, boundSNP is a border on the SNPs to add
 	* @returns the absolut positon of the added SNP, or -1 on error */
-	int makeForwardStep ( Model &biggerModel, const int boundSNP, int criterium);
+	int makeForwardStep ( Model &biggerModel, const int boundSNP, const int selectionCriterium );
  
 	/** computes the Best Model with a SNP smaller,
 	* Model &smallerModel is the new model
 	* @returns the relativ position of the removed SNP, or -1 on error */
 	int makeBackwardStep ( Model &smallerModel );
 	/*special Version of the multiforward step*/
-	bool finalizeModelSelection ( Model &backwardModel, bool improvment, int PValueBorder, int *startIndex, vector<int> score, int criterium = 0 );
-        bool finalizeModelSelection ( Model &backwardModel, bool improvment, int PValueBorder, int *startIndex ,int criterium = 0 );
-        bool makeForwardStepLinear ( Model *forwardModel, double* bestMSC, int PValueBorder, int *startIndex, int criterium = 0 );
+	bool finalizeModelSelection (
+		Model &backwardModel,
+		bool improvement,
+		int PValueBorder,
+		int *startIndex,
+		vector<int> score,
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
+	);
+	bool finalizeModelSelection (
+		Model &backwardModel,
+		bool improvment,
+		int PValueBorder,
+		int *startIndex,
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
+	);
+	bool makeForwardStepLinear (
+		Model *forwardModel,
+		double* bestMSC,
+		int PValueBorder,
+		int *startIndex,
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
+	);
 	/**  makeForwardStepLogistic replaces the code in selectModel*/
-	bool makeForwardStepLogistic ( double *bestMSC, int PValueBorder, int *startIndex, int criterium = 0 );
+	bool makeForwardStepLogistic (
+		double *bestMSC,
+		int PValueBorder,
+		int *startIndex,
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
+	);
 /**makeForwardStepLogistic score version */
-	bool makeForwardStepLogistic ( double *bestMSC, int PValueBorder, int *startIndex, vector<int> score, int criterium = 0 );
+	bool makeForwardStepLogistic (
+		double *bestMSC,
+		int PValueBorder,
+		int *startIndex,
+		vector<int> score,
+		int selectionCriterium = Parameter::selectionCriterium_mBIC2
+	);
 
         bool makeMFFS (int PValueBorder,int *startIndex); //with linear
-	bool makeMFFL (int PValueBorder,int *startIndex,int criterium=0 ); //with logistic
+	bool makeMFFL (
+		int PValueBorder,
+		int *startIndex,
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
+	);
 	bool makeMFFL (int PValueBorder,int *startIndex, vector<int> score,int criterium=0); //with logistic+score
 
         bool makeMultiForwardStepScore ( int PValueBorder, int selectionCriterium, int* startIndex, vector<int> scores);
@@ -234,7 +268,12 @@ public:
 	/** makeBackwardStepED  a variation of makeBackwardStep */
         int makeBackwardStepED ( Model &smallerModel, const int criterium=0 );
 
-	bool selectModel(Model &startFromModel, int border=100, int maxModel=parameter.maximalModelSize,int criterium=0);
+	bool selectModel (
+		Model &startFromModel,
+		int border=100,
+		int maxModel=parameter.maximalModelSize,
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
+	);
 	/** Compute Regression for Model.
 	* @returns false on error */
 	bool computeRegression ();

@@ -72,9 +72,12 @@ Parameter::Parameter () {
 		);
 	}
 
+	// model preselection (i.e. first round with mBIC) settings
+	declare( "model_preselection", "mBIC_expected_causal_SNPs", mBIC_firstRound_expectedCausalSNPs = 20 );
+
 	// model selection settings
-	declare( "model_selection", "expected_causal_snps_MBIC", expected_causal_snps_MBIC );
-	declare( "model_selection", "nSNPKriterium", nSNPKriterium);
+	declare( "model_selection", "mBIC_expected_causal_SNPs", mBIC_expectedCausalSNPs = 1 );
+	declare( "model_selection", "nSNPKriterium", nSNPKriterium );
 	{
 		map< const string, int > choice;
 		choice[ "BIC" ] = selectionCriterium_BIC;
@@ -186,8 +189,6 @@ singlefile=out_file_name; //this is for simulators which need in every run the g
 	        reset=350;
         if(0==jump_back)
                 jump_back=350;
-        if (0==expected_causal_snps_MBIC)
-		expected_causal_snps_MBIC = 20;
 	if (0==maximalModelSize)
 		maximalModelSize=35; //maximum model for my computer, the faster the computer the bigger the number, or when you have much time.
 	if (0==nSNPKriterium)
