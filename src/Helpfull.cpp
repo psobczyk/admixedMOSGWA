@@ -285,7 +285,7 @@ bool logistffit(
 				gsl_matrix_free(covs);
 				gsl_vector_free (UStar);
 				gsl_vector_free (delta);
-				cerr << "error Fisher Matrix is not invertible"<<endl;
+				cerr << "Fisher Matrix is not invertible" << endl;
 				return false;
 			}
 			i++;
