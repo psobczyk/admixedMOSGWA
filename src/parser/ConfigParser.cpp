@@ -13,6 +13,7 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
+#include "../Exception.hpp"
 #include "ConfigParser.hpp"
 #include "SectionParslet.hpp"
 #include "VariableParslet.hpp"
@@ -36,14 +37,19 @@ namespace parser {
 		while ( 0 != *text ) ++text;
 	}
 
-	bool ConfigParser::parseLine ( const char* &text, string &sectionName, const int lineNumber, const char* filename ) {
+	void ConfigParser::parseLine (
+		const char* &text,
+		string &sectionName,
+		const int lineNumber,
+		const char* filename
+	) {
 
 		// Skip leading whitespace
 		skipWhitespace( text );
 		skipComment( text );
 
 		// Skip blank or comment line
-		if ( 0 == *text ) return true;
+		if ( 0 == *text ) return;
 
 		// Is it a [sectionname] line?
 		SectionParslet sp( sectionName );
@@ -55,15 +61,13 @@ namespace parser {
 
 		// If the current sectionName is not known
 		if ( 0 == sectionMaps.count( sectionName ) ) {
-			// Warn only once: when section is opened
-			if ( ( 1 == lineNumber ) || sectionHeading ) {
-				cerr << filename << ":" << lineNumber << ": "
-					<< "Warning: Config section name \""
-					<< sectionName << "\" unknown: Section contents skipped."
-					<< endl;
-			}
-			while ( 0 != *text ) ++text;
-			return true;
+			throw Exception(
+				"%s:%u:"
+				" Unrecognised configuration section name \"%s\".",
+				filename,
+				lineNumber,
+				sectionName.c_str()
+			);
 		}
 
 		// Line information is either section heading or variable setting
@@ -73,20 +77,27 @@ namespace parser {
 			string variableName;
 			VariableParslet vp( variableName );
 			if ( ! vp.parse( text ) ) {
-				cerr << filename << ":" << lineNumber << ": "
-					<< "Syntax error: Expected valid variable name, but got \""
-					<< text << "\"." << endl;
-				return false;
+				throw Exception(
+					"%s:%u:"
+					" Syntax error: Expected valid variable name, but got \"%s\".",
+					filename,
+					lineNumber,
+					text
+				);
 			}
 			skipWhitespace( text );
 
 			// Expect an equals sign
 			if ( '=' != *text ) {
-				cerr << filename << "::" << lineNumber << ": "
-					<< "Syntax error: Expected '=' after variable name \""
-					<< variableName << "\", but got \""
-					<< text << "\"." << endl;
-				return false;
+				throw Exception(
+					"%s:%u:"
+					" Syntax error: Expected '=' after variable name \"%s\","
+					" but got \"%s\".",
+					filename,
+					lineNumber,
+					variableName.c_str(),
+					text
+				);
 			} else {
 				++text;
 			}
@@ -95,24 +106,31 @@ namespace parser {
 			// Get the Parslet to parse the variable value
 			map< const string, Parslet * > &sectionMap = *sectionMaps[ sectionName ];
 			if ( 0 == sectionMap.count( variableName ) ) {
-				cerr << filename << ":" << lineNumber << ": "
-					<< "Warning: Config variable name \"" << variableName
-					<< "\" unknown in Section \"" << sectionName
-					<< "\": Variable setting skipped." << endl;
-				while ( 0 != *text ) ++text;
-				return true;
+				throw Exception(
+					"%s:%u:"
+					" Unrecognized config variable name \"%s\""
+					" in Section \"%s\".",
+					filename,
+					lineNumber,
+					variableName.c_str(),
+					sectionName.c_str()
+				);
 			}
 			Parslet &parslet = *sectionMap[ variableName ];
 
 			// Parse the variable value
 			if ( ! parslet.parse( text ) ) {
-				cerr << filename << ":" << lineNumber << ": "
-					<< "Error: Unrecognised value for "
-					<< parslet.type()
-					<< " variable name \""
-					<< variableName <<
-					"\": \"" << text << "\"." << endl;
-				return false;
+				throw Exception(
+					"%s:%u:"
+					" Unrecognised value in Section \"%s\""
+					" for %s variable name \"%s\": \"%s\".",
+					filename,
+					lineNumber,
+					sectionName.c_str(),
+					parslet.type(),
+					variableName.c_str(),
+					text
+				);
 			}
 			skipWhitespace( text );
 			skipComment( text );
@@ -120,13 +138,14 @@ namespace parser {
 
 		// Anything left on the line?
 		if ( 0 != *text ) {
-			cerr << filename << ":" << lineNumber << ": "
-				<< "Syntax error: Unrecognised characters: \""
-				<< text << "\"." << endl;
-			return false;
+			throw Exception(
+				"%s:%u:"
+				" Unrecognised characters: \"%s\".",
+				filename,
+				lineNumber,
+				text
+			);
 		}
-
-		return true;
 	}
 
 	/** This function assumes as precondition
@@ -135,11 +154,13 @@ namespace parser {
 	*/
 	void ConfigParser::declare ( const string &sectionName, const string &variableName, Parslet *parslet ) {
 		if ( NULL == parslet ) {
-			cerr << "Implementation error or out of memory:"
-				<< " Null pointer to parslet for configuration section name \""
-				<< sectionName << "\", variable name \""
-				<< variableName << "\"." << endl;
-			exit( 252 );
+			throw Exception(
+				"Implementation error or out of memory:"
+				" Null pointer to parslet for configuration section name \"%s\","
+				" variable name \"%s\".",
+				sectionName.c_str(),
+				variableName.c_str()
+			);
 		}
 		if ( 0 == sectionMaps.count( sectionName ) ) {
 			sectionMaps[ sectionName ] = new map< const string, Parslet* >();
@@ -149,13 +170,15 @@ namespace parser {
 			sectionMap[ variableName ] = parslet;
 		} else {
 			// This should not happen.
-			cerr << "Implementation error:"
-				<< " Duplicate configuration variable definition in section name \""
-				<< sectionName << "\", variable name \""
-				<< variableName << "\"." << endl;
 			// Free allocated parslet, because it would not be freed by ~ConfigParser
 			delete parslet;
-			exit( 253 );	// Exit anyway
+			throw Exception(
+				"Implementation error:"
+				" Duplicate configuration variable definition in section \"%s\","
+				" variable name \"%s\".",
+				sectionName.c_str(),
+				variableName.c_str()
+			);
 		}
 	}
 
@@ -183,15 +206,13 @@ namespace parser {
 		declare( sectionName, variableName, new ChoiceParslet<int>( variable, choices ) );
 	}
 
-	bool ConfigParser::parse( istream &input, const char* filename ) {
-		bool ok = true;
+	void ConfigParser::parse( istream &input, const char* filename ) {
 		string sectionName;
 		string line;
 		for ( int lineNumber = 1; getline( input, line ); ++lineNumber ) {
 			const char* text = line.c_str();
-			ok &= parseLine( text, sectionName, lineNumber, filename );
+			parseLine( text, sectionName, lineNumber, filename );
 		}
-		return ok;
 	}
 
 	ConfigParser::~ConfigParser () {

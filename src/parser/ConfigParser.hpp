@@ -22,8 +22,6 @@
 #include <iostream>
 #include "Parslet.hpp"
 
-using namespace std;
-
 /** Contains the configuration file parser.
 * @author Bernhard Bodenstorfer
 */
@@ -35,10 +33,14 @@ namespace parser {
 		private:
 
 		/** Known sections with their variable-accessors */
-		map< const string, map< const string, class Parslet* >* > sectionMaps;
+		std::map< const std::string, std::map< const std::string, class Parslet* >* > sectionMaps;
 
 		/** Declare a configuration variable in the given section. */
-		void declare ( const string &sectionName, const string &variableName, Parslet *parslet );
+		void declare (
+			const std::string &sectionName,
+			const std::string &variableName,
+			Parslet *parslet
+		);
 
 		/** Skip whitespace, if any */
 		static void skipWhitespace ( const char* &text );
@@ -51,7 +53,12 @@ namespace parser {
 		* @param lineNumber used to formulate error messages
 		* @returns whether an error has occurred
 		*/
-		bool parseLine ( const char* &text, string &sectionName, const int lineNumber, const char* filename );
+		void parseLine (
+			const char* &text,
+			std::string &sectionName,
+			const int lineNumber,
+			const char* filename
+		);
 
 		public:
 
@@ -59,22 +66,47 @@ namespace parser {
 		ConfigParser ();
 
 		/** Declare a boolean configuration variable in the given section. */
-		void declare ( const string &sectionName, const string &variableName, bool &variable );
+		void declare (
+			const std::string &sectionName,
+			const std::string &variableName,
+			bool &variable
+		);
 
 		/** Declare an integer configuration variable in the given section. */
-		void declare ( const string &sectionName, const string &variableName, int &variable );
+		void declare (
+			const std::string &sectionName,
+			const std::string &variableName,
+			int &variable
+		);
 
 		/** Declare a double precision numeric configuration variable in the given section. */
-		void declare ( const string &sectionName, const string &variableName, double &variable );
+		void declare (
+			const std::string &sectionName,
+			const std::string &variableName,
+			double &variable
+		);
 
 		/** Declare a string configuration variable in the given section. */
-		void declare ( const string &sectionName, const string &variableName, string &variable );
+		void declare (
+			const std::string &sectionName,
+			const std::string &variableName,
+			std::string &variable
+		);
 
                 /** Declare a vector<string> configuration variable in the given section. */
-		void declare ( const string &sectionName, const string &variableName, vector<string> &variable );
+		void declare (
+			const std::string &sectionName,
+			const std::string &variableName,
+			std::vector<std::string> &variable
+		);
 
 		/** Declare an integer configuration variable represented by a choice of strings in the given section. */
-		void declare ( const string &sectionName, const string &variableName, int &variable, const map< const string, int > &choices );
+		void declare (
+			const std::string &sectionName,
+			const std::string &variableName,
+			int &variable,
+			const std::map< const std::string, int > &choices
+		);
 
 
 		/** Parse sections of name-value-pairs.
@@ -82,7 +114,7 @@ namespace parser {
 		* @param filename used to formulate error messages
 		* @returns whether an error has occurred
 		*/
-		bool parse ( istream &input, const char* filename );
+		void parse ( std::istream &input, const char* filename );
 
 		/** Destruct a configuration parser, free its internally allocated memory resources */
 		~ConfigParser ();
