@@ -97,6 +97,15 @@ public:
 //++++++++++++
 //ModelSelection:
 
+	/** Constants to interpret {@link #selectionCriterium}. */
+	static const int
+		selectionCriterium_BIC = 1,
+		selectionCriterium_EBIC = 2,
+		selectionCriterium_mBIC = 3,
+		selectionCriterium_mBIC2 = 4;
+	/** Which criterium to use. */
+	int selectionCriterium;
+
 	/** Number of Expected SNPs, in the preselection with mBIC */
 	int expected_causal_snps_MBIC;
 	int nSNPKriterium=0;
@@ -117,11 +126,13 @@ public:
 //++++++++++++
 // Parameters for Affection/Case-Control
 
-	/** use Pearson-Chi-Square for Single Marker Test for affection */
-	bool cc_SingleMarkerTest_ChiSq;
+	/** Constants to interpret {@link #singleMarkerTest}. */
+	static const int
+		singleMarkerTest_CHI_SQUARE = 1,
+		singleMarkerTest_COCHRAN_ARMITAGE = 2;
 
-	/** use Cochran-Armitage trend test (CATT) for Single Marker Test for affection */
-	bool cc_SingleMarkerTest_CATT;
+	/** What to use for the initial single-marker tests. */
+	int singleMarkerTest;
 
 // Logistic Regression Control Parameters
 	int logrC_maxit;
@@ -144,21 +155,7 @@ public:
   
 
 // TEST 
-	int test;
-	bool binary;
-	/** upper limit for beta s*/
-	double betaup;
-	/** lower limit for beta s*/
-	double inter;
-	double betadown;
-	double beta;
-	int  nSNP;
 	int  replications; 
-
-	std::vector<std::string> SNPs;
-	std::vector<std::string> SNPs1;
-	std::vector<std::string> SNPs2;
-//++++++++++++
 
 	/** Constructor */
 	Parameter ();

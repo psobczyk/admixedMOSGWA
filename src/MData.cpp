@@ -1277,7 +1277,12 @@ size_t MData::calculatePValueBorder () const {
 	}
 	return PValueBorder;
 }
-bool MData::selectModel ( Model *currentModel, size_t PValueBorder, int maxModel, int criterium ) {
+bool MData::selectModel (
+	Model *currentModel,
+	size_t PValueBorder,
+	int maxModel,
+	const int selectionCriterium
+) {
 	printLOG("Model Selection started: ");
 	bool 	stop = false;
 //	int     removedSNP=-1;
@@ -1305,23 +1310,24 @@ PValueBorder=min(getSnpNo()-1,PValueBorder);
 		*backwardModel = &model2;
        
 //	schreibt es in die Variable für mBIC2 auch wenn man mBIC haben will
-if (currentModel->getModelSize()>0)
-{if (currentModel->computeMSC(criterium)>0.000001)
-	//only here a backwardstep makes sense
-	currentModel->saveguardbackwardstep( *backwardModel,criterium);
-}
+	if ( 0 < currentModel->getModelSize() ) {
+		if ( 0.000001 < currentModel->computeMSC( selectionCriterium ) ) {
+			//only here a backwardstep makes sense
+			currentModel->saveguardbackwardstep( *backwardModel, selectionCriterium );
+		}
+	}
 
-	currentModel->makeMultiForwardStep(PValueBorder,criterium,startIndex);
+	currentModel->makeMultiForwardStep( PValueBorder, selectionCriterium, startIndex );
 	currentModel->computeRegression();
 
 	printLOG( "Start stepwise selection" );
 double bestMSC= currentModel->getMSC();
 //currentModel->replaceModelSNPbyNearCorrelated(0);
 //exit(0);
-bool improvment=false;
+	bool improvement = false;
 	while ( !stop ) {
-         improvment=currentModel->replaceModelSNPbyNearFromCAT( *startIndex, PValueBorder, criterium );
-	 improvment=currentModel->saveguardbackwardstep( *backwardModel, criterium );
+		improvement = currentModel->replaceModelSNPbyNearFromCAT( *startIndex, PValueBorder, selectionCriterium );
+		improvement = currentModel->saveguardbackwardstep( *backwardModel, selectionCriterium );
          
 	 //ED break because of computational limitations
 	 if (currentModel->getModelSize()>min(parameter.maximalModelSize,maxModel))
@@ -1329,26 +1335,43 @@ bool improvment=false;
         /* linear case normal forward step
          */
           if (!parameter.affection_status_phenotype)//quantitative
-			improvment = currentModel->makeForwardStepLinear( forwardModel, &bestMSC, PValueBorder, startIndex );
+			improvement = currentModel->makeForwardStepLinear( forwardModel, &bestMSC, PValueBorder, startIndex );
           else if (parameter.affection_status_phenotype)/*PRÄSELECTION nur bis Revision 274*/
-			improvment = currentModel->makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex, criterium );
+			improvement = currentModel->makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex, selectionCriterium );
           else 
 		  cerr<<" not linear nor logistic, this should not happen"<<endl;
-		stop = currentModel->finalizeModelSelection( *backwardModel, improvment, PValueBorder, startIndex, criterium );
+		stop = currentModel->finalizeModelSelection(
+			*backwardModel,
+			improvement,
+			PValueBorder,
+			startIndex,
+			selectionCriterium
+		);
 }//while
 size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs case below.
 	if( parameter.affection_status_phenotype)
       {if (350>getSnpNo()-1) reference=getSnpNo()-1;
 	    
-	while(currentModel->selectModel(*backwardModel,max(reference,PValueBorder),maxModel,criterium)) //minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
-		{
+		while(
+			currentModel->selectModel(
+				*backwardModel,
+				max( reference, PValueBorder ),
+				maxModel,
+				selectionCriterium
+			)
+		) {
+			//minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
 		 //currentModel->replaceModelSNPbyNearCorrelated1();//should
 		 //improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder, criterium);
 	         //if(improvment)	 currentModel->saveguardbackwardstep( *backwardModel,criterium);
 		}
 	} 
-                  improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder, criterium);
-	         if(improvment)	 currentModel->saveguardbackwardstep( *backwardModel,criterium);
+		improvement = currentModel->replaceModelSNPbyNearFromCAT(
+			*startIndex , PValueBorder, selectionCriterium
+		);
+		if ( improvement ) {
+			currentModel->saveguardbackwardstep( *backwardModel, selectionCriterium );
+		}
 
 //when all fails	
 
@@ -1356,7 +1379,7 @@ size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs 
 //currentModel=backwardModel;
 currentModel->printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "the_result" );
 
-currentModel->printModel("finalModel",criterium);
+	currentModel->printModel( "finalModel", selectionCriterium );
 
 return true ; 
 }
@@ -1402,7 +1425,7 @@ bool MData::selectModel()
         currentModel->computeMSC(0);
         //currentModel->printModel("check1");
 double bestMSC= currentModel->getMSC();
-bool improvment=false;
+	bool improvement=false;
 /*  This is the backward step
  *  one take the full model and remove every SNP.
  *  Then one look for that model with  lowest MSC 
@@ -1411,17 +1434,27 @@ bool improvment=false;
  *  We repeat this until the 1 model is selected.
  */
 	while ( !stop ) {
-         improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder);
-	 improvment=currentModel->saveguardbackwardstep( *backwardModel);	 
+		improvement = currentModel->replaceModelSNPbyNearFromCAT( *startIndex , PValueBorder );
+		improvement = currentModel->saveguardbackwardstep( *backwardModel );
 	 currentModel=backwardModel; 
         /* linear case normal forward step
          */
-         if (!parameter.affection_status_phenotype)//quantitative
-			improvment = currentModel->makeForwardStepLinear( forwardModel, &bestMSC, PValueBorder, startIndex);
-          else if (parameter.affection_status_phenotype)/*PRÄSELECTION nur bis Revision 274*/
-			improvment = currentModel->makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex );
-          else cerr<<" not linear nor logistic, this should not happen"<<endl;
-		stop = currentModel->finalizeModelSelection( *backwardModel, improvment, PValueBorder, startIndex );
+		if ( !parameter.affection_status_phenotype ) {
+			improvement = currentModel->makeForwardStepLinear(
+				forwardModel,
+				&bestMSC,
+				PValueBorder,
+				startIndex
+			);
+		} else {
+			improvement = currentModel->makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex );
+		}
+		stop = currentModel->finalizeModelSelection(
+			*backwardModel,
+			improvement,
+			PValueBorder,
+			startIndex
+		);
 	}//while
 	size_t reference = 350;	// REMARK<BB>: Where does 350 come from?
 	if( parameter.affection_status_phenotype)
@@ -1431,7 +1464,7 @@ bool improvment=false;
 	while(currentModel->getModelSize()&&currentModel->selectModel(*backwardModel,max(reference,PValueBorder)))
 		 //minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
 		{
-		 improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder);
+		improvement = currentModel->replaceModelSNPbyNearFromCAT( *startIndex , PValueBorder );
 		 currentModel->saveguardbackwardstep( *backwardModel);
 		}
 	} 

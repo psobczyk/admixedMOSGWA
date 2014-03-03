@@ -149,7 +149,11 @@ public:
 
 	// Output
 	/** outputs the Model information, string out is a title */
-	void printModel ( const std::string& out="", int criterion=0,const std::string& filemodifier="" );
+	void printModel (
+		const std::string& out = "",
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2,
+		const std::string& filemodifier = ""
+	);
 
 	/** TESTING: outputs the Model in a form readable by R */
 	void printModelInR () const;
@@ -158,16 +162,16 @@ public:
 	void printModelInMatlab ( const std::string& dummy ="") const;
 
 	void printModelNew () const;
-	/** replaceModelSNPbyNearCorrelate 
-         * near is set by fenster
-         * and correlated is set by threshold 
-         * everything other should be fixed
-          */
-bool replaceModelSNPbyNearCorrelated1(const int typeNr=0); //1 dimensional case
-bool replaceModelSNPbyNearCorrelated(const int typeNr=0);//2 dimensional case
-bool replaceModelSNPbyNearFromCAT( int currrentPosition, int PValueBorder,const int typeNr=0);
-bool replaceModelSNPbyNearFromSCORE( int currrentPosition, int PValueBorder, vector<int>SCORE, const int typeNr=0);
-bool replaceModelSNPSCORE(int criterium); //neuer Fall mit conditionalen scoretest für jedes model SNP removed
+
+	bool replaceModelSNPbyNearFromCAT (
+		int currentPosition,
+		int PValueBorder,
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
+	);
+
+	/** Try to replace using conditional score test for each model SNP removed */
+	bool replaceModelSNPSCORE ( const int selectionCriterium );
+
 	/** outputs for every SNP in the model SNPs with a correlation above const double threshold */
 	void printStronglyCorrelatedSnps ( const double threshold, string extra ="" ) const;
 	/**  printStronglyCorrelatedSnps2 is for  replaceModelSNPbyNearCorrelated when the second  variable should be checked against the original SNP */
@@ -223,10 +227,12 @@ bool replaceModelSNPSCORE(int criterium); //neuer Fall mit conditionalen scorete
         /** makeMultiForwardStep take the PValueBorder, an selection Criterium, the default Value is 1 for BIC in the initial ForwardStep and an  an exclusivedSNP set,*/ 
 	bool makeMultiForwardStep ( int PValueBorder = 0, int selectionCriterium =1, int *startIndex= NULL ,  std::set<snp_index_t> * exclusivedSNP = 0 );
 	bool makeMultiBackwardStep ();
-        bool saveguardbackwardstep(Model &smallerModel,int criterium=0,int how_many_steps=4); //how many steps downward just for
-	/** makeBackwardStepED  a variation of makeBackwardStep
-	 */
-        int makeBackwardStepED ( Model &smallerModel,int criterium=0 );
+	bool saveguardbackwardstep (
+		Model &smallerModel,
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
+	);
+	/** makeBackwardStepED  a variation of makeBackwardStep */
+        int makeBackwardStepED ( Model &smallerModel, const int criterium=0 );
 
 	bool selectModel(Model &startFromModel, int border=100, int maxModel=parameter.maximalModelSize,int criterium=0);
 	/** Compute Regression for Model.
@@ -250,14 +256,13 @@ bool replaceModelSNPSCORE(int criterium); //neuer Fall mit conditionalen scorete
 	  */
 	void getYvec(vector<bool> & sel);
 
-	/** Calculate the model selection criterion.
-	* (typeNr gives the type of the MSC), (typeNr = 1 BIC, default mBIC2) */
-	double computeMSC ( const int typeNr = 0 );
+	/** Calculate the model selection criterion. */
+	double computeMSC ( const int selectionCriterium = Parameter::selectionCriterium_mBIC2 );
 
 	/** Calculate the model selection criterion from the model judging criterion.
 	* @see computeMSC ( int )
 	*/
-	double computeMSC ( const int typeNr, double mjc );
+	double computeMSC ( const int selectionCriterium, double mjc );
 
 	/** @brief Returns msc of the model. Remember to use calculateMSC() before getMSC() (for GA)
       @returns msc of the model
@@ -287,12 +292,9 @@ bool replaceModelSNPSCORE(int criterium); //neuer Fall mit conditionalen scorete
   /** @brief Computes MSC for model with correlated snps. Use if computeRegression() returns false
    *TODO This function is not optimised
    */
-       double computeMSCfalseRegression(const int typeNr = 0);
+	double computeMSCfalseRegression ( const int selectionCriterium = Parameter::selectionCriterium_mBIC2 );
   
-       double computeMSCfalseRegression(const int typeNr, vector<snp_index_t> &removedSnps);
- //for checking the score test with the logistic regression!!!!!!!!!
-	void checkallSNPS();
-  
+	double computeMSCfalseRegression ( const int selectionCriterium, std::vector<snp_index_t> &removedSnps );
 };
 
 #endif	/* MODEL_HPP */

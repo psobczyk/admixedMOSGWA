@@ -60,13 +60,34 @@ Parameter::Parameter () {
 	declare( "imputation", "consider_n_close_snps", imp_Best_SNPs_No );
 
 	// single marker test settings
-	declare( "single_marker", "chi_square", cc_SingleMarkerTest_ChiSq );
-	declare( "single_marker", "cochran_armitage", cc_SingleMarkerTest_CATT );
+	{
+		map< const string, int > choice;
+		choice[ "chi_square" ] = singleMarkerTest_CHI_SQUARE;
+		choice[ "cochran_armitage" ] = singleMarkerTest_COCHRAN_ARMITAGE;
+		declare(
+			"single_marker",
+			"test",
+			singleMarkerTest = singleMarkerTest_CHI_SQUARE,
+			choice
+		);
+	}
 
 	// model selection settings
 	declare( "model_selection", "expected_causal_snps_MBIC", expected_causal_snps_MBIC );
 	declare( "model_selection", "nSNPKriterium", nSNPKriterium);
-
+	{
+		map< const string, int > choice;
+		choice[ "BIC" ] = selectionCriterium_BIC;
+		choice[ "EBIC" ] = selectionCriterium_EBIC;
+		choice[ "mBIC" ] = selectionCriterium_mBIC;
+		choice[ "mBIC2" ] = selectionCriterium_mBIC2;
+		declare(
+			"model_selection",
+			"selection_criterium",
+			selectionCriterium = selectionCriterium_mBIC2,
+			choice
+		);
+	}
 	declare( "model_selection", "maximalModelSize",maximalModelSize );
 	declare( "model_selection", "multi_forward_step_max", ms_MaximalSNPsMultiForwardStep );
 	declare( "model_selection", "multi_forward_pvalue_max", ms_MaximalPValueForwardStep );
@@ -96,20 +117,7 @@ Parameter::Parameter () {
   declare( "genetic_algorithm", "causalModelFilename", causalModelFilename);
   
 //Erichs testcase gearatator  
-declare( "TESTING", "test", test );
-declare( "TESTING", "binary", binary);
-declare( "TESTING", "betaup", betaup ); //setzt das beta uniform für alle SNP
-declare( "TESTING", "inter", inter ); 
-declare( "TESTING", "betadown", betadown ); //setzt das beta uniform für alle SNP
-
-declare( "TESTING", "beta", beta ); //setzt das beta uniform für alle SNP 
-
-declare( "TESTING", "nSNP", nSNP ); //setzt die Anzahl der kausalen SNP
-
 declare( "TESTING", "replications", replications ); //how many Y vectors should be produced  
-declare ("TESTING", "SNPs", SNPs); //which SNP to select
-declare ("TESTING", "SNPs1", SNPs1); //which SNP to select
-declare ("TESTING", "SNPs2", SNPs2); //which SNP to select
 }
 
 /** Initialise the parameter holder from the files given on the command line. */

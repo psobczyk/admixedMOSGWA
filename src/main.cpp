@@ -75,9 +75,17 @@ int main ( const int argc, const char *argv[] ) {
 		data.setLL0M( model0.getMJC() );
 		Model *modelin=&model0;
 		//modelin->printModel("we are before select model",3);//3 is mBIC
-		data.selectModel( modelin, parameter.PValueBorder, parameter.maximalModelSize, 3 );
+		data.selectModel(
+			modelin,
+			parameter.PValueBorder,
+			parameter.maximalModelSize,
+			Parameter::selectionCriterium_mBIC
+		);
 		modelin->printModel("first result");
-		data.selectModel( modelin, 5000 );
+		data.selectModel(
+			modelin,
+			5000
+		);
 	} catch ( const Exception e ) {
 		printLOG( e.what() );
 	}
