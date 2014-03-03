@@ -17,7 +17,8 @@
 #define _CHOICEPARSLET_CPP_
 
 #include "ChoiceParslet.hpp"
-#include <string.h>
+#include <cctype>
+#include <cstring>
 #include <iostream>
 
 using namespace std;
@@ -52,7 +53,11 @@ namespace parser {
 		) {
 			const char* choice = iterator->first.c_str();
 			const int length = strlen( choice );
-			if ( 0 == strncmp( choice, text, length ) ) {
+			if (
+				0 == strncmp( choice, text, length ) && (
+					0 == text[length] || isspace( text[length] )
+				)
+			) {
 				this->set( iterator->second );
 				text += length;
 				return true;
