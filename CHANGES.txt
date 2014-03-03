@@ -1,3 +1,9 @@
+Version 1.1.0
+-------------
+Changed configuration options around single marker tests and model selection criteria.
+Prepare for further selection criteria.
+Code cleanup.
+
 Version 1.0.3
 -------------
 Some code cleanup.
