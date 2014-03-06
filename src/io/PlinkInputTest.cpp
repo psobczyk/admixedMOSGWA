@@ -41,12 +41,7 @@ namespace test {
 		/** Name template for temporary test data directory and files. */
 		static const char
 			* const tmpDirnameTemplate,
-			* const filenameTrunc,
-			* const snpListFileExtension,
-			* const individualListFileExtension,
-			* const genotypeMatrixFileExtension,
-			* const covariateMatrixFileExtension,
-			* const phenotypeMatrixFileExtension;
+			* const filenameTrunc;
 
 		/** Prepare test setup.
 		* @param snpMajour determines whether SNP majour mode should be used. Else Individual majour mode.
