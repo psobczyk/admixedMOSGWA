@@ -14,6 +14,7 @@
  ********************************************************************************/
 
 #include "PlinkInput.hpp"
+#include "PlinkConstants.hpp"
 #include "../TestSuite.hpp"
 #include "../Exception.hpp"
 #include "../linalg/AutoVector.hpp"
@@ -27,8 +28,9 @@
 #include <fstream>
 
 using namespace std;
-using namespace io;
 using namespace linalg;
+using namespace io;
+using namespace io::PlinkConstants;
 using namespace unitpp;
 
 namespace test {
@@ -86,12 +88,7 @@ namespace test {
 
 	const char
 		* const PlinkInputTest::tmpDirnameTemplate = "plinkinput-test.XXXXXX",
-		* const PlinkInputTest::filenameTrunc = "data",
-		* const PlinkInputTest::snpListFileExtension = "bim",
-		* const PlinkInputTest::individualListFileExtension = "fam",
-		* const PlinkInputTest::genotypeMatrixFileExtension = "bed",
-		* const PlinkInputTest::covariateMatrixFileExtension = "cov",
-		* const PlinkInputTest::phenotypeMatrixFileExtension = "yvm";
+		* const PlinkInputTest::filenameTrunc = "data";
 
 	PlinkInputTest::PlinkInputTest () : TestSuite( "PlinkInputTest" ) {
 		addTestMethod( "PlinkInputTest::testRead", this, &PlinkInputTest::testRead );
@@ -113,7 +110,7 @@ namespace test {
 		const string testDirname( tmpDirname.data() );
 
 		{
-			const string snpFilename( testDirname + "/" + filenameTrunc + "." + snpListFileExtension );
+			const string snpFilename( testDirname + "/" + filenameTrunc + snpListExtension );
 			ofstream bim( snpFilename.c_str() );
 			bim << "0\tAdenin\t0\t0\tA\tT" << endl;
 			bim << "4\tCytosin\t1.7e1\t27\tC\tG" << endl;
@@ -123,7 +120,7 @@ namespace test {
 		}
 
 		{
-			const string idvFilename( testDirname + "/" + filenameTrunc + "." + individualListFileExtension );
+			const string idvFilename( testDirname + "/" + filenameTrunc + individualListExtension );
 			ofstream fam( idvFilename.c_str() );
 			fam << "Fohliks\tFlo\tStefan\tLudmilla\t1\t-1.0e-1" << endl;
 			fam << "Grün\tGeorg\tKarl\tWaltraud\t1\t2e2" << endl;
@@ -132,7 +129,7 @@ namespace test {
 		}
 
 		{
-			const string genFilename( testDirname + "/" + filenameTrunc + "." + genotypeMatrixFileExtension );
+			const string genFilename( testDirname + "/" + filenameTrunc + genotypeMatrixExtension );
 			ofstream bed( genFilename.c_str(), ofstream::binary );
 			bed << static_cast<char>( 0x6c );
 			bed << static_cast<char>( 0x1b );
@@ -173,7 +170,7 @@ namespace test {
 		}
 
 		if ( withCovariates ) {
-			const string covFilename( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension );
+			const string covFilename( testDirname + "/" + filenameTrunc + covariateMatrixExtension );
 			ofstream covStream( covFilename.c_str() );
 			covStream << "FID IID\tAge Salary" << endl;	// space+tab mix
 			covStream << "Skala Esra 1.5e-1 -1.3" << endl;	// space instead tab
@@ -183,7 +180,7 @@ namespace test {
 		}
 
 		if ( withExtraPhenotypes ) {
-			const string yvmFilename( testDirname + "/" + filenameTrunc + "." + phenotypeMatrixFileExtension );
+			const string yvmFilename( testDirname + "/" + filenameTrunc + phenotypeMatrixExtension );
 			ofstream yvmStream( yvmFilename.c_str() );
 			yvmStream << "FID\tIID third_nosehole\tbaldness" << endl;	// space+tab mix
 			yvmStream << "Skala Esra - -1.3e-2" << endl;	// space instead tab
@@ -200,14 +197,34 @@ namespace test {
 		const bool withCovariates,
 		const bool withExtraPhenotypes
 	) {
-		assert_eq( "Remove test SNP file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + snpListFileExtension ).c_str() ) );
-		assert_eq( "Remove test Individual file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + individualListFileExtension ).c_str() ) );
-		assert_eq( "Remove test genome file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + genotypeMatrixFileExtension ).c_str() ) );
+		assert_eq(
+			"Remove test SNP file failed",
+			0,
+			unlink( ( testDirname + "/" + filenameTrunc + snpListExtension ).c_str() )
+		);
+		assert_eq(
+			"Remove test Individual file failed",
+			0,
+			unlink( ( testDirname + "/" + filenameTrunc + individualListExtension ).c_str() )
+		);
+		assert_eq(
+			"Remove test genome file failed",
+			0,
+			unlink( ( testDirname + "/" + filenameTrunc + genotypeMatrixExtension ).c_str() )
+		);
 		if ( withCovariates ) {
-			assert_eq( "Remove test covariate file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension ).c_str() ) );
+			assert_eq(
+				"Remove test covariate file failed",
+				0,
+				unlink( ( testDirname + "/" + filenameTrunc + covariateMatrixExtension ).c_str() )
+			);
 		}
 		if ( withExtraPhenotypes ) {
-			assert_eq( "Remove test extra phenotype file failed", 0, unlink( ( testDirname + "/" + filenameTrunc + "." + phenotypeMatrixFileExtension ).c_str() ) );
+			assert_eq(
+				"Remove test extra phenotype file failed",
+				0,
+				unlink( ( testDirname + "/" + filenameTrunc + phenotypeMatrixExtension ).c_str() )
+			);
 		}
 		assert_eq( "Remove test directory failed", 0, rmdir( testDirname.c_str() ) );
 	}
@@ -393,7 +410,7 @@ namespace test {
 	void PlinkInputTest::testUnknownIndividuals () {
 		const string testDirname( setUp( false, true, true ) );
 		const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
-		const string covFilename( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension );
+		const string covFilename( testDirname + "/" + filenameTrunc + covariateMatrixExtension );
 		ofstream covStream( covFilename.c_str(), ios::app );
 		covStream << "Grau\tGustav\t1\t0" << endl;
 		covStream.close();
@@ -411,7 +428,7 @@ namespace test {
 	void PlinkInputTest::testDuplicateIndividuals () {
 		const string testDirname( setUp( false, true, true ) );
 		const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
-		const string covFilename( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension );
+		const string covFilename( testDirname + "/" + filenameTrunc + covariateMatrixExtension );
 		ofstream covStream( covFilename.c_str(), ios::app );
 		covStream << "Skala\tEsra\t1.5e-1\t-1.3" << endl;
 		covStream.close();
@@ -429,7 +446,7 @@ namespace test {
 	void PlinkInputTest::testIncompleteCovariates () {
 		const string testDirname( setUp( false, true, false ) );
 		const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
-		const string covFilename( testDirname + "/" + filenameTrunc + "." + covariateMatrixFileExtension );
+		const string covFilename( testDirname + "/" + filenameTrunc + covariateMatrixExtension );
 		ofstream covStream( covFilename.c_str(), ios::app );
 		covStream << "Fohliks Flo\t-10" << endl;
 		covStream.close();
