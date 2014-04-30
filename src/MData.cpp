@@ -1217,10 +1217,9 @@ void MData::calculateIndividualTests()
 	Model SingleSNP( *this );	// create Model with current MData
 	auto_ptr<size_t> snpArray( new size_t[ getSnpNo() ] );	// to store information for SortVec snp_order_
 	auto_ptr<double> TestStat( new double[ getSnpNo() ] ); // to store information for SortVec snp_order_
-// return allways  1 when asking for omp_get_num_threads()
-	cerr<<"!parameter.affection_status_phenotype="<<!parameter.affection_status_phenotype<<endl;
-cerr<<"omp_get_num_threads()"<<omp_get_num_threads()<<endl;
-//
+
+	// REMARK<BB>: does OMP duplicate SingleSNP in storage?
+	// Otherwise, calls to computeSingleRegressorTest will clash.
 	#pragma omp parallel for
 	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
 		// for sorting, store positon 
