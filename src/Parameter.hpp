@@ -107,10 +107,13 @@ public:
 	/** Which criterium to use. */
 	int selectionCriterium;
 
+	/** Parameter in the EBIC criterium. */
+	double EBIC_gamma;
+
 	/** Number of Expected SNPs, in the preselection with mBIC */
 	int mBIC_expectedCausalSNPs;
 	int mBIC_firstRound_expectedCausalSNPs;
-	int nSNPKriterium=0;
+	int nSNPKriterium;
         int maximalModelSize;
 	/* *the maximal number of SNPs added in the Multi-Forward-Step */
 	int ms_MaximalSNPsMultiForwardStep;
@@ -124,7 +127,7 @@ public:
         int     PValueBorder;
 	int     reset;
 	int	jump_back;
-        int     saveguardsteps=2;
+	int saveguardsteps;
 //++++++++++++
 // Parameters for Affection/Case-Control
 

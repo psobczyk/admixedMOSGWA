@@ -14,6 +14,7 @@
  ********************************************************************************/
 
 #include "Parameter.hpp"
+#include <cmath>
 #include <limits>
 #include <stdlib.h>
 #include <sstream>  //for stringstream
@@ -77,7 +78,8 @@ Parameter::Parameter () {
 
 	// model selection settings
 	declare( "model_selection", "mBIC_expected_causal_SNPs", mBIC_expectedCausalSNPs = 1 );
-	declare( "model_selection", "nSNPKriterium", nSNPKriterium );
+	declare( "model_selection", "EBIC_gamma", EBIC_gamma = ::nan( "default" ) );
+	declare( "model_selection", "nSNPKriterium", nSNPKriterium = 0 );
 	{
 		map< const string, int > choice;
 		choice[ "BIC" ] = selectionCriterium_BIC;
@@ -99,7 +101,7 @@ Parameter::Parameter () {
 	declare( "model_selection", "PValueBorder", PValueBorder );
 	declare( "model_selection", "reset", reset );
 	declare( "model_selection", "jump_back", jump_back );
-	declare( "model_selection", "saveguardsteps", saveguardsteps );
+	declare( "model_selection", "saveguardsteps", saveguardsteps = 2 );
 	// log_regression settings
 	declare( "log_regression", "max_it", logrC_maxit );
 	declare( "log_regression", "max_hs", logrC_maxhs );
