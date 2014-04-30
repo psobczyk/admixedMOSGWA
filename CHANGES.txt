@@ -1,3 +1,7 @@
+Version 1.1.1
+-------------
+Added EBIC as a selection criterium.
+
 Version 1.1.0
 -------------
 Changed configuration options around single marker tests and model selection criteria.
