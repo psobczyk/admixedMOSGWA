@@ -2351,7 +2351,10 @@ double Model::computeSingleRegressorTest ( const snp_index_t snp ) {
 
 /** @see Model::computeLinRegression() for more detailed comments */
 double Model::computeSingleLinRegressorTest ( const snp_index_t snp ) {
-	
+	// REMARK<BB>: The following code is similar to that in Model::computeLinRegression(),
+	// but uses LU and the explicit Inverse.
+	// TODO: Unify both approaches and use QRuncher.
+
 	// allocate auxiliary gsl objects
 	gsl_vector * beta = gsl_vector_alloc( getNoOfVariables() );
 	gsl_matrix * TMat =gsl_matrix_alloc( getNoOfVariables(), getNoOfVariables() );
@@ -2437,6 +2440,8 @@ double Model::computeSingleLinRegressorTest ( const snp_index_t snp ) {
 		// compute the p-value for the test-statistic. 	
 		// to checkt: http://home.ubalt.edu/ntsbarsh/Business-stat/otherapplets/pvalues.htm#rtdist
 		return ( gsl_cdf_tdist_P ( -fabs(test_stat), diff ) + gsl_cdf_tdist_Q ( fabs(test_stat), diff )); // F(-|x|) +  (1-F(|x|)) 
+		// TODO<BB>: it would be more efficient not to calculate all P values for cut-off,
+		// but rather sort by critical value and use the inverse of the distribution function to cut off.
 	}
 
 }
@@ -2470,18 +2475,10 @@ double Model::computeMSC ( const int selectionCriterium, double mjc ) {
 		computeRegression();
 	}
 
-	int n = data_->getIdvNo();
-	int p=0; //should be bigger
-//now in MData in line 65 after PlinkInput call
-//	if ( parameter.nSNPKriterium>0) 
-//
-	 p = parameter.nSNPKriterium; // data_->getSnpNo(); das ist original
-//	else
-//		 p =data_->getSnpNo();
-	
-	//int p = 780675; // p as magic number
-	int q = getModelSize();
-	//double d = -2 * log( parameter.ms_ExpectedCausalSNPs );
+	const size_t
+		n = data_->getIdvNo(),
+		p = parameter.nSNPKriterium,	// data_->getSnpNo(); das ist original
+		q = getModelSize();
 
 	// choose the likelihood part depending if the Data is quantitative or affection
 	double LRT, d;
@@ -2498,6 +2495,15 @@ if(DEBUG) cerr<<"LRT="<<LRT<<endl;
 	switch ( selectionCriterium ) {
 		case Parameter::selectionCriterium_BIC:
 			msc = LRT + q * log(n);
+			return msc;
+
+		case Parameter::selectionCriterium_EBIC:
+			if ( ::isnan( parameter.EBIC_gamma ) ) {
+				// How the default value comes about, see Zhao Chen:
+				// "A feature selection approach to case-control genome-wide association studies"
+				parameter.EBIC_gamma = 1.0 - log( n ) / ( 2 * log( p ) );
+			}
+			msc = LRT + q * log(n) + 2 * parameter.EBIC_gamma * logFactorial.logChoose( p, q );
 			return msc;
 
 		case Parameter::selectionCriterium_mBIC_firstRound:

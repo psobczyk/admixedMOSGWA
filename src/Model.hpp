@@ -26,6 +26,7 @@
 #include "lookup/ModelIndex.hpp"
 #include "linalg/AutoVector.hpp"
 #include "linalg/AutoMatrix.hpp"
+#include "util/LogFactorial.hpp"
 
 #include <set>      
 #include <iterator> 
@@ -74,6 +75,10 @@ private:
 
 	/** For initializing GA population. Set of used SNPs. SNPs may belong to one model */
 
+	/** Helps calculating factorials and combinations.
+	* TODO: do it in a thread-safe way.
+	*/
+	util::LogFactorial logFactorial;
 
 	/** msc of the model. calculateMSC() set up msc value */
 	double msc;                         //  FOR GA. 
