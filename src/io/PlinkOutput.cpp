@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2013, Bernhard Bodenstorfer.					*
+ *	Copyright ©2013–2014, Bernhard Bodenstorfer.				*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -58,6 +58,8 @@ namespace io {
 				}
 			}
 		}
+		covariateMatrixTransposed.fill( ::nan( "missing" ) );
+		phenotypeMatrixTransposed.fill( ::nan( "missing" ) );
 	}
 
 	void PlinkOutput::setSnps ( const SNP * snps ) {
@@ -103,15 +105,20 @@ namespace io {
 				pattern < sizeof( genotypeTranslation ) / sizeof( genotypeTranslation[0] );
 				++pattern
 			) {
-				if ( genotypeTranslation[pattern] == x ) {
+				if (
+					genotypeTranslation[pattern] == x
+					||
+					::isnan( genotypeTranslation[pattern] ) && ::isnan( x )
+				) {
 					break;
 				}
 			}
 			if ( sizeof( genotypeTranslation ) / sizeof( genotypeTranslation[0] ) <= pattern ) {
 				throw Exception(
 					"Cannot convert genotype for individual %u and SNP %u"
-					" value of %f to BED file."
-					" Only values -1, 0, +1 and NaN are allowed.",
+					" value %f to binary genotype (BED) file."
+					" Only values -1, 0, +1 and NaN are allowed in this filetype."
+					" You may want to output as HDF5 instead of Plink.",
 					idv,
 					snpIndex,
 					x
@@ -164,9 +171,16 @@ namespace io {
 					<< "\t"
 					<< individual.getSexCode();
 				if ( 0 < traitCount ) {
-					famStream
-						<< "\t"
-						<< phenotypeMatrixTransposed.get( 0, idv );
+					const double value = phenotypeMatrixTransposed.get( 0, idv );
+					if ( ::isnan( value ) ) {
+						famStream << "\t-";
+					} else {
+						famStream
+							<< "\t"
+							<< value;
+					}
+				} else {
+					famStream << "\t-";
 				}
 				famStream << endl;
 			}
@@ -190,9 +204,14 @@ namespace io {
 					<< individual.getIndividualID();
 				const Vector covVector = covariateMatrixTransposed.columnVector( idv );
 				for ( size_t cov = 0; cov < covCount; ++cov ) {
-					covStream
-						<< "\t"
-						<< covVector.get( cov );
+					const double value = covVector.get( cov );
+					if ( ::isnan( value ) ) {
+						covStream << "\t-";
+					} else {
+						covStream
+							<< "\t"
+							<< value;
+					}
 				}
 				covStream << endl;
 			}
@@ -220,9 +239,14 @@ namespace io {
 					<< individual.getIndividualID();
 				const Vector traitVector = phenotypeMatrixTransposed.columnVector( idv );
 				for ( size_t trait = 1; trait < traitCount; ++trait ) {
-					yvmStream
-						<< "\t"
-						<< traitVector.get( trait );
+					const double value = traitVector.get( trait );
+					if ( ::isnan( value ) ) {
+						yvmStream << "\t-";
+					} else {
+						yvmStream
+							<< "\t"
+							<< value;
+					}
 				}
 				yvmStream << endl;
 			}
