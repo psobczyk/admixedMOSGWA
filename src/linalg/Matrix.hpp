@@ -81,7 +81,9 @@ namespace linalg {
 		* i.e. the array must be at least of size {@link countRows()} times {@link countColumns()}.
 		* @param array contains data in C convention format, "row-major",
 		* i.e. first row complete; opposite of FORTRAN "column-major" convention.
-		* This is done, because GSL does it like that, see
+		* This is done,
+		* because C++ source code then properly shows the matrix
+		* and GSL does it like that, too, see
 		* <a href="http://www.gnu.org/software/gsl/manual/html_node/Matrices.html">GSL Matrix</a>.
 		* Once GSL will be dropped, the class Matrix might store in "column-major"
 		* for convenient communication with BLAS.
