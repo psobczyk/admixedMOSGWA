@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2012–2014, Bernhard Bodenstorfer.				*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -17,6 +17,7 @@
 #define _TEST_SUITE_HPP_
 
 #include <string>
+#include <istream>
 #include <unit++.h>
 
 /** Contains unit tests.
@@ -33,6 +34,19 @@ namespace test {
 		/** Construct with a title for reports. */
 		TestSuite ( const std::string &title );
 
+		/** Prepare temporary directory to help setting up a test scenario.
+		* @param tmpDirNameTemplate indicates a wish for how the directory name should look.
+		* It must contain the substring "XXXXXX" somewhere,
+		* which will be replaced by some random characters.
+		* @returns name of the newly created test directory.
+		*/
+		std::string createTmpDir ( const char* tmpDirNameTemplate );
+
+		/** Remove temporary directory after testing is over.
+		* @param tmpDirName names the directory to be deleted. It must be empty (again).
+		*/
+		void removeTmpDir ( const std::string &tmpDirName );
+
 		/** Add a method to the list of those to be run to perform the test. */
 		template<class C> void addTestMethod(
 			const std::string& name,
@@ -48,6 +62,12 @@ namespace test {
 			const double expected,
 			const double actual,
 			const double tolerance = 1e-15
+		);
+
+		/** Assert NaN, but not infinity. */
+		void assert_nan (
+			const std::string& msg,
+			const double actual
 		);
 
 		/** Assert equality of two rectangular arrays. */
@@ -71,6 +91,22 @@ namespace test {
 			const int x,
 			const int y,
 			const T * m
+		);
+
+		/** Assert equality of binary stream content with array of <code>char</code>. */
+		void assertData (
+			const std::string message,
+			const size_t countBytes,
+			const char * const data,
+			std::istream& input
+		);
+
+		/** Assert equality of text stream content with array of lines. */
+		void assertText (
+			const std::string message,
+			const size_t countLines,
+			const char * const lines[],
+			std::istream& input
 		);
 	};
 
