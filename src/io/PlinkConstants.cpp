@@ -30,8 +30,8 @@ namespace io {
 	*/
 	const double PlinkConstants::genotypeTranslation[4] = {
 		-1.0,	// 00 homocygote
-		::nan( "missing" ),	// 10 missing
-		0.0,	// 01 heterocygote
+		::nan( "missing" ),	// 10 missing (stored as bit pattern 01 written with leading MSB)
+		0.0,	// 01 heterocygote (stored as bit pattern 10 written with leading MSB)
 		+1.0	// 11 homocygote
 	};
 
