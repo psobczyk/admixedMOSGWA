@@ -28,6 +28,7 @@ set( core_libraries
 	Pool.cpp
 	Pool.hpp
 	GA.hpp
+	GA.cpp
 	buildinfo.cpp
 	buildinfo.hpp
 	GenotypeFreq.cpp

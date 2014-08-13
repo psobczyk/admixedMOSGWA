@@ -50,6 +50,33 @@ string timeStemple()
   return int2strPadWith( now->tm_hour, 2, '0' ) + ":" + int2strPadWith( now->tm_min, 2, '0' ) + ":" + int2strPadWith( now->tm_sec, 2, '0' );  
 }
 
+string sec2time(const time_t &t)
+{
+  int hour = t / 3600;
+  int sec = t - hour * 3600;
+  int min = sec / 60;
+  sec = sec % 60;
+  return int2strPadWith( hour, 2, '0' ) + ":" + int2strPadWith( min, 2, '0' ) + ":" + int2strPadWith( sec, 2, '0' );    
+}
+
+
+string stemp_diff(const tm* t_start, const tm* t_end)
+{
+  unsigned int start_sec = t_start->tm_sec + t_start->tm_min * 60 + t_start->tm_hour * 3600;
+  unsigned int end_sec = t_end->tm_sec + t_end->tm_min * 60 + t_end->tm_hour * 3600;
+  unsigned int diff_sec;
+  if (start_sec > end_sec)
+    diff_sec = 24 * 3600 + end_sec - start_sec;
+  else
+    diff_sec = end_sec - start_sec;
+  int hour = diff_sec / 3600;
+  //sec -= hour * 3600;
+  int sec = diff_sec % 3600;
+  int min = sec / 60;
+  sec = sec % 60;
+  
+  return int2strPadWith( hour, 2, '0' ) + ":" + int2strPadWith( min, 2, '0' ) + ":" + int2strPadWith( sec, 2, '0' );    
+}
 
 /**
  * @brief Creates a progress bar. It is helpfull to set the stop criterion
@@ -101,6 +128,21 @@ double normCDF(double z)
   return n;
 }
 
+/*
+string stemp_diff(const tm* t_end, const tm* t_start)
+{
+  unsigned int start_sec = t_start->tm_sec + t_start->tm_min * 60 + t_start->tm_hour * 3600;
+  unsigned int end_sec = t_end->tm_sec + t_end->tm_min * 60 + t_end->tm_hour * 3600;
+  unsigned int diff_sec;
+  if (start_sec > end_sec)
+    diff_sec = 24 * 3600 + end_sec - start_sec;
+  else
+    diff_sec = end_sec - start_sec;
+  
+  return int2strPadWith( now->tm_hour, 2, '0' ) + ":" + int2strPadWith( now->tm_min, 2, '0' ) + ":" + int2strPadWith( now->tm_sec, 2, '0' );    
+}
+*/
+
 /** @brief For calculatation a difference between two times 
  * @param hour, min, sec, nano - calculated time
  * @param tp - start time
@@ -110,7 +152,9 @@ void time_diff(int &hour, int & min, int &sec, int &nano, timespec &ts, timespec
 {
   if (ts.tv_nsec > te.tv_nsec)
   {
-     nano = te.tv_nsec - ts.tv_nsec + 1000000000;
+     nano = 1000000000 + te.tv_nsec - ts.tv_nsec;
+     if (te.tv_sec == 0)
+       te.tv_sec = 24 * 3600;
      --te.tv_sec;
   }
   else
@@ -167,6 +211,10 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
 
   data.calculateIndividualTests();
   
+  Model m0(data);
+  m0.computeRegression();
+  data.setLL0M( m0.getMJC() );
+
   if (printInfo) printLOG("Initial population start");
 
   map<string, int> SNP_Names_Id;
@@ -179,10 +227,11 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   readClusterLabel(mapSNPid_label, clusterFile_POWER, SNP_Names_Id, &mapLabel_PmiY);
  
   if (statisticsOnly == true)
-  { //<TODO>  sprawdzić, czy potrzeba przydzielać pamięć models;
+  { //<TODO>  sprawdzić, czy potrzeba przydzielać pamięć dla models;
     return;
   }
-
+//  stronglyCorrelatedSnpsCluster();
+//  exit(0);
   if ((unsigned int) (parameter.ms_MaximalSNPsMultiForwardStep) > data.getIdvNo()/4)
     parameter.ms_MaximalSNPsMultiForwardStep = data.getIdvNo()/4;
   cout << "maxInitModelSize: " << parameter.ms_MaximalSNPsMultiForwardStep << ", individuals: " << data.getIdvNo() << endl;
@@ -220,27 +269,18 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   }
   cout << "goodSNPsNo: " << goodSNPsNo << endl;
 
-  Model m0(data);
   vector<snp_index_t> v;
-  if (m0.computeRegression())
+  m0.computeMSC();
+  RSSo = m0.getMJC();
+  double h2_M = (RSSo - m0.getMJC()) / RSSo;
+  unsigned int pSize = pool.size(); 
+  v = m0.getModelSnps();
+  PoolItem p(v, m0.getMSC(), h2_M, pSize + 1, 'I');
+  pool.insert(p);
+  if (pSize < pool.size()  && parameter.silent == false)
   {
-    m0.computeMSC();
-    RSSo = m0.getMJC();
-    double h2_M = (RSSo - m0.getMJC()) / RSSo;
-    unsigned int pSize = pool.size(); 
-    v = m0.getModelSnps();
-    PoolItem p(v, m0.getMSC(), h2_M, pSize + 1, 'I');
-    pool.insert(p);
-    if (pSize < pool.size()  && parameter.silent == false)
-    {
-      poolFilePart << p << "\n";
-    }
+    poolFilePart << p << "\n";
   }
-  else
-  {
-    cerr << "error: compute regression for model 0 fail" << endl;
-    exit(-1);
-  }  
 
   try
   {
@@ -262,9 +302,50 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   vector<snp_index_t> snps;
 
   stringstream ss;
+  // the first model is created by stepwise method
+  try
+  {
+    models[0] = new Model(data);
+    if (fileName != "")  // reads models from a file. 
+    {
+      if (itPop != population.end())
+      {
+        v.clear();
+        v = itPop->getPoolItem();                             
+        models[0]->addManySNP(v);
+        ++itPop;
+      }
+    }
+    else                 // stepwise selection, mBIC2
+    {
+      data.selectModel(
+        models[0],
+        parameter.PValueBorder,
+        parameter.maximalModelSize,
+        Parameter::selectionCriterium_mBIC_firstRound
+      );
   
-  // for the first half of population
-  for (unsigned int i = 0; i < modelsNo/2; i++)
+//      int maxModelSieze = 150;
+      data.selectModel(
+        models[0], 
+        parameter.PValueBorder, 
+        parameter.maximalModelSize, 
+        Parameter::selectionCriterium_mBIC2
+      ); 
+      cout << "First model: " << *models[0] << endl;
+      vector<snp_index_t> v = models[0]->getModelSnps();
+      for (unsigned int i = 0; i < v.size(); ++i)
+        exclusivedSNP[ data.getOrderedSNP(i) ] = true;
+    }  
+  }
+  catch (bad_alloc &ba)
+  {
+    cerr << "Not enought memory to create a model " << 0 << " (in GA())" <<  endl;
+    exit(-1);   
+  }
+  // for the first half of populations
+  
+  for (unsigned int i = 1; i < modelsNo/2; i++)
   {
     try
     {
@@ -290,7 +371,8 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
       exit(-1);   
     }
   }
-  
+//  cout << "parameter.ms_MaximalSNPsMultiForwardStep: " << parameter.ms_MaximalSNPsMultiForwardStep << endl;
+//  char c; cout << "Press a key.."; cin >> c;
   // for the second half of population
   for (unsigned int i = modelsNo/2; i < modelsNo; i++)
   {
@@ -317,7 +399,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
     {
       set<snp_index_t> initSNP;
       int randSNP;
-      while ( initSNP.size() < (unsigned int) (models[0]->getModelSize()) && initSNP.size() < (unsigned int) (parameter.ms_MaximalSNPsMultiForwardStep))
+      while ( initSNP.size() < (unsigned int) (models[0]->getModelSize()) && initSNP.size() < (unsigned int)(models[0]->getModelSize()) )
       { 
         randSNP = rand() % goodSNPsNo;
         if (exclusivedSNP[randSNP] == true)
@@ -329,6 +411,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
     
   }
   // writes the models to the pool file
+  cout << endl;
   for (unsigned int i = 0; i < modelsNo; i++)
   {
     if (models[i]->computeRegression() == false)
@@ -708,10 +791,21 @@ void GA::run()
     { // we have a better model than the worst model in the population
       unsigned int toChange = 0;
       // We don't want to have two or more the same models in the population. This code prevents it.
-      while (toChange < modelsNo && childModel->getMSC() != models[toChange]->getMSC())
+      //while (toChange < modelsNo && childModel->getMSC() != models[toChange]->getMSC())
+      while (toChange < modelsNo && *childModel != *models[toChange])
          ++toChange;
       if (toChange == modelsNo && childModel->getModelSize() > 0)
-      { 
+      {
+        if (childModel->getMSC() < 34128.82)
+        {
+          for (unsigned int m = 0; m < modelsNo; ++m)
+            cout << m << ") " << setprecision(15) << *models[m] << "<>" << setprecision(20) << models[m]->getMSC() << endl;
+          cout << "child: " << setprecision(15) << *childModel  << "<>" << setprecision(20) << childModel->getMSC() << endl;
+          char c; cout << "Press a key..."; cin >> c;
+        }
+        
+        
+        
         if (parameter.silent == false)
           cout << endl << "We have got a better model " << endl;
         delete models[theWorst];
@@ -1084,7 +1178,7 @@ void GA::coumputeHeritability(stringstream &sp_sort, const vector<long double> &
  * @brief Computes and writes to file (*_pProb.txt) posterior probalibities of models
  */
 void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost,
-                                    vector< multiset<long double> > &tabCausalPost_b, long double minPosterior)
+                                    vector< multiset<long double> > &tabCausalPost_b)//, long double minPosterior)
 {
   //cout << "computePosteriorProbability" << endl;
   makeVectCluster(mapSNPid_label);
@@ -1392,8 +1486,8 @@ void GA::calculatePOWER_FDR_clustGA(set<snp_index_t> &mySnps, vector<snp_index_t
 }
 
 /**-------------------------------------------------------------------------
- * @brief Model selection for GA. It works like selectModel() but makes only stepwise selection.
- * @param SelectedModel model for selection
+ * @brief Model selection for GA. It works like selectModel() but makes only a stepwise selection.
+ * @param model a model of selection
  * -------------------------------------------------------------------------
  */
 void GA::selectModel ( Model& model ) {
@@ -1402,7 +1496,7 @@ void GA::selectModel ( Model& model ) {
     model.computeMSC();
   else
     model.computeMSCfalseRegression();
-  model.makeMultiForwardStep(0, 1, NULL, &exclusivedSNP, &goodSNPs );
+  model.makeMultiForwardStep(0, Parameter::selectionCriterium_BIC, NULL, &exclusivedSNP, &goodSNPs );
 } 
 
 /** 
@@ -3460,3 +3554,89 @@ void GA::setCausalCount(map<snp_index_t, int> &map_SNP2count)
      map_SNP2count[ causalSNPs[i] ] = 0;    
   }
 }
+
+
+/**
+ * @brief Computes correlation for snps of causal model
+ * @param threshold - threshold value of correlation. 
+ * @return vector of snps with a correlation above threshold
+ */
+void GA::stronglyCorrelatedSnpsCluster(const double& threshold )
+{
+  stringstream ss;
+  
+  int tabCl[] = {46, 448, 884, 1275, 1642, 2013, 2416, 2749, 3043, 3352, 3712, 4096, 4448, 4848, 5185, 5570, 5960, 6378, 6764, 7254};
+  
+  vector<snp_index_t> causalSNPs;             // snps from real model
+  modelReader(parameter.causalModelFilename, causalSNPs);  
+
+  stringstream ssAll;                 // to save the output
+  ssAll << "causalSNP\tclusterSNP\tcorrelation" << endl;
+  stringstream ssClusters;
+  multimap<double, int> StrongCor; // to sort the correlated SNPs
+
+  double abscor;                   // abs|Correlation| of two SNPs
+  unsigned int j;                           
+  
+  
+  unsigned int rangeFrom = 0,
+               rangeTo = data.getSnpNo();
+  // search for strongly correlated SNPs
+  for (unsigned int ind = 0; ind < causalSNPs.size(); ++ind)
+  {
+    cout << "calculation for " << causalSNPs[ind] << " >> " << data.getSNP( causalSNPs[ind] )->getSnpId() << endl;
+    for (j = rangeFrom; j < rangeTo; j++)
+    {
+      abscor = fabs( data.computeCorrelation( causalSNPs[ind], j ) ); // compute correlation between model SNP and SNP j
+      if (abscor  >= threshold) // add if correlation is big enough
+      {
+//        ssAll << causalSNP[ind] << "\t" << j << "\t" << abscor << endl; data.getSNP( (*itM).second )->getSnpId()
+        ssAll << data.getSNP( causalSNPs[ind] )->getSnpId() << "\t" << data.getSNP( j )->getSnpId() << "\t" << abscor << "\t" << tabCl[ind] << endl;
+        if (j == rangeFrom)
+          ssClusters << endl << data.getSNP( causalSNPs[ind] )->getSnpId() << "\t" << tabCl[ind] << endl;
+        ssClusters << data.getSNP( j )->getSnpId() << "\t" << tabCl[ind] << endl;
+      }
+    }
+    ssAll << endl;
+  }
+  abscor = fabs( data.computeCorrelation( 13, 15 ) ); 
+  ssAll << endl << data.getSNP( 13 )->getSnpId() << "\t" << data.getSNP( 15 )->getSnpId() << "\t" << abscor << endl;
+  abscor = fabs( data.computeCorrelation( 13, 16 ) );
+  ssAll << data.getSNP( 13 )->getSnpId() << "\t" << data.getSNP( 16 )->getSnpId() << "\t" << abscor << endl;
+  abscor = fabs( data.computeCorrelation( 7207, 7279 ) );
+  ssAll << endl << data.getSNP( 7207 )->getSnpId() << "\t" << data.getSNP( 7279 )->getSnpId() << "\t" << abscor << endl;
+  abscor = fabs( data.computeCorrelation( 15616, 15622 ) );
+  ssAll << endl << data.getSNP( 15616 )->getSnpId() << "\t" << data.getSNP( 15622 )->getSnpId() << "\t" << abscor << endl;
+
+
+  
+  ofstream  outFile;
+  outFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
+  try
+  {
+    outFile.open((parameter.out_file_name + "_corrAG.txt").c_str(),  fstream::out | fstream::trunc );
+    outFile << ssAll.str() << endl;
+    outFile.flush();
+    outFile.close();
+  }
+  catch (ofstream::failure e)
+  {
+    cerr << "Could not write a _corrAG file" <<endl;
+    exit(-1);
+  }
+  
+  try
+  {
+    outFile.open((parameter.out_file_name + "_cluAG.clu").c_str(),  fstream::out | fstream::trunc );
+    outFile << ssClusters.str() << endl;
+    outFile.flush();
+    outFile.close();
+  }
+  catch (ofstream::failure e)
+  {
+    cerr << "Could not write a _cluAG file" <<endl;
+    exit(-1);
+  }
+}  
+
+//SNP_A-1828353 SNP_A-2157434 SNP_A-1794641 SNP_A-1815281 SNP_A-2202441 SNP_A-2309459 SNP_A-2160092 SNP_A-1850477 SNP_A-2289125 SNP_A-1829559 SNP_A-2208065 SNP_A-1786242

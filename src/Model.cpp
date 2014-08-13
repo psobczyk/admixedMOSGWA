@@ -1603,7 +1603,8 @@ bool Model::makeMultiForwardStep (
 	int PValueBorder,
 	const int selectionCriterium,
 	int *startIndex,
-	set<snp_index_t> *exclusivedSNP
+        TBitset * exclusivedSNP,
+        TBitset * goodSNPs
 ) {
 //if(score) 
 	//getscores this means that we have logistic regression 
@@ -1664,9 +1665,14 @@ int newSNP=0;
 //DEBUG cout<<endl<<"getModelSize() =  startSize+ newSNP"<<getModelSize()<<"="
 //<< startSize+/*parameter.ms_MaximalSNPsMultiForwardStep*/ newSNP;
 
-      if (exclusivedSNP != 0)
+	if (goodSNPs != 0) {   //  GA
+		if ( false == (*goodSNPs)[data_->getOrderedSNP(i)] ) {
+			continue;
+		}
+	}
+      if (exclusivedSNP != 0) // GA
       {
-        if (exclusivedSNP->find( data_->getOrderedSNP(i)) != exclusivedSNP->end())   // for GA
+	if ( true == (*exclusivedSNP)[ data_->getOrderedSNP(i)] )
         {
           continue;          
         }     
@@ -1701,8 +1707,8 @@ int newSNP=0;
             );
           }
           oldBIC = newBIC;
-          if (exclusivedSNP != 0)
-            exclusivedSNP->insert(orderedSnpIndex);   // for GA
+          if (exclusivedSNP != 0)    // GA
+            (*exclusivedSNP)[data_->getOrderedSNP(i)] = true;  
           }
 	  
        }
@@ -1744,13 +1750,24 @@ int newSNP=0;
       
       const snp_index_t orderedSnpIndex = data_-> getOrderedSNP( snpCol );
       
-      if (exclusivedSNP != 0)
+      if (goodSNPs != 0)
       {
-        if ((exclusivedSNP->find( orderedSnpIndex)!= exclusivedSNP->end()))   // for GA
+        if (orderedSnpIndex < 0 || orderedSnpIndex > goodSNPs->size())
         {
-          continue;          
-        }     
-      }
+          cerr << "ERROR: orderedSnpIndex: " << orderedSnpIndex << endl;
+          exit(-1);
+        }
+        if ((*goodSNPs)[orderedSnpIndex] == false)
+          continue;
+      }  
+
+	if (exclusivedSNP != 0)
+	{
+		if ( true == (*exclusivedSNP)[orderedSnpIndex] )	// for GA
+		{
+			continue;          
+		}
+	}
       
       if ( modelIndex.contains( orderedSnpIndex ) ) continue;
       
@@ -1765,10 +1782,10 @@ int newSNP=0;
  printLOG("newBIC________________"+double2str(newBIC));
         addSNPtoModel( orderedSnpIndex );
       
-        if (exclusivedSNP != 0)
-        {
-          exclusivedSNP->insert(orderedSnpIndex);   // for GA        
-        }  
+	if (exclusivedSNP != 0)  // GA
+	{
+		(*exclusivedSNP)[orderedSnpIndex] = true;   
+	}  
         oldBIC = newBIC;
 	if ( ::isinf( oldBIC ) && oldBIC < 0.0 ) {
    		printLOG( "model fully explains observations" );
@@ -2611,16 +2628,17 @@ void Model::printModelNew() const {
  * @brief Print model information (snps and msc) on the screen. Just for testing GA
  */
 ostream &operator << ( ostream &out, const Model &m ) {
-	vector<snp_index_t>::const_iterator it = m.modelSnps_.begin();
+  vector<snp_index_t> v = m.modelSnps_;
+  sort(v.begin(), v.end());
   out << "[";
-  if (m.modelSnps_.size() > 0)
+  if (v.size() > 0)
   {
-    out << *it;
-    ++it;
+    out << v.at( 0 );
   }  
-  for (; it != m.modelSnps_.end(); ++it)
-    out << ", " << *it;
-  return out << "], msc: " << m.msc;
+  for ( size_t i = 1; i < v.size(); ++i ) {
+    out << ", " << v.at( i );
+  }
+  return out << "], msc: " << setprecision(8) << m.msc;
 }  
 
 /**
@@ -2784,4 +2802,27 @@ bool Model::selectModel (
 		selectionCriterium
 	);
 	return getMSC() < best;
+}
+
+
+bool Model::operator == ( const Model &m ) const {
+  if (modelSnps_.size() != m.modelSnps_.size())
+    return false;
+  if (modelSnps_.size() == 0)
+    return true;
+
+  vector<snp_index_t> v1 = modelSnps_;
+  sort(v1.begin(), v1.end());
+
+  vector<snp_index_t> v2 = m.modelSnps_;
+  sort(v2.begin(), v2.end());
+
+  unsigned int i = 0;
+  while (i < v1.size())
+  {
+    if (v1[i] != v2[i])
+      return false;
+    ++i;
+  }
+  return true;
 }

@@ -104,8 +104,17 @@ public:
 		selectionCriterium_mBIC = 3,
 		selectionCriterium_mBIC_firstRound = -3,	// uses different expected_causal_SNPs
 		selectionCriterium_mBIC2 = 4;
+
 	/** Which criterium to use. */
 	int selectionCriterium;
+
+	/** Constants to interpret {@link #searchStrategy}. */
+	static const int
+		searchStrategy_greedy = 0,
+		searchStrategy_genetic_algorithm = 1;
+
+	/** Which search strategy to use. */
+	int searchStrategy;
 
 	/** Parameter in the EBIC criterium. */
 	double EBIC_gamma;

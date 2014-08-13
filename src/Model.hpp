@@ -264,7 +264,7 @@ public:
 
         bool makeMultiForwardStepScore ( int PValueBorder, int selectionCriterium, int* startIndex, vector<int> scores);
         /** makeMultiForwardStep take the PValueBorder, an selection Criterium, the default Value is 1 for BIC in the initial ForwardStep and an  an exclusivedSNP set,*/ 
-	bool makeMultiForwardStep ( int PValueBorder = 0, int selectionCriterium =1, int *startIndex= NULL ,  std::set<snp_index_t> * exclusivedSNP = 0 );
+	bool makeMultiForwardStep ( int PValueBorder = 0, int selectionCriterium =1, int *startIndex= NULL ,  TBitset * exclusivedSNP = 0, TBitset * goodSNPs = 0 );
 	bool makeMultiBackwardStep ();
 	bool saveguardbackwardstep (
 		Model &smallerModel,
@@ -339,6 +339,10 @@ public:
 	double computeMSCfalseRegression ( const int selectionCriterium = Parameter::selectionCriterium_mBIC2 );
   
 	double computeMSCfalseRegression ( const int selectionCriterium, std::vector<snp_index_t> &removedSnps );
+
+	bool operator == ( const Model &m ) const;
+
+	bool operator != ( const Model &m ) const { return !(*this == m); }
 };
 
 #endif	/* MODEL_HPP */

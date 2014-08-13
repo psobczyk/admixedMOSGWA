@@ -31,6 +31,21 @@ ofstream LOG;
 /** Global parameter holder */
 Parameter parameter;
 
+void runGreedy ();
+void runGA ( const int outNo = -1, const string &modelsFileName = "" );
+
+string timeStamp ( const time_t t ) {
+	int hour, min, sec;
+	sec = t;
+	hour = sec / 3600;
+	sec = sec % 3600;
+	min = sec / 60;
+	sec = sec % 60;
+	return int2strPadWith( hour, 2, '0' )
+		+ ":" + int2strPadWith( min, 2, '0' )
+		+ ":" + int2strPadWith( sec, 2, '0' );  
+}
+
 /** Application entry point */
 int main ( const int argc, const char *argv[] ) {
 
@@ -60,33 +75,11 @@ int main ( const int argc, const char *argv[] ) {
 	LOG.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
 
 	try {
-		// Read in data by generating MData object
-		MData data;
-
-		// calculate single marker test (need for modelselection)
-		data.calculateIndividualTests();
-
-		// complete model selection process
-		//OLD data.selectModel();
-
-		Model model0( data );
-		Model firstmodel(data);
-		model0.computeRegression();
-		data.setLL0M( model0.getMJC() );
-		Model *modelin=&model0;
-		data.selectModel(
-			modelin,
-			parameter.PValueBorder,
-			parameter.maximalModelSize,
-			Parameter::selectionCriterium_mBIC_firstRound
-		);
-		modelin->printModel( "First round result" );
-		data.selectModel(
-			modelin,
-			5000,
-			parameter.maximalModelSize,
-			parameter.selectionCriterium
-		);
+		if ( Parameter::searchStrategy_genetic_algorithm == parameter.searchStrategy ) {
+			runGA();
+		} else {
+			runGreedy();
+		}
 	} catch ( const Exception e ) {
 		printLOG( e.what() );
 	}
@@ -98,3 +91,116 @@ int main ( const int argc, const char *argv[] ) {
 		cerr << "Could not close logfile \"" + logFileName + "\"" << endl;
 	}
 }
+
+void runGreedy () {
+	// Read in data by generating MData object
+	MData data;
+
+	// calculate single marker test (need for modelselection)
+	data.calculateIndividualTests();
+
+	// complete model selection process
+	//OLD data.selectModel();
+
+	Model model0( data );
+	Model firstmodel(data);
+	model0.computeRegression();
+	data.setLL0M( model0.getMJC() );
+	Model *modelin=&model0;
+	data.selectModel(
+		modelin,
+		parameter.PValueBorder,
+		parameter.maximalModelSize,
+		Parameter::selectionCriterium_mBIC_firstRound
+	);
+	modelin->printModel( "First round result" );
+	data.selectModel(
+		modelin,
+		5000,
+		parameter.maximalModelSize,
+		parameter.selectionCriterium
+	);
+}
+
+void runGA ( const int outNo, const string &modelsFileName ) {
+  unsigned int modelsNo_ = parameter.modelsNo;                   
+  unsigned int maxNoProgressIter_ = parameter.maxNoProgressIter; 
+  double pCross_ = parameter.pCross;                             
+  double pMutation_ = parameter.pMutation;                       
+  unsigned int tournamentSize_ = parameter.tournamentSize;       
+  double correlationThreshold_ = parameter.correlationThreshold; 
+  int correlationRange_ = parameter.correlationRange;           
+  int B_ = parameter.B;
+  string old_out_file_name;
+  
+  if (outNo >= 0)  
+  {
+    old_out_file_name = parameter.out_file_name;
+    parameter.out_file_name = parameter.out_file_name + "_" + int2str(outNo);
+  }
+
+  const time_t time_start = time(NULL);
+  
+ 
+  stringstream ss;
+  timespec ts;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
+  time_t now;
+  time(&now);
+  srand(now);
+
+  map<snp_index_t, int> mapSNPCausal_ind; 
+  vector< multiset<long double> > tabCausalPost; 
+  vector< multiset<long double> > tabCausalPost_b; 
+
+  GA ga(modelsNo_, maxNoProgressIter_, pCross_, pMutation_, tournamentSize_, B_, modelsFileName, correlationThreshold_, correlationRange_);
+  ga.run();
+  
+  ga.initCausalPost( mapSNPCausal_ind );
+  tabCausalPost.resize( mapSNPCausal_ind.size() );
+  tabCausalPost_b.resize( mapSNPCausal_ind.size() );
+  
+  stringstream ssModels;
+  ssModels << "";
+  ga.computePosteriorProbability(ssModels, mapSNPCausal_ind, tabCausalPost, tabCausalPost_b);//, minPosterior);
+  writePosterior((parameter.out_file_name + "_post_12.txt").c_str(), mapSNPCausal_ind, tabCausalPost, 1);
+
+  ss.str("");
+  ss.clear();
+  ss << "GA time: ";
+
+  const time_t time_end = time(NULL);          //get current calendar time
+
+  cout << "start at " << timeStamp(time_start) << endl;
+  cout << "start at " << time_start << endl;
+  cout << "end at " << timeStamp(time_end) << endl;
+  cout << "end at " << time_end << endl;
+  
+  ss << (time_end > time_start? sec2time(time_end - time_start) : sec2time(24 * 3600 + time_end - time_start)) << endl;
+  cout << ss.str() << endl;
+  ga.writePoolToFile(ss);
+
+  ofstream  Pmi_YsortFile;
+  Pmi_YsortFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); 
+  try
+  {
+    Pmi_YsortFile.open( ( parameter.out_file_name + "_PjMi_YsortFile_#" + int2str(parameter.in_values_int) + ".txt" ).c_str(),  fstream::out | fstream::trunc );
+    Pmi_YsortFile << ss.str() << ssModels.str() << endl;
+    Pmi_YsortFile.flush();
+    Pmi_YsortFile.close();
+  }
+  catch (ofstream::failure e)
+  {
+    cerr << "Could not write PMi_Y-sorted File" <<endl;
+  }
+  cout << "Posterior probalibities of models are in the file: " 
+       <<  ( parameter.out_file_name + "_PjMi_YsortFile_#" + int2str(parameter.in_values_int) + ".txt" ).c_str() << endl;
+  
+  printLOG(ss.str());   
+  if (outNo >= 0)  
+  {
+    parameter.out_file_name = old_out_file_name;
+  }
+}
+
+

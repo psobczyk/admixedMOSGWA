@@ -102,6 +102,18 @@ Parameter::Parameter () {
 	declare( "model_selection", "reset", reset );
 	declare( "model_selection", "jump_back", jump_back );
 	declare( "model_selection", "saveguardsteps", saveguardsteps = 2 );
+	{
+		map< const string, int > choice;
+		choice[ "greedy" ] = searchStrategy_greedy;
+		choice[ "genetic_algorithm" ] = searchStrategy_genetic_algorithm;
+		declare(
+			"model_selection",
+			"search_strategy",
+			searchStrategy = searchStrategy_greedy,
+			choice
+		);
+	}
+
 	// log_regression settings
 	declare( "log_regression", "max_it", logrC_maxit );
 	declare( "log_regression", "max_hs", logrC_maxhs );

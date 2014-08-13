@@ -18,9 +18,7 @@
 #include <iomanip>
 #include <iostream>
 
-
 using namespace std;
-
 
 ostream& operator << ( ostream &out, const PoolItem &p )
 {
