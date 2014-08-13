@@ -990,6 +990,7 @@ for ( int i = 0; i < getModelSize(); ++i ) {
  *  which is even better than the selected variable.
  *  currentPosition could be set to 0 search all or the psoition from the forwardstep
  * */
+// REMARK<BB> 0 should not be a reserved value, it is a valid SNP index.
 bool Model::replaceModelSNPbyNearFromCAT (
 	int currentPosition,
 	int PValueBorder,
