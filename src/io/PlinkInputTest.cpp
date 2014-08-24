@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2012–2014, Bernhard Bodenstorfer.				*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -47,7 +47,12 @@ namespace test {
 		* @param snpMajour determines whether SNP majour mode should be used. Else Individual majour mode.
 		* @returns name of the test directory.
 		*/
-		string setUp ( const bool snpMajour, const bool withCovariates, const bool withExtraPhenotypes );
+		string setUp (
+			const bool snpMajour,
+			const bool withCovariates,
+			const bool withExtraPhenotypes,
+			const bool withMoreData = false
+		);
 
 		/** Remove test setup. */
 		void tearDown (
@@ -97,7 +102,8 @@ namespace test {
 	string PlinkInputTest::setUp (
 		const bool snpMajour,
 		const bool withCovariates,
-		const bool withExtraPhenotypes
+		const bool withExtraPhenotypes,
+		const bool withMoreData
 	) {
 		vector<char> tmpDirname( strlen( tmpDirnameTemplate ) + 1 );	// +1 for trailing 0
 		strcpy( tmpDirname.data(), tmpDirnameTemplate );
@@ -111,6 +117,9 @@ namespace test {
 			bim << "4\tCytosin\t1.7e1\t27\tC\tG" << endl;
 			bim << "4\tGuanin\t-7e-1 271717\tG C" << endl;
 			bim << "7 Thymin 7.0 1 T A" << endl;	// space instead tab
+			if ( withMoreData ) {
+				bim << "8\tUracil\t0.001 1\tT A" << endl;
+			}
 			bim.close();
 		}
 
@@ -120,6 +129,9 @@ namespace test {
 			fam << "Fohliks\tFlo\tStefan\tLudmilla\t1\t-1.0e-1" << endl;
 			fam << "Grün\tGeorg\tKarl\tWaltraud\t1\t2e2" << endl;
 			fam << "Skala Esra Reginald Rabia 2 7" << endl;		// space instead tab
+			if ( withMoreData ) {
+				fam << "Skala\tSophus\tTergonius\tScholastika\t1\t0.0" << endl;
+			}
 			fam.close();
 		}
 
@@ -131,34 +143,64 @@ namespace test {
 			if ( snpMajour ) {
 				bed << static_cast<char>( 1 );
 				{
-					const bitset<8> adeninGenome( string( "001111" ) );
+					const bitset<8> adeninGenome( string(
+						withMoreData ? "00001111" : "001111"
+					) );
 					bed << static_cast<char>( adeninGenome.to_ulong() );
 				}
 				{
-					const bitset<8> cytosinGenome( string( "001101" ) );
+					const bitset<8> cytosinGenome( string(
+						withMoreData ? "01001101" : "001101"
+					) );
 					bed << static_cast<char>( cytosinGenome.to_ulong() );
 				}
 				{
-					const bitset<8> guaninGenome( string( "001110" ) );
+					const bitset<8> guaninGenome( string(
+						withMoreData ? "10001110" : "001110"
+					) );
 					bed << static_cast<char>( guaninGenome.to_ulong() );
 				}
 				{
-					const bitset<8> thyminGenome( string( "001100" ) );
+					const bitset<8> thyminGenome( string(
+						withMoreData ? "11001100" : "001100"
+					) );
 					bed << static_cast<char>( thyminGenome.to_ulong() );
+				}
+				if ( withMoreData ) {
+					const bitset<8> uracilGenome( string( "00011011" ) );
+					bed << static_cast<char>( uracilGenome.to_ulong() );
 				}
 			} else {
 				bed << static_cast<char>( 0 );
 				{
 					const bitset<8> floGenome( string( "00100111" ) );
 					bed << static_cast<char>( floGenome.to_ulong() );
+					if ( withMoreData ) {
+						const bitset<8> floGenome2( string( "11" ) );
+						bed << static_cast<char>( floGenome2.to_ulong() );
+					}
 				}
 				{
 					const bitset<8> georgGenome( string( "11111111" ) );
 					bed << static_cast<char>( georgGenome.to_ulong() );
+					if ( withMoreData ) {
+						const bitset<8> georgGenome2( string( "10" ) );
+						bed << static_cast<char>( georgGenome2.to_ulong() );
+					}
 				}
 				{
 					const bitset<8> esraGenome( string( "00000000" ) );
 					bed << static_cast<char>( esraGenome.to_ulong() );
+					if ( withMoreData ) {
+						const bitset<8> esraGenome2( string( "01" ) );
+						bed << static_cast<char>( esraGenome2.to_ulong() );
+					}
+				}
+				if ( withMoreData ) {
+					const bitset<8> sophusGenome( string( "11100100" ) );
+					bed << static_cast<char>( sophusGenome.to_ulong() );
+					const bitset<8> sophusGenome2( string( "00" ) );
+					bed << static_cast<char>( sophusGenome2.to_ulong() );
 				}
 			}
 			bed.close();
@@ -226,8 +268,9 @@ namespace test {
 
 	void PlinkInputTest::testRead () {
 		// Test both arrangements for PLink genotype data.
+		for ( int withMoreData = 0; withMoreData < 2; ++withMoreData )
 		for ( int snpMajour = 0; snpMajour < 2; ++snpMajour ) {
-			const string testDirname( setUp( 0 < snpMajour, false, false ) );
+			const string testDirname( setUp( 0 < snpMajour, false, false, withMoreData ) );
 			const string testFilenameTrunc( testDirname + "/" + filenameTrunc );
 			const char * const tft = testFilenameTrunc.c_str();
 			PlinkInput plinkInput( tft );
@@ -235,7 +278,11 @@ namespace test {
 
 			{
 				const SNP * snp = plinkInput.getSnps();
-				assert_eq( "countSnps", 4, plinkInput.countSnps() );
+				assert_eq(
+					"countSnps",
+					withMoreData ? 5 : 4,
+					plinkInput.countSnps()
+				);
 
 				assert_eq( "snp[0].chromosome", 0, snp[0].getChromosome() );
 				assert_eq( "snp[0].id", string( "Adenin" ), snp[0].getSnpId() );
@@ -268,7 +315,11 @@ namespace test {
 
 			{
 				const Individual * idv = plinkInput.getIndividuals();
-				assert_eq( "countIndividuals", 3, plinkInput.countIndividuals() );
+				assert_eq(
+					"countIndividuals",
+					withMoreData ? 4 : 3,
+					plinkInput.countIndividuals()
+				);
 
 				assert_eq( "individual[0].familyId", string( "Fohliks" ), idv[0].getFamilyID() );
 				assert_eq( "individual[0].id", string( "Flo" ), idv[0].getIndividualID() );
@@ -289,11 +340,22 @@ namespace test {
 				assert_eq( "individual[2].sex", Individual::FEMALE, idv[2].getSexCode() );
 			}
 
+			/* Scheme of genotype array is:
+					SNP	0	1	2	3	4
+				IDV
+				0		+	nan	0	-	+
+				1		+	+	+	+	0
+				2		-	-	-	-	nan
+				3		-	nan	0	+	-
+			*/
 			{
 				plinkInput.retrieveGenotypeVector( 0, vector );
 				assert_eq( "genotypeMatrixNontransposed[0,0]", 1.0, vector.get( 0 ) );
 				assert_eq( "genotypeMatrixNontransposed[1,0]", 1.0, vector.get( 1 ) );
 				assert_eq( "genotypeMatrixNontransposed[2,0]", -1.0, vector.get( 2 ) );
+				if ( withMoreData ) {
+					assert_eq( "genotypeMatrixNontransposed[3,0]", -1.0, vector.get( 3 ) );
+				}
 			}
 
 			{
@@ -301,6 +363,9 @@ namespace test {
 				assert_true( "genotypeMatrixNontransposed[0,1]", ::isnan( vector.get( 0 ) ) );
 				assert_eq( "genotypeMatrixNontransposed[1,1]", 1.0, vector.get( 1 ) );
 				assert_eq( "genotypeMatrixNontransposed[2,1]", -1.0, vector.get( 2 ) );
+				if ( withMoreData ) {
+					assert_true( "genotypeMatrixNontransposed[3,1]", ::isnan( vector.get( 3 ) ) );
+				}
 			}
 
 			{
@@ -308,6 +373,9 @@ namespace test {
 				assert_eq( "genotypeMatrixNontransposed[0,2]", 0.0, vector.get( 0 ) );
 				assert_eq( "genotypeMatrixNontransposed[1,2]", 1.0, vector.get( 1 ) );
 				assert_eq( "genotypeMatrixNontransposed[2,2]", -1.0, vector.get( 2 ) );
+				if ( withMoreData ) {
+					assert_eq( "genotypeMatrixNontransposed[3,2]", 0.0, vector.get( 3 ) );
+				}
 			}
 
 			{
@@ -315,6 +383,17 @@ namespace test {
 				assert_eq( "genotypeMatrixNontransposed[0,3]", -1.0, vector.get( 0 ) );
 				assert_eq( "genotypeMatrixNontransposed[1,3]", 1.0, vector.get( 1 ) );
 				assert_eq( "genotypeMatrixNontransposed[2,3]", -1.0, vector.get( 2 ) );
+				if ( withMoreData ) {
+					assert_eq( "genotypeMatrixNontransposed[3,3]", 1.0, vector.get( 3 ) );
+				}
+			}
+
+			if ( withMoreData ) {
+				plinkInput.retrieveGenotypeVector( 4, vector );
+				assert_eq( "genotypeMatrixNontransposed[0,4]", 1.0, vector.get( 0 ) );
+				assert_eq( "genotypeMatrixNontransposed[1,4]", 0.0, vector.get( 1 ) );
+				assert_true( "genotypeMatrixNontransposed[2,4]", ::isnan( vector.get( 2 ) ) );
+				assert_eq( "genotypeMatrixNontransposed[3,4]", -1.0, vector.get( 3 ) );
 			}
 
 			{

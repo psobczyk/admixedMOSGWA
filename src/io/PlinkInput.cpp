@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2012–2014, Bernhard Bodenstorfer.				*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -16,14 +16,12 @@
 #include "PlinkInput.hpp"
 #include "PlinkConstants.hpp"
 #include "../Exception.hpp"
-#include <fstream>
 #include <iostream>
 #include <cstdlib>
 #include <cassert>
 #include <cmath>	// for nan(...)
 #include <cstring>
 #include <cerrno>
-#include <map>
 
 using namespace std;
 using namespace linalg;
@@ -49,7 +47,6 @@ namespace io {
 
 	PlinkInput::PlinkInput ( const char* const filenameTrunc )
 		:
-		genotypeMatrixTransposed( 0, 0 ),
 		covariateMatrixTransposed( 0, 0 ),
 		phenotypeMatrixTransposed( 0, 0 )
 	{
@@ -267,62 +264,54 @@ namespace io {
 		}
 
 		{
-			// Read genotype matrix file
-			string genFilename( filenameTrunc );
-			genFilename += genotypeMatrixExtension;
-			ifstream bed( genFilename.c_str(), ifstream::binary );
-			if ( ! bed.good() ) {
+			// Prepare reading genotype matrix file
+			genotypeFilename = filenameTrunc;
+			genotypeFilename += genotypeMatrixExtension;
+			genotypeFile.open( genotypeFilename.c_str(), ifstream::binary );
+			if ( ! genotypeFile.good() ) {
 				throw Exception(
 					"Genotype file \"%s\""
 					" open failed: \"%s\".",
-					genFilename.c_str(),
+					genotypeFilename.c_str(),
 					strerror( errno )	// not perfectly threadsafe
 				);
 			}
-			char byte;
 			// check PLink magic number
-			bed.read( &byte, sizeof( byte ) );
-			assert( 0x6c == byte );		// prevent non-PLink or out-of-date PLink
-			bed.read( &byte, sizeof( byte ) );
-			assert( 0x1b == byte );		// prevent non-PLink or out-of-date PLink
-			// read SNP<->Individual transpose flag
-			bed.read( &byte, sizeof( byte ) );
-			assert( 0 == byte || 1 == byte );
-			// Loop, if flag==1 by SNP, Individual; else by Individual, SNP.
-			const size_t
-				snps = countSnps(),
-				idvs = countIndividuals();
-			size_t snp, idv;
-			const size_t
-				&outerLoopLimit = byte ? snps : idvs,
-				&innerLoopLimit = byte ? idvs : snps;
-			size_t
-				&outerLoopVariable = byte ? snp : idv,
-				&innerLoopVariable = byte ? idv : snp;
-			genotypeMatrixTransposed.exactSize( snps, idvs );
-			for ( outerLoopVariable = 0; outerLoopVariable < outerLoopLimit; ++outerLoopVariable ) {
-				// Plink wastes bits a end of "line"
-				// see http://pngu.mgh.harvard.edu/~purcell/plink/binary.shtml.html
-				int nextBit = 8;	// position of the next bit to be processed; read next byte if >= 8
-				for ( innerLoopVariable = 0; innerLoopVariable < innerLoopLimit; ++innerLoopVariable ) {
-					if ( 8 <= nextBit ) {
-						bed.read( &byte, sizeof( byte ) );
-						if ( bed.eof() ) {
-							assert( snps == snp + 1 && idvs == idv + 1 );
-						}
-						nextBit = 0;
-					}
-					// retrieve next 2 bits; algorithm relies on a genome of chromosome PAIRS.
-					const unsigned int geneticPattern = ( byte >> nextBit ) & 0x3;
-					nextBit += 2;
-					const double value = genotypeTranslation[geneticPattern];
-					genotypeMatrixTransposed.set( snp, idv, value );
+			{
+				assert( 0 < sizeof( bedFileMagic ) );
+				char header[sizeof( bedFileMagic )];
+				genotypeFile.read( header, sizeof( header ) );
+				if ( genotypeFile.fail() ) {
+					throw Exception(
+						"Genotype file \"%s\""
+						" read first %u characters failed: \"%s\".",
+						genotypeFilename.c_str(),
+						sizeof( header ),
+						strerror( errno )	// not perfectly threadsafe
+					);
 				}
-				assert( 0 == ( byte & 0xff ) >> nextBit );		// Expect null bits trailer, if any
+				const size_t orderType = sizeof( header ) - 1;
+				if ( memcmp( bedFileMagic, header, orderType ) ) {
+					throw Exception(
+						"Genotype file \"%s\""
+						" is not recognised PLINK format.",
+						genotypeFilename.c_str()
+					);
+				}
+				switch ( header[orderType] ) {
+					case 0: genotypeArrayTransposition = IDV_MAJOUR; break;
+					case 1: genotypeArrayTransposition = SNP_MAJOUR; break;
+					default:
+						throw Exception(
+							"Genotype file \"%s\""
+							" has unrecognised data transposition flag %u.",
+							genotypeFilename.c_str(),
+							header[orderType]
+						);
+				}
 			}
-			bed.read( &byte, sizeof( byte ) );
-			assert( bed.eof() );
-			bed.close();
+
+			genotypeArrayStart = genotypeFile.tellg();
 		}
 
 		{
@@ -526,9 +515,82 @@ namespace io {
 		stream.close();
 	}
 
+	/** Shared file state breaks thread-safety. */
 	void PlinkInput::retrieveGenotypeVector ( const size_t snpIndex, Vector& vector ) {
-		const Vector genotypeVector = genotypeMatrixTransposed.rowVector( snpIndex );
-		vector.copy( genotypeVector );
+		const size_t
+			snps = countSnps(),
+			idvs = countIndividuals();
+		streampos position( genotypeArrayStart );
+		char byte;
+		switch ( genotypeArrayTransposition ) {
+			case IDV_MAJOUR: {
+				const size_t snpsRoundUp = snps + ( 0x3 & -snps );
+				assert( 0 == ( 0x3 & snpsRoundUp ) );
+				const size_t dimStep = snpsRoundUp >> 2;
+				position += snpIndex >> 2;
+				const unsigned int patternLowBit = ( 0x3 & snpIndex ) << 1;
+				for (
+					size_t idv = 0;
+					idv < idvs;
+					++idv,
+					position += dimStep
+				) {
+					genotypeFile.seekg( position );
+					genotypeFile.read( &byte, sizeof( byte ) );
+					if ( genotypeFile.fail() ) {
+						throw Exception(
+							"Genotype file \"%s\""
+							" read failed: %s.",
+							genotypeFilename.c_str(),
+							strerror( errno )	// not perfectly threadsafe
+						);
+					}
+					const unsigned int geneticPattern = ( byte >> patternLowBit ) & 0x3;
+					const double value = genotypeTranslation[geneticPattern];
+					vector.set( idv, value );
+				}
+			} break;
+			case SNP_MAJOUR: {
+				const size_t idvsRoundUp = idvs + ( 0x3 & -idvs );
+				assert( 0 == ( 0x3 & idvsRoundUp ) );
+				position += snpIndex * ( idvsRoundUp >> 2 );
+				genotypeFile.seekg( position );
+				int nextBit = 8;	// position of the next bit to be processed; read next byte if >= 8
+				for (
+					size_t idv = 0;
+					idv < idvs;
+					++idv,
+					nextBit += 2
+				) {
+					if ( 8 <= nextBit ) {
+						genotypeFile.read( &byte, sizeof( byte ) );
+						if ( genotypeFile.fail() ) {
+							throw Exception(
+								"Genotype file \"%s\""
+								" read failed: %s.",
+								genotypeFilename.c_str(),
+								strerror( errno )	// not perfectly threadsafe
+							);
+						}
+						nextBit = 0;
+					}
+					// retrieve next 2 bits; algorithm relies on a genome of chromosome PAIRS.
+					const unsigned int geneticPattern = ( byte >> nextBit ) & 0x3;
+					const double value = genotypeTranslation[geneticPattern];
+					vector.set( idv, value );
+				}
+				if ( ( byte & 0xff ) >> nextBit ) {	// Expect null bits trailer, if any
+					throw Exception(
+						"Genotype file \"%s\""
+						" violates PLINK format for SNP index %u.",
+						genotypeFilename.c_str(),
+						snpIndex
+					);
+				}
+			} break;
+			default:
+				assert( 0 == "Invalid genotypeArrayTransposition" );
+		}
 	}
 
 	void PlinkInput::retrievePhenotypeVector ( const size_t traitIndex, Vector& vector ) {
@@ -542,6 +604,7 @@ namespace io {
 	}
 
 	PlinkInput::~PlinkInput () {
+		genotypeFile.close();
 	}
 
 }

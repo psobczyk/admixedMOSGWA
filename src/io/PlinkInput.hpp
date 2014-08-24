@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2012–2014, Bernhard Bodenstorfer.				*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -18,6 +18,7 @@
 
 #include "InputAdapter.hpp"
 #include "../linalg/AutoMatrix.hpp"
+#include <fstream>
 #include <map>
 
 namespace io {
@@ -25,19 +26,28 @@ namespace io {
 	/** Reads input data from PLink BIM, FAM and BED formatted files. */
 	class PlinkInput : public InputAdapter {
 
-		/** Genome data matrix.
+		/** File name for genotype data. */
+		std::string genotypeFilename;
+
+		/** Genotype data file. */
+		std::ifstream genotypeFile;
+
+		/** Points to genotype array start within the genonotype data file. */
+		std::streampos genotypeArrayStart;
+
+		/** Genotype data order. */
+		enum { IDV_MAJOUR, SNP_MAJOUR } genotypeArrayTransposition;
+
+		/** Phenotype data vectors for all traits.
 		* It is stored as transposed matrix in order to optimise memory access.
 		* The vectors holding all individuals' data for one SNP should be in a contiguous piece of memory
 		* so that the whole vector fits into cache.
 		* It is these vectors which are added to the regression algorithm in the search phase.
 		*/
-		linalg::AutoMatrix genotypeMatrixTransposed;
-
-		/** Phenotype data vectors for all traits. */
 		linalg::AutoMatrix phenotypeMatrixTransposed;
 
 		/** Covariate matrix.
-		* Similar to {@link #genomeMatrixTransposed},
+		* Similar to {@link #phenotypeMatrixTransposed},
 		* it is stored as transposed matrix in order to optimise memory access.
 		*/
 		linalg::AutoMatrix covariateMatrixTransposed;
