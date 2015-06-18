@@ -49,7 +49,7 @@ Parameter::Parameter () {
 	// output file settings
 	declare( "output", "files", out_file_name );
 	declare( "output", "singlefile", singlefile);//for creating the Hlasso genotyp file only once
-
+	declare( "output", "correlation_threshold", correlation_threshold = 0.999 );
 
 	// log settings
 	declare( "log", "silent", silent );

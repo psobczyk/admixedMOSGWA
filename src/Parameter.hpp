@@ -82,6 +82,9 @@ public:
 	/** true = all model selection steps are written to logfile */
 	bool detailed_selction;
 
+	/** Threshold used in the display of "strongly correlated" SNPs. */
+	double correlation_threshold;
+
 //++++++++++++
 //Imputation:
 
