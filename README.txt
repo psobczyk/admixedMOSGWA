@@ -83,15 +83,18 @@ expected_causal_snps_MBIC	lets the first step with the relaxed selection criteri
 
 Further useful options:
 
+[output]
+correlation_threshold	double		restricts the listing of closely correlated SNPs, default 0.999
+
 [single_marker]
 test			choice		chi_square, cochran_armitage ... which one to use
 
 [model_preselection]
-mBIC_expected_causal_SNPs	integer		parameter for first round of model search (with mBIC)
+mBIC_expected_causal_SNPs	integer		parameter for first round of model search (with mBIC), which determines the starting point for the actual model search
 
 [model_selection]
 selection_criterium	choice		mBIC or mBIC2 (default): criterium to use in second round of model selection
-mBIC_expected_causal_SNPs	integer		parameter for second round of model search, when mBIC is chosen
+mBIC_expected_causal_SNPs	integer		parameter for second round of model search, when mBIC is chosen, irrelevant for mBIC2
 EBIC_gamma		double		parameter in the EBIC criterium, defaults to 1 - log( #individuals ) / ( 2 * log( #SNPs ) )
 search_strategy		choice		greedy (default), genetic_algorithm
 maximalModelSize	integer		limits the search to models of size up to the given; saves time
