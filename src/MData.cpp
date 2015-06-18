@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2014, Erich Dolejsi, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -14,7 +14,7 @@
  ********************************************************************************/
 
 #include "MData.hpp"
-#include <cmath>	//in c++11 for nan(...)
+#include <cassert>
 #include "Model.hpp"
 #include "GenotypeFreq.hpp"
 #include "PermSort.hpp"
@@ -23,6 +23,7 @@
 #include <sstream>
 #include <map>
 #include <memory>
+#include <limits>	// for nan(...)
 #include <cmath>	// for nan(...)
 #include <cfloat>	// for maximal double
 #include <omp.h>
@@ -35,34 +36,34 @@ using namespace io;
 //  class MData
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-const Vector MData::getXcolumn ( const size_t snp ) { return xMat.columnVector( snp ); }
+void MData::getXcolumn ( const size_t snp, Vector& vector ) const {
+	input->retrieveGenotypeVector( snp, vector );
+}
 
 const string& MData::getCovMatElementName( const size_t cov ) const {
 	return covNames.at( cov );
 }
 
-const Vector MData::getCovariateColumn ( const size_t cov ) { return covMat.columnVector( cov ); }
+void MData::getCovariateColumn ( const size_t cov, Vector& vector ) const {
+	input->retrieveCovariateVector( cov, vector );
+}
 
-const Vector MData::getY () { return yVec; }
+void MData::getY ( Vector& vector ) const {
+	input->retrievePhenotypeVector( parameter.in_values_int, vector );
+}
 
 void MData::setLL0M ( const double ll ) {
 	loglikelihood0Model_ = ll;
 }
 
-void MData::setY ( const size_t index, const double value ) {
-	yVec.set(index,value);
-	// REMARK<BB>: Does not alter value stored in Individual.
-}
-
 /** Default Constructor: reads the input-files, sets parameters, deallambda.hpps with missing phenotypes */
-MData::MData ( io::Input *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
-
-	const bool allocateInput = NULL == input;
+MData::MData ( io::Input * const externalInput ) : input( externalInput ), allocateInput( NULL == externalInput ), covMat( 0, 0 ) {
 	if ( allocateInput ) {
 		if ( parameter.in_file_hdf5.empty() ) {
 			input = new PlinkInput( parameter.in_files_plink.c_str() );
-		if (0==parameter.nSNPKriterium)
-                parameter.nSNPKriterium=getSnpNo();
+			if ( 0 == parameter.nSNPKriterium ) {
+				parameter.nSNPKriterium=getSnpNo();
+			}
 		} else {
 			input = new Hdf5Input( parameter.in_file_hdf5.c_str(), parameter.cov_extra_file );
 		}
@@ -75,20 +76,8 @@ MData::MData ( io::Input *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
 	        //ED setting default Value for nSNPKriterium when not set 
 	        if(0==parameter.nSNPKriterium)
                   parameter.nSNPKriterium=snps;
-	xMat.exactSize( idvs, snps );
-	yVec.exactSize( idvs );
 	covMat.exactSize( idvs, covs );
-	const SNP * snpArray = input->getSnps();
-	for ( size_t snp = 0; snp < snps; ++snp ) {
-		snpList.push_back( snpArray[ snp ] );
-		Vector xVec = xMat.columnVector( snp );
-		input->retrieveGenotypeVector( snp, xVec );
-	}
-	const Individual * idvArray = input->getIndividuals();
-	for ( size_t idv = 0; idv < idvs; ++idv ) {
-		idvList.push_back( idvArray[ idv ] );
-	}
-	input->retrievePhenotypeVector( parameter.in_values_int, yVec );
+	singleMarkerTestResult.resize( snps, numeric_limits<double>::signaling_NaN() );
 	const std::string * covariates = input->getCovariates();
 	for ( size_t cov = 0; cov < covs; ++cov ) {
 		covNames.push_back( covariates[ cov ] );
@@ -96,23 +85,23 @@ MData::MData ( io::Input *input ) : xMat( 0, 0 ), yVec( 0 ), covMat( 0, 0 ) {
 		input->retrieveCovariateVector( cov, covVec );
 	}
 	Y_name_ = input->getTraits()[parameter.in_values_int];
-	if ( allocateInput ) {
-		delete input;
-		input = NULL;
-	}
 
 	checkYValues();
 }
 
 MData::~MData () {
+	if ( allocateInput ) {
+		delete input;
+		input = NULL;
+	}
 }
 
 size_t MData::getSnpNo () const {
-	return snpList.size();
+	return input->countSnps();
 }
 
 size_t MData::getIdvNo () const {
-	return idvList.size();
+	return input->countIndividuals();
 }
 
 size_t MData::getCovNo () const {
@@ -120,17 +109,20 @@ size_t MData::getCovNo () const {
 }
 
 string MData::getFID ( const size_t index ) const {
-	const Individual individual = idvList.at( index );
-	return individual.getFamilyID();
+	assert( index < getIdvNo() );
+	const Individual * individual = input->getIndividuals() + index;
+	return individual->getFamilyID();
 }
 
 string MData::getID ( const size_t index ) const {
-	const Individual individual = idvList.at( index );
-	return individual.getIndividualID();
+	assert( index < getIdvNo() );
+	const Individual * individual = input->getIndividuals() + index;
+	return individual->getIndividualID();
 }
 
-const SNP * MData::getSNP ( const size_t snp ) const {
-	return &( snpList.at( snp ) );
+const SNP & MData::getSNP ( const size_t snp ) const {
+	assert ( snp < input->countSnps() );
+	return input->getSnps()[snp];
 }
 
 size_t MData::getOrderedSNP ( const size_t snp ) const {
@@ -153,24 +145,17 @@ double MData::getSnp_order_Value ( const size_t index ) const {
 	return snp_order_.getValue( index );
 }
 
+double MData::getSingleMarkerTestAt ( const size_t index ) const {
+	return singleMarkerTestResult.at( index );
+}
+
 void MData::setSingleMarkerTestAt ( const size_t index, const double value ) {
-	snpList.at( index ).setSingleMarkerTest( value );
+	singleMarkerTestResult.at( index ) = value;
 }
 
 void MData::fillSnp_order_Vec ( const size_t snpNo, size_t* SNPList, double* TestStat ) {
 	snp_order_.fillVec( snpNo, SNPList, TestStat );
 }
-
-/** Remark: case and control counts and other values derived from the input data are not updated here! */
-void MData::removeIndividual ( const size_t idv ) {
-	idvList.erase( idvList.begin() + idv );
-	xMat.removeRow( idv );
-	yVec.removeDimension( idv );
-	covMat.removeRow( idv );
-	covNames.erase( covNames.begin() + idv );
-}
-
-
 
 /** Check Y-Values and store them in a vector.
  MISSING: to check for missing values and remove then the individual, and the genotype-info */
@@ -183,29 +168,25 @@ void MData::checkYValues()
 	caseNo_=0;
 	contNo_=0;
 	
+	const size_t idvs = getIdvNo();
+	AutoVector yVec( idvs );
+	getY( yVec );
 	for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
 		const double indPheno = yVec.get( idv );
 		// do not consider individuals with missing phenotype
 		if ( indPheno == parameter.missing_phenotype_code ) {
-			removeIndividual( idv );
-			// the current position was removed,
-			// so a diffrent individual is now at the i-th position
-			--idv;
-			++noOfRemovedIndividuals;
+			printLOG( "Missing individuals' phenotype for individual \"" + getID( idv ) + " " + getFID( idv ) + "\"." );
+			exit(2);	
 		}
 		else // no missing phenotype, determine if phenotype is affection (case-control) or quantitative
 		{
 			if ( indPheno == parameter.case_value) // was set 1 check affection status
 			{
-                         //yVec.set(idv,1); //internally a case ist 1
-
 				caseNo_++;
 			}
 			else if ( indPheno == parameter.control_value)  //was set 0
 			{
-			 //yVec.set(idv,0); //internally a control ist 0	
 				contNo_++;
-
 			}
 			else // some other number than 0/1 detected, phenotype must be qua
 			{ cerr<<"i="<<idv<<" indPheno="<<indPheno<<endl;
@@ -237,145 +218,31 @@ void MData::checkYValues()
 }
 
 
-void MData::setYfromMOSGWA( const vector<bool>& Y ) {
-	for( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-		yVec.set( idv, Y[idv] ? 1.0 : 0.0 );
-	}
-}
-
-
-
-/** TESTING */
-void MData::printSNPs () {
-	for (
-		vector<SNP>::const_iterator itsnps = snpList.begin();
-		itsnps < snpList.end();
-		++itsnps
-	) {
-		cout << *itsnps << endl;
-	}
-}
-
-
-
 /** TESTING */
 void MData::printIndividuals () {
+	const size_t idvs = getIdvNo();
+	const Individual * individuals = input->getIndividuals();
 	for (
-		vector<Individual>::const_iterator itidvs = idvList.begin();
-		itidvs < idvList.end();
-		++itidvs
+		int idv = 0;
+		idv < idvs;
+		++idv
 	) {
-		cout << *itidvs << endl;
+		cout << individuals[idv] << endl;
 	}
 }
 
 void MData::printIndividuals ( ostream &s ) {
 	const size_t idvs = getIdvNo();
+	const Individual * individuals = input->getIndividuals();
+	AutoVector yVec( idvs );
+	getY( yVec );
 	for ( size_t idv = 0; idv < idvs; ++idv ) {
-		const Individual individual = idvList.at( idv );
+		const Individual & individual = individuals[idv];
 		s
 			<< individual.getFamilyID() << " "
 			<< individual.getIndividualID() << " "
 			<< yVec.get( idv ) << endl;
 	}
-}
-
-//WARNING this is not used for generation of a new yvm file with generated data
-void MData::printmyY()
-{ cout<<parameter.out_file_name + ".yvm_local";
-	ofstream Y;
-	Y.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
-	try {
-		Y.open( ( parameter.out_file_name + ".yvm" ).c_str(), fstream::out );
-	        Y<<"FID IID G"<<endl;  
-		                     
-                 printIndividuals (Y); //ED version
-                Y.close();
-	} catch ( ofstream::failure e/*xception*/ ) {
-		cerr << "Could not write plink  --pheno  file" << ( parameter.out_file_name + ".yvm_local" ).c_str()<< endl;
-	}
-}
-
-
-/** printY printY to a file */
-void MData::printYforGWASselect () {
-	ofstream Y;
-	size_t counter =yVec.countDimensions();
-	//	cout << counter<<endl;
-
-	Y.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
-	try {
-
-		Y.open( ( parameter.out_file_name + "Yextra" ).c_str(), fstream::out );
-	} catch ( ofstream::failure e/*xception*/ ) {
-		cerr << "Could not open Y for GWASselect file:" << ( parameter.out_file_name + "Yextra" ).c_str()<< endl;
-	}
-
-		for ( size_t dim = 0; dim < counter; ++dim ) 
-			Y << yVec.get( dim ) << endl;
-	try {	Y.close();
-		}
-	catch ( ofstream::failure e/*xception*/ ) {
-		cerr << "Could not closing Y for GWASselect file:" << ( parameter.out_file_name + "Yextra" ).c_str()<< endl;
-	}
-}
-
-
-/** TESTING */
-/** caco is case control 0 control 1 case*/
-void MData::printGenoData ( ostream& hyper, const vector<bool>& sel, const bool caco ) const {
-	if ( sel.size() != getIdvNo() ) {
-		cerr << "printGenoData should have sel.size() == getIdvNo() !" << endl;
-	} else {
-		for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
-			hyper << ( 0 < snp ? " " : "" );
-			snpList.at( snp ).getSnpId();
-			const Vector xVec = const_cast<MData*>( this )->getXcolumn( snp );
-			for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-				if ( caco == sel[idv] ) {
-					hyper << " ";
-					hyper << xVec.get( idv );
-				}
-			}
-			hyper << endl;
-		}
-	}
-}
-
-void MData::printGenoData () const {
-	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
-		const Vector xVec = const_cast<MData*>( this )->getXcolumn( snp );
-		for ( size_t idv = 0; idv < getIdvNo(); ++idv )  {
-			cout << ( 0 < idv ? " " : "" );
-			cout << xVec.get( idv );
-		}
-		cout << endl;
-	}
-}
-
-/** printGenoData prints the whole GenoData Matrix in 
-a ofstream hyper 
-Example: see printHyper
-*/
-void MData::printGenoData ( ostream& hyper ) const {
-	for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-		for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
-			const Vector genome = const_cast<MData*>( this )->getXcolumn( snp );
-			cout << ( 0 < snp ? " " : "" );
-			hyper << genome.get( idv );
-		}
-		hyper << endl;
-	}
-}
-
-
-/** wer braucht die SNP id noch*/
-void MData::printSNPId ( ostream& hyper ) const {
-	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
-		hyper << ( 0 < snp ? " " : "" );
-		snpList.at( snp ).getSnpId();
-	}
-	hyper << endl;
 }
 
 void  MData::findSNPIndex(vector<string>& SNPNames, vector<unsigned int>& index) const
@@ -389,7 +256,7 @@ vector< int> tindex(SNPNames.size(),-999); //bring index to final size -999 is t
 
 	//this is maybe a large loop 500 000 is possible
 	for( size_t snp = 0; snp < getSnpNo(); ++snp ) {
-		allSNPs[snp] = snpList.at( snp ).getSnpId();
+		allSNPs[snp] = getSNP( snp ).getSnpId();
 	}
  std::vector<int> permutation;
  sortingPermutation(allSNPs, permutation);
@@ -428,85 +295,10 @@ for(iter=tindex.begin();iter<nend;++iter)
 		cout<< boost::lambda::_1 <<"is not available\n"));*/
 }
 
-void MData::printHyper() const {
-bool	create=false;
-
-ifstream ifile((parameter.singlefile /*out_file_name*/ + "HyperLasso.in").c_str()); //check if I could open the file 
-if (!ifile) create=true;
-ifile.close(); //close the file
-ofstream Hyper;
-if(create)
-{
-Hyper.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if Logfile can be writt
-try
- {Hyper.open( ( parameter.singlefile /*out_file_name*/ + "HyperLasso.in" ).c_str(), fstream::out );
-
-  printSNPId(Hyper);
-  printGenoData(Hyper);
-
-  Hyper.close();
- }
-catch (ofstream::failure e)//why e?
- {
- cerr << "Could not write Hyper-Lasso file" <<endl;
- }
-} //no create needed
-}
-
-
-void MData::printGWASselect(Model & newmodel) const {
-//#pragma omp parallel shared(GWASselectcases,GWASselectcontrol,sel) private(i) //has to be alterd to fit
-bool createcas=false, createcont=false;
-vector<bool> sel;
-	newmodel.getYvec(sel);
-ifstream ifile(( parameter.out_file_name + "GWASelect.cont" ).c_str());
-   if (!ifile)
-	createcont=true;
-ifile.close(); //close the file
-if(createcont)	
-{ofstream GWASselectcontrol;
-// can be written
-GWASselectcontrol.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if Logfile can be written
-/*omp parallel section*/
-//#pragma omp section
-try
-{GWASselectcontrol.open( ( parameter.out_file_name + "GWASelect.cont" ).c_str(), fstream::out ); //changed file names 
-
-  printGenoData(GWASselectcontrol,sel,false);
-
-  GWASselectcontrol.close();
- }
-catch (ofstream::failure e)//why e?
- {
- cerr << "Could not write GWASselect file" <<endl;
- }	
-}
-
-ifstream ifile1(( parameter.out_file_name + "GWASelect.cas" ).c_str());
-   if (!ifile1)
-	createcas=true;
-ifile1.close(); //close the file
-if (createcas)
-{//#pragma omp section
-ofstream GWASselectcases;
-GWASselectcases.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if Logfile
-try
- {GWASselectcases.open( ( parameter.out_file_name + "GWASelect.cas" ).c_str(), fstream::out ); //changed file names 
-
-  printGenoData(GWASselectcases,sel,true);
-
-  GWASselectcases.close();
- }
-
-catch (ofstream::failure e)//why e?
- {
- cerr << "Could not write GWASselect file" <<endl;
- }	
-}
-}
-
 
 void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
+	const size_t idvs = getIdvNo();
+	AutoVector vec( idvs );	// allocate outside loop
 	ofstream	SNPL;
 
 	SNPL.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if Logfile can be writt
@@ -520,16 +312,16 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 			size_t snp;
 			for (
 				snp = 0;
-				snp < getSnpNo() && snpList.at( snp ).getSnpId() != *it_SNPList;
+				snp < getSnpNo() && getSNP( snp ).getSnpId() != *it_SNPList;
 				++snp
 			);
 
 			if ( snp < getSnpNo() ) {
+				getXcolumn( snp, vec );
 				SNPL << *it_SNPList <<" <- c(";
-				const Vector xVec = const_cast<MData*>( this )->getXcolumn( snp );
-				for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
+				for ( size_t idv = 0; idv < idvs; ++idv ) {
 					SNPL << ( 0 < idv ? "," : "" );
-					SNPL << xVec.get( idv );
+					SNPL << vec.get( idv );
 				}
 				SNPL<< ")"<< endl;
 			}
@@ -541,23 +333,24 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 		
 		for ( size_t cov = 0; cov < getCovNo(); ++cov ) {
 			SNPL << getCovMatElementName( cov ) << " <- c(";
-			const Vector covVec = const_cast<MData*>( this )->getCovariateColumn( cov );
-			for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
+			getCovariateColumn( cov, vec );
+			for ( size_t idv = 0; idv < idvs; ++idv ) {
 				SNPL << ( 0 < idv ? "," : "" );
-				SNPL << covVec.get( idv );
+				SNPL << vec.get( idv );
 			}
 			SNPL<< ")"<< endl;	
 		}
 
 		SNPL << "Y" <<" <- c(";
-		for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
+		getY( vec );
+		for ( size_t idv = 0; idv < idvs; ++idv ) {
 			SNPL << ( 0 < idv ? "," : "" );
-			SNPL << yVec.get( idv );
+			SNPL << vec.get( idv );
 		}
 		SNPL<< ")"<< endl;
 
 		SNPL << "Intercept" <<" <- c(";
-		for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
+		for ( size_t idv = 0; idv < idvs; ++idv ) {
 			SNPL << ( 0 < idv ? "," : "" );
 			SNPL << 1;
 		}
@@ -583,127 +376,20 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 	}	
 }
 
-//everything in h5
-
-bool MData::printALLmat(const string& extra){ } 
-//	char mat [getIdvNo()][getModelSize()];
-//const int64_t  IndN=getIdvNo(),SnpN=getSnpNo();
-//const int64_t sA= IndN*SnpN;
-//
-//	char * mat= (char *)malloc(sA);
-//	// genotype-data
-//	for(int64_t i=0;i<SnpN;++i){
-//	   const Vector genotypes = getX().columnVector( i );//getX unbekannt
-//	   for (int64_t   j = 0; j <IndN ; ++j ) {
-//		mat[i*IndN+j]=
-//		 genotypes.get(j );}
-//    //init of genotype matrix
-//}	
-////from h5 compress
-//    hid_t    file_id, dataset_id, dataspace_id; /* identifiers */
-//    hid_t    plist_id; 
-//
-//    size_t   nelmts;
-//    unsigned flags, filter_info;
-//    H5Z_filter_t filter_type;
-//
-//    herr_t   status;
-//    hsize_t  dims[2];
-//    hsize_t cdims[2];
-// 
-//    int      idx;
-//    int      i,j, numfilt;
-//   // int      buf[DIM0][DIM1];
-//  //  int      rbuf [DIM0][DIM1];
-//  /* Uncomment these variables to use SZIP compression 
-//    unsigned szip_options_mask;
-//    unsigned szip_pixels_per_block;
-//    */
-//
-//    /* Create a file.  */
-//string filename=	parameter.models_file+extra+".h5";
-//cerr<<filename<<endl;
-//file_id = H5Fcreate (filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-//
-//
-//    /* Create dataset "Compressed Data" in the group using absolute name. 
-//	   getIdvNo()][getModelSize()]*/
-//    dims[1] = getIdvNo();//verdreht!
-//    dims[0] = getSnpNo();
-//    dataspace_id = H5Screate_simple (2, dims, NULL); //2 ist der Rang
-//
-//    plist_id  = H5Pcreate (H5P_DATASET_CREATE);
-//
-//    /* Dataset must be chunked for compression */
-//    cdims[1] = 20;//verdreht!
-//    cdims[0] = getSnpNo();
-//    status = H5Pset_chunk (plist_id, 2, cdims);
-//
-//    /* Set ZLIB / DEFLATE Compression using compression level 6.
-//     * To use SZIP Compression comment out these lines. 
-//    */ 
-//    status = H5Pset_deflate (plist_id, 6); 
-//
-//    /* Uncomment these lines to set SZIP Compression 
-//    szip_options_mask = H5_SZIP_NN_OPTION_MASK;
-//    szip_pixels_per_block = 16;
-//    status = H5Pset_szip (plist_id, szip_options_mask, szip_pixels_per_block);
-//    */
-//    /*nun nicht H5T_STD_I32BE sondern I8BE)*/
-//    dataset_id = H5Dcreate2 (file_id, "X", H5T_STD_I8BE, 
-//                            dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT); 
-//
-//    status = H5Dwrite (dataset_id, H5T_NATIVE_CHAR, H5S_ALL, H5S_ALL, H5P_DEFAULT, mat);
-//
-//    status = H5Sclose (dataspace_id);
-//    status = H5Dclose (dataset_id);
-//    status = H5Pclose (plist_id); //für die cunchs 
-////%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-////%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-//
-//
-//    status = H5Fclose (file_id);
-//
-//
-//}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /** printSelectedSNPsInMatlab create an *Octave.h5 file with the selected SNPs (as a vector of strings)  and their X and of course the phenotype Y
  * additionaly it writes a */ 
 void MData::printSelectedSNPsInMatlab ( vector<string> SNPList , string extra) const  {
+	const size_t idvs = getIdvNo();
+	AutoVector vec( idvs );
 	ofstream	SNPL;
          {        	ofstream	SNPL;
 		 //create the same in hdf
 		 hid_t file,fid,dataset,space,/*dset,memtype,*/ filetype,props;
                  herr_t status;
-                 hsize_t dim[]={SNPList.size(),getIdvNo()};//transponiert
+                 hsize_t dim[] = { SNPList.size(), idvs };	//transponiert
                  hsize_t di[]={SNPList.size()};
 		 double  zwischen[getIdvNo()*SNPList.size()];
-		 double  Y[getIdvNo()];
+		 double  Y[idvs];
 		 vector<string>::iterator it_SNPList;
 		 int i;
 printLOG( parameter.out_file_name + extra + "Octave.h5");
@@ -725,19 +411,20 @@ const char *S[SNPList.size()];
                         S[i]=it_SNPList->c_str();
 				
 		}//that should have done the job
-unsigned int jj=0;
 vector<unsigned int> index;
 findSNPIndex(SNPList, index);
 //sortd according the names1
-unsigned int ii=0;
-	for (jj=0; jj < index.size(); ++jj)
-	{
-		const Vector tmp = const_cast<MData*>( this )->getXcolumn( index[jj] );
-		for(ii=0;ii<getIdvNo();++ii)
-		       	zwischen[jj*getIdvNo()+ii] = tmp.get(ii);
-	}	
-        for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-		Y[idv] = yVec.get( idv );
+
+	for ( size_t jj = 0; jj < index.size(); ++jj ) {
+		getXcolumn( index[jj], vec );
+		for( size_t ii = 0; ii < idvs; ++ii ) {
+		       	zwischen[jj*getIdvNo()+ii] = vec.get(ii);
+		}
+	}
+	// TODO: refactor with Vector Y to avoid additional copy
+	getY( vec );
+        for ( size_t idv = 0; idv < idvs; ++idv ) {
+		Y[idv] = vec.get( idv );
 	}
 
       	status = H5Dwrite (dataset,filetype , H5S_ALL, H5S_ALL, H5P_DEFAULT, S);
@@ -752,7 +439,7 @@ unsigned int ii=0;
 	status=H5Dwrite(dataset,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,zwischen);
 	status=H5Dclose (dataset);
         status=H5Sclose (fid);
-dim[0]=getIdvNo();
+dim[0]=idvs;
 dim[1]=1;
 fid=H5Screate_simple(2,dim,NULL);
 	dataset=H5Dcreate2( file, "Y", H5T_NATIVE_DOUBLE, fid, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
@@ -785,15 +472,15 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 			size_t snp;
 			for (
 				snp = 0;
-				snp < getSnpNo() && snpList.at( snp ).getSnpId() != *it_SNPList;
+				snp < getSnpNo() && getSNP( snp ).getSnpId() != *it_SNPList;
 				++snp
 			);
 			
 			if ( snp < getSnpNo() ) {
-				const Vector xVec = const_cast<MData*>( this )->getXcolumn( snp );
-				for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
+				getXcolumn( snp, vec );
+				for ( size_t idv = 0; idv < idvs; ++idv ) {
 					SNPL << ( 0 < idv ? " " : "" );
-					SNPL << xVec.get( idv );
+					SNPL << vec.get( idv );
 				}
 				SNPL<< ";"<< endl;
 			}
@@ -806,18 +493,19 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 		
 		for ( size_t cov = 0; cov < getCovNo(); ++cov ) {
 			SNPL << getCovMatElementName( cov ) << " = [";
-			const Vector covVec = const_cast<MData*>( this )->getCovariateColumn( cov );
-			for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
+			getCovariateColumn( cov, vec );
+			for ( size_t idv = 0; idv < idvs; ++idv ) {
 				SNPL << ( 0 < idv ? ";" : "" );
-				SNPL << covVec.get( idv );
+				SNPL << vec.get( idv );
 			}
 			SNPL<< "]'"<< endl;	
 		}
 
 		SNPL << "Y" <<" = [";
-		for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
+		getY( vec );
+		for ( size_t idv = 0; idv < idvs; ++idv ) {
 			SNPL << ( 0 < idv ? ";" : "" );
-			SNPL << yVec.get( idv );
+			SNPL << vec.get( idv );
 		}
 		SNPL << "]" << endl;
 		SNPL.close();
@@ -829,73 +517,18 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 	}	
 }
 
-void MData::writeBEDfile() {
-	printLOG( "Writing genotype bitfile to \"" + parameter.in_files_plink + ".bed\"" );
-	ofstream bed( ( parameter.in_files_plink + ".bed" ).c_str(), ios::out | ios::binary );
-  
-	// Magic numbers for .bed file
-	const char magic[3] = {
-		0x6c,
-		char( parameter.imp_is_imputated ? 0x9a : 0x1b ),
-		0x01	// SNP-major true
-	};
-	bed.write( magic, sizeof( magic ) );
-  
-	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
-		const Vector xVec = const_cast<MData*>( this )->getXcolumn( snp );
-		unsigned int count = 0;
-		char accumulator = 0;
-		for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-			const double x = xVec.get( idv );
-			unsigned int pattern;
-			if ( -1.0 == x ) {
-				pattern = 0x0;
-			} else if ( 0.0 == x ) {
-				pattern = 0x1;
-			} else if ( 1.0 == x ) {
-				pattern = 0x3;
-			} else if ( ::isnan( x ) ) {
-				pattern = 0x2;
-			} else {
-				throw Exception(
-					"Cannot convert genotype matrix containing a value of %f at (%u,%u)"
-					" to BED file."
-					" Only values -1, 0, +1 and NaN are allowed.",
-					x,
-					idv,
-					snp
-				);
-			}
-			accumulator |= pattern << count;
-			if ( 8 >= ( count+= 2 ) ) {
-				bed.write( &accumulator, sizeof( accumulator ) );
-			}
-		}
-	}
-
-	bed.close();
-}
-
-
-void MData::writeBEDfilePlink()
-{	
-	bool orig = parameter.imp_is_imputated;
-	parameter.imp_is_imputated = false;
-	writeBEDfile();
-	parameter.imp_is_imputated = orig;
-}
-
-
 
 /** computes correlation between two snps, utilise the structur of the data */
 double MData::computeCorrelation ( const size_t locus1, const size_t locus2 ) const {
-	const Vector
-		v1 = const_cast<MData*>( this )->getXcolumn( locus1 ),
-		v2 = const_cast<MData*>( this )->getXcolumn( locus2 );
+	const size_t idvs = getIdvNo();
+	AutoVector
+		v1( idvs ),
+		v2( idvs );
+	getXcolumn( locus1, v1 ),
+	getXcolumn( locus2, v2 );
 	double
 		sum1 = 0.0,
 		sum2 = 0.0;
-	const size_t idvs = getIdvNo();
 	size_t n = 0;
 
 	for ( size_t idv = 0; idv < idvs; ++idv ) {
@@ -964,251 +597,6 @@ double MData::computeCorrelation ( const size_t locus1, const size_t locus2 ) co
 }
 
 
-
-
-
-/** according to Piotr's code
-
-	Suppose x_ij, the genotype of SNP j for the i-th individual, is missing. We search for the
-	"parameter.imp_Best_SNPs_No" SNPs with strongest correlation to SNP j fulfilling two conditions: They are in
-	a neighborhood of "parameter.imp_Neighbours_No" SNPs upstream or downstream of SNP j and their values
-	for the i-th individual are not missing. If we find individuals who have exactly
-	the same values as the i-th individual on these "parameter.imp_Best_SNPs_No" SNPs, then we predict the value
-	of x_ij as the most frequent value of SNP j among these individuals. If we cannot
-	find individuals fulfilling the above mentioned condition, then the most frequent
-	value of the jth SNP among all individuals is imputed. */
-void MData::imputateMissingValues () {
-	printLOG( "Begin Imputation of Missing Values." );
-	int 	j, k, l; // loop variables
-	int 	Predicted, PredictedAPriori;
-	AutoVector pattern( 2 * parameter.imp_Neighbours_No );
-	// auto_ptr used to deallocate upon exception
-	auto_ptr<double> correlationCoeffs( new double[ 2 * parameter.imp_Neighbours_No + 1 ] );
-	auto_ptr<size_t>
-		neighboursOrder( new size_t[ 2 * parameter.imp_Neighbours_No + 1 ] ),
-		bestSNPs( new size_t[ 2 * parameter.imp_Neighbours_No ] );
-	size_t Frequency[3];
-	bool 	Conformity, UsePriorPrediction;
-	
-	int 	MissingEntries=0; 	// Counter for missing entries
-	int 	MissingHelp; 		// to check for a SNP there are missing entries
-	int 	MissingSNPs =0; 	// Counter for SNPs with missing entries
-
-	// Create Matrix
-	AutoMatrix correlationMatrixT( getSnpNo(), parameter.imp_Neighbours_No );
-	int progressCounter = 0;
-	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
-		Vector xVec = getXcolumn( snp );
-
-		MissingHelp=MissingEntries;
-	
-		// print progress (ED) this print only 1 time
-		if ( 200 == progressCounter ) {
-			printf( "\rDone %2.2f%%...", snp * 100.0 / getSnpNo() );
-			fflush(stdout);
-			progressCounter = 0;
-		} else {
-			++progressCounter;
-		}
- 
-		// for the snp-th SNP determine predecessors and successors:
-
-		//  predecessors do not exist
-		for ( j = 0; j < parameter.imp_Neighbours_No - snp; ++j ) {
-			correlationCoeffs.get()[j] = -10.0;
-		}
-
-		//  predecessors allready known
-		for ( ; j < parameter.imp_Neighbours_No; ++j ) {
-			correlationCoeffs.get()[j] = correlationMatrixT.get( snp, j );
-		}
-		// the snp-th
-		correlationCoeffs.get()[ parameter.imp_Neighbours_No ] = -10.0;
-               
-		// compute successors
-		// compute some safeguard
-		if ( getSnpNo() <= parameter.imp_Neighbours_No+1 ) {
-			printLOG( "Imputation should be used with this >>consider_n_neighbours<< setting, maybe there are only few snps" );
-			exit(22);
-		}
-		for (
-			j = parameter.imp_Neighbours_No + 1;
-			j <= 2 * parameter.imp_Neighbours_No
-			&&
-			snp + j - parameter.imp_Neighbours_No < getSnpNo();   
-			++j
-		) {
-			// WARNING could be less then 0
-			correlationCoeffs.get()[j] = fabs( computeCorrelation( snp, j ) );
-			correlationMatrixT.set(
-				snp + j - parameter.imp_Neighbours_No,
-				2 * parameter.imp_Neighbours_No - j,
-				correlationCoeffs.get()[j]
-			);
-		}
-
-		//  successors do not exist
-		for ( j = 2 * parameter.imp_Neighbours_No; snp + j - parameter.imp_Neighbours_No >= getSnpNo(); --j ) {
-			correlationCoeffs.get()[j] = -10.0;
-		}
-
-		// for sorting
-		for ( j = 0; j <= 2 * parameter.imp_Neighbours_No; ++j ) {
-			neighboursOrder.get()[j] = j;
-		}
-
-		// sort the neighbours w.r.t ascending correlation coefficients 
-		SortVec pSort(
-			2 * parameter.imp_Neighbours_No + 1,
-			neighboursOrder.get(),
-			correlationCoeffs.get()
-		);
-
-		// determine the abs. frequency of genotypes for the snp-th SNP 
-		Frequency[0] = Frequency[1] = Frequency[2] = 0;
-		for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-			const double x = xVec.get( idv );
-			if ( -1.0 == x ) {
-				++Frequency[0];
-			} else if ( 0.0 == x ) {
-				++Frequency[1];
-			} else if ( 1.0 == x ) {
-				++Frequency[2];
-			} else if ( ::isnan( x ) ) {
-				// treat later
-			} else {
-				throw Exception(
-					"Cannot imputate genotype matrix containing a value of %f at (%u,%u)."
-					" Only values -1, 0, +1 and NaN are allowed.",
-					x,
-					idv,
-					snp
-				);
-			}
-		}
-
-		// use highest frequency as predictor
-		if (
-			Frequency[0] > Frequency[1]
-			&&
-			Frequency[0] > Frequency[2]
-		) {
-			PredictedAPriori = 0;
-		} else if (
-			Frequency[1] >= Frequency[0]
-			&&
-			Frequency[1] >= Frequency[2]
-		) {
-			PredictedAPriori = 1;
-		} else {
-			PredictedAPriori = 2;
-		}
-		
-		// check for all individuals, whether the snp-th SNP is missing
-		for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-			const double x = xVec.get( idv );
-			if ( ::isnan( x ) ) {
-				MissingEntries++;
-				UsePriorPrediction = false;
-				
-				// search non-missing entries until parameter.imp_Best_SNPs_No SNPs are reached, sorted by correlation coefficent
-
-				for (
-					k = 0, l = 2 * parameter.imp_Neighbours_No;
-					k < parameter.imp_Best_SNPs_No;
-					++k, --l
-				) {
-					while( true ) {
-						const double x1 = getXcolumn( snp + pSort.getId( l ) - parameter.imp_Neighbours_No ).get( j );
-						if ( -1.0 != x1 && 0.0 != x1 && 1.0 != x1 ) {
-							--l;
-						} else {
-							break;
-						}
-					}
-					
-					// no strongly correlated SNPs with missing SNP are found, so the most-frequent is used for prediction 	
-					if ( pSort.getValue(l) < 0.0)
-					{
-						UsePriorPrediction = true;
-						break;
-					}
-					
-					bestSNPs.get()[k] = pSort.getId(l); // position of stronly correlated SNP
-					// genotype of stronly correlated SNP
-					pattern.set( k, getXcolumn( snp + bestSNPs.get()[k] - parameter.imp_Neighbours_No ).get( j ) );
-				}
-				
-				Predicted = PredictedAPriori;
-				// strongly correlated SNPs with missing SNP are found
-				if (!UsePriorPrediction)
-				{
-					Frequency[0] = Frequency[1] = Frequency[2] = 0;
-					// check for each individual if pattern is matched
-					for (l = 0; l < getIdvNo(); l ++)
-					{
-						Conformity = true;
-						for ( k = 0; Conformity && k < parameter.imp_Best_SNPs_No; ++k  )
-							if (
-								getXcolumn( snp + bestSNPs.get()[k] - parameter.imp_Neighbours_No ).get( l )
-								!=
-								pattern.get( k )
-							) {
-								Conformity = false;
-							}
-						if ( Conformity ) {
-							const double x2 = xVec.get( l );
-							if ( -1.0 == x2 ) {
-								++Frequency[0];
-							} else if ( 0.0 == x2 ) {
-								++Frequency[1];
-							} else if ( 1.0 == x2 ) {
-								++Frequency[2];
-							}
-						}
-					}
-					if (
-						Frequency[0] > Frequency[PredictedAPriori]
-						&&
-						Frequency[0] > Frequency[1]
-						&&
-						Frequency[0] > Frequency[2]
-					) {
-						Predicted = 0;
-					} else if (
-						Frequency[1] > Frequency[PredictedAPriori]
-						&&
-						Frequency[1] >= Frequency[0]
-						&&
-						Frequency[1] >= Frequency[2]
-					) {
-						Predicted = 1;
-					} else if (
-						Frequency[2] > Frequency[PredictedAPriori]
-						&&
-						Frequency[2] >= Frequency[0]
-						&&
-						Frequency[2] > Frequency[1]
-					) {
-						Predicted = 2;
-					}
-				}
-				
-				xVec.set( j, Predicted - 1.0 );
-			}
-		}
-		if (MissingHelp != MissingEntries)
-		{
-			++MissingSNPs;
-		}
-	}
-	
-	printLOG("Imputation finished: "+int2str(MissingEntries)+ " missing values in "+int2str(MissingSNPs)+" SNPs replaced");
-	parameter.imp_is_imputated = true;
-}
-
-
-
 void MData::calculateIndividualTests()
 {
 	
@@ -1229,7 +617,7 @@ void MData::calculateIndividualTests()
 	}
 	omp_set_num_threads( 4 );
 	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
-		snpList.at( snp ).setSingleMarkerTest( TestStat.get()[snp] );
+		setSingleMarkerTestAt( snp, TestStat.get()[snp] );
 	}
 	
 	// sort the SNPs w.r.t ascending p-values in snp_order_
@@ -1242,7 +630,7 @@ void MData::calculateIndividualTests()
 	IT << "SNP_no. \t SNP_name \t Chr \t Pos \t p-value" << endl;
 	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
 		const size_t snpi = snp_order_.getId( snp );
-		const SNP& snpo = snpList.at( snpi );
+		const SNP& snpo = getSNP( snpi );
 		IT 	<< snpi << "\t"
 			<< snpo.getSnpId() <<"\t"
 			<< snpo.getChromosome() << "\t"
@@ -1376,7 +764,7 @@ size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs 
 
 //currentModel->replaceModelSNPbyNearCorrelated(); bringt nichts
 //currentModel=backwardModel;
-currentModel->printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "the_result" );
+currentModel->printStronglyCorrelatedSnps( parameter.correlation_threshold, int2str(parameter.in_values_int) + "the_result" );
 
 	currentModel->printModel( "finalModel", selectionCriterium );
 
@@ -1468,7 +856,7 @@ double bestMSC= currentModel->getMSC();
 		}
 	} 
 
-currentModel->printStronglyCorrelatedSnps( 0.999, int2str(parameter.in_values_int) + "the_result" );
+currentModel->printStronglyCorrelatedSnps( parameter.correlation_threshold, int2str(parameter.in_values_int) + "the_result" );
 
 currentModel->printModel("finalModel");
 
@@ -1504,14 +892,14 @@ void MData::readInSNPOrder ( const string& filename ) {
 			ITF >> SNPPos; // not needed
 			ITF >> pValue;	
 	
-			if (getSNP(Pos)->getSnpId() != SNPId) // check if position match
+			if ( getSNP(Pos).getSnpId() != SNPId ) // check if position match
 			{
 				printLOG("SNP Position of : \""+ filename +"\" and the Data do not match.");
 				exit(1);
 			}
 			else
 			{
-				snpList.at(Pos).setSingleMarkerTest( pValue );
+				setSingleMarkerTestAt( Pos, pValue );
 				CheckSNP.at(Pos)=true;
 				snpArray.get()[i]=Pos;
 				testStat.get()[i]=pValue;
@@ -1549,7 +937,7 @@ void MData::printSnpOrder()
   IT << "SNP_no. \t SNP_name \t Chr \t Pos \t p-value" << endl;
 	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
 		const size_t snpi = snp_order_.getId( snp );
-		const SNP& snpo = snpList.at( snpi );
+		const SNP& snpo = getSNP( snpi );
 		IT	<< snpi << "\t" 
 			<< snpo.getSnpId() <<"\t"
 			<< snpo.getChromosome() << "\t"

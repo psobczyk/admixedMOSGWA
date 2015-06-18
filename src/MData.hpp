@@ -35,26 +35,20 @@ class Model;
 
 using namespace std;	// TODO<BB>: remove namespace import in *.hpp
 
-/** Stores all the information from the input plink files. Data is read
-* and access methodes are provided. The genotype matrix can be imputated and
-* single marker test and model selection can be performed. */
+/** Stores all the information from the input plink files.
+* Data is read and access methodes are provided.
+* Single marker test and model selection can be performed.
+*/
 class MData {
 
-	/** Holds the SNPs */
-	vector <SNP> snpList;
+	/** Where to fetch input data from. E.g. Genotype data is read only on demand. */
+	io::Input *input;
 
-	/** pointers to the individuals */
-	vector <Individual> idvList;
-
-	/** The regression matrix. */
-	linalg::AutoMatrix xMat;
-	// TODO<BB>: Transpose it for cache optimisation. But the io::Input framework will make this irrelevant.
+	/** Whether the input was given as <code>NULL</code> and thus has been allocated. */
+	const bool allocateInput;
 
 	/** the name of the target trait */
 	string Y_name_;
-	
-	/** the values of the trait, one for each individual */
-	linalg::AutoVector yVec;
 	
 	/** the names of the Covariates */
 	vector <string> covNames;
@@ -69,6 +63,9 @@ class MData {
 
 	/** the number of controls (for affection phenotype) */
 	size_t contNo_;
+
+	/** Holds the single marker tests for all SNPs */
+	vector <double> singleMarkerTestResult;
 
 	/** the SNPs, sorted according to ascending single marker tests */
 	SortVec snp_order_;
@@ -87,14 +84,13 @@ public:
 	/** for affection-type targets, stores the log-likelihood of the zero-model */
 	void setLL0M ( const double ll );
 
-	void setY ( const size_t index, const double value );
-
 	/** Default Constructor: reads the input-files in, sets parameters, deals with missing phenotypes.
 	* @param input provides access to input data for the transition of the MOSGWA architecture.
+	* If given, the pointer must be valid as long as the <code>MData</code> is alive.
 	* Otherwise, input is read according to the preference settings in {@link Parameter}.
 	* @see Parameter
 	*/
-	MData ( io::Input *input = NULL );
+	MData ( io::Input * const externalInput = NULL );
 
 	/** Destructor: clean up */
 	~MData();
@@ -115,17 +111,17 @@ public:
 	* if the content of MData is changed after the call of <code>getXcolumn()</code>.
 	* WARNING: Modifying the X matrix will most likely invalidate already calculated model selection criteria.
 	*/
-	const linalg::Vector getXcolumn ( const size_t snp );
+	void getXcolumn ( const size_t snp, linalg::Vector& vector ) const;
 
 	/** Get the regression target vector.
 	* The returned Vector provides a snapshot.
 	* Its behaviour becomes undefined if the content of MData is changed after the call of getY().
 	* WARNING: Modifying the Y vector will most likely invalidate already calculated model selection criteria.
 	*/
-	const linalg::Vector getY ();
+	void getY ( linalg::Vector& vector ) const;
 
 	/** for an integer snp a pointer to the snp-th SNP is returned */
-	const SNP * getSNP ( const size_t snp ) const;
+	const SNP & getSNP ( const size_t snp ) const;
 
 	/** For an integer i, return the (absolute) postition of the SNP with the snp-th lowest p-value. */
 	size_t getOrderedSNP ( const size_t snp ) const;
@@ -138,7 +134,7 @@ public:
 	* Its behaviour becomes undefined if the content of MData is changed after the call.
 	* WARNING: Modifying the matrix will most likely invalidate already calculated model selection criteria.
 	*/
-	const linalg::Vector getCovariateColumn ( const size_t cov );
+	void getCovariateColumn ( const size_t cov, linalg::Vector& vector ) const;
 
 	/** return the name of the cov-th covaribale */
 	const string& getCovMatElementName( const size_t cov ) const;
@@ -166,23 +162,10 @@ public:
 		to skip calcualtion of single marker tests.
 		WARNING: just for speed up testing, causes memory leaks */
 	void readInSNPOrder(const string& filename);
-    /*a hopefully not neccercery function */
-	void setYfromMOSGWA( const std::vector<bool>& Y );
-
-	// file-output
-	/** the binary genotype file is written */
-	void writeBEDfile();
-
-	/** the binary genotype file is written with plink-header */
-	void writeBEDfilePlink();
 
 	// general methods
 	/** Computes the correlation between two SNPs (loci) */
 	double computeCorrelation ( const size_t locus1, const size_t locus2 ) const;
-
-	/** missing values in the genotype matrix are replaced by likely values */
-	void imputateMissingValues();
-
 
 	// model selection
 	/** single marker test are performed, and saved (in object SNP).
@@ -223,27 +206,18 @@ public:
 	/** TESTING // screen-output of the informations stored for the individuals */
 	void printIndividuals ();
 	void printIndividuals ( std::ostream &s );
-	void printmyY	();
-        void printYforGWASselect ();
-	/** print GWASselect print a GWASselect input file  */
-	void printGWASselect(Model & newmodel) const;
 	/** TESTING // screen-output of genotyp matrix */
 	void printGenoData () const;
 	void printGenoData ( std::ostream& hyper, const vector<bool>& sel, const bool caco ) const;
 	/** print GenoData in an ostream */
 	void printGenoData ( std::ostream& hyper ) const;
-        /**print SNPId in a stream */
-	void  printSNPId ( std::ostream& hyper ) const;
-        /** printHyper print in a inputfile for HyperLasso */
-        void printHyper() const;
 	/** a special version for Artur */
 	/** TESTING // given a list of SNP-Names, the Genotype of the SNP
 	 is extracted, the SNPs, Covariables, Intercept are written to
 	 an R-linear model. Was used to check correctness of linear regression
 	 but may be helpful in general to extract all the date of a model... */
 	void printSelectedSNPsInR ( vector<string> SNPList ) const;
-        //everything in h5
-	bool printALLmat(const string& extra="");
+
 	/** The same in Matlab extra is the number in the yvm file */
 	void printSelectedSNPsInMatlab ( vector<string> SNPList, string extra ) const;
 
@@ -253,6 +227,9 @@ public:
    */
   double getSnp_order_Value ( const size_t i ) const;
   
+	/** Access the Single Marker Test result for the given SNP. */
+	double getSingleMarkerTestAt ( const size_t index ) const;
+
   /** Artur's new code:
    * @brief sets single markert test for i-th snp with value
    * @param i - position of the snps_
