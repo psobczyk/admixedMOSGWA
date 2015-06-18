@@ -44,9 +44,6 @@ class SNP {
 	char allele1;
 	char allele2;
 
-	// to save the outcome of the accoring single marker test
-	double singleMarkerTest;
-
 public:
 
 	/** Construct a SNP. */
@@ -69,9 +66,6 @@ public:
 		const char allele2
 	);
 
-	// Setters
-	void setSingleMarkerTest ( const double singleMarkerTest );
-
 	// Getters
 	int getChromosome () const;
 	std::string getSnpId () const;
@@ -79,7 +73,6 @@ public:
 	int getBasePairPosition () const;
 	char getAllele1 () const;
 	char getAllele2 () const;
-	double getSingleMarkerTest () const;
 };
 
 /** Output a {@link SNP}. */

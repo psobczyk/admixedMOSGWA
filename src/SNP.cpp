@@ -83,11 +83,6 @@ SNP::SNP (
 	}
 }
 
-// TODO<BB>: factor out single marker test value from SNP class.
-void SNP::setSingleMarkerTest ( const double singleMarkerTest ) {
-	this->singleMarkerTest = singleMarkerTest;
-}
-
 // TODO<BB>: Rename to getChromosomeId.
 int SNP::getChromosome () const {
 	return chromosomeId;
@@ -113,10 +108,6 @@ char SNP::getAllele2 () const {
 	return allele2;
 }
 
-double SNP::getSingleMarkerTest () const {
-	return singleMarkerTest;
-}
-
 ostream& operator<< ( ostream& s, const SNP& snp ) {
 	return s
 		<< "SNP( \""
@@ -131,7 +122,5 @@ ostream& operator<< ( ostream& s, const SNP& snp ) {
 		<< snp.getAllele1()
 		<< "\",\""
 		<< snp.getAllele2()
-		<< "\",\""
-		<< snp.getSingleMarkerTest()
 		<< ")";
 }
