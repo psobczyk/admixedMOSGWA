@@ -21,15 +21,23 @@ using namespace linalg;
 using namespace lookup;
 using namespace std;
 
+/** Helps Firthimizer construction by temporarily allocating an <code>AutoVector</code>. */
+static AutoVector getY( const MData& mData ) {
+	AutoVector vector( mData.getIdvNo() );
+	const_cast<MData&>( mData ).getY( vector );
+	return vector;
+}
+
 ScoreTestShortcut::ScoreTestShortcut (
 	const MData& mData
-) : Firthimizer( const_cast<MData&>( mData ).getY() ), mData( mData ) {}
+) : Firthimizer( getY( mData ) ), mData( mData ) {}
 
 void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	const ModelIndex index = model.getIndex();
 	const size_t
 		rows = mData.getIdvNo(),
 		cols = 1 + index.size();	// 1 for leftmost column of ones
+	AutoVector vec( rows );
 
 	// track current number of columns
 	size_t currentCols = countDimensions();
@@ -40,9 +48,8 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	}
 
 	// X leftmost column is 1
-	AutoVector ones( rows );
-	ones.fill( 1.0 );
-	insertColumn( currentCols++, ones );
+	vec.fill( 1.0 );
+	insertColumn( currentCols++, vec );
 
 	// X columns 1 to modelsize
 	for (
@@ -52,7 +59,8 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	) {
 		const snp_index_t i = *iterator;
 		// insertion at the end is fastest
-		insertColumn( currentCols++, const_cast<MData&>( mData ).getXcolumn( i ) );
+		mData.getXcolumn( i, vec );
+		insertColumn( currentCols++, vec );
 	}
 
 	// now all columns are there
@@ -74,12 +82,13 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	vector<double> scores( remainingSize );
 	// Erich: Should this loop be parallelized?
 	// BB: You can try, scoreTest() should be thread-safe.
-	// But be careful with the conditional increment ++j.
+	// But be careful with the conditional increment ++j and use of vec.
 	// I think it may not be worthwhile for the remaining experiments.
 	for ( size_t i = 0, j = 0; i < dataSize; ++i ) {
 		if ( ! index.contains( i ) ) {
 			snps[j] = i;
-			scores[j] = scoreTest( const_cast<MData&>( mData ).getXcolumn( i ) );
+			const_cast<MData&>( mData ).getXcolumn( i, vec );
+			scores[j] = scoreTest( vec );
 			++j;
 		}
 	}
@@ -93,6 +102,7 @@ size_t ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec, siz
 	const size_t
 		rows = mData.getIdvNo(),
 		cols = 1 + index.size();	// 1 for leftmost column of ones
+	AutoVector vec( rows );
 
 	// track current number of columns
 	size_t currentCols = countDimensions();
@@ -103,9 +113,8 @@ size_t ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec, siz
 	}
 
 	// X leftmost column is 1
-	AutoVector ones( rows );
-	ones.fill( 1.0 );
-	insertColumn( currentCols++, ones );
+	vec.fill( 1.0 );
+	insertColumn( currentCols++, vec );
 
 	// X columns 1 to modelsize
 	for (
@@ -115,7 +124,8 @@ size_t ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec, siz
 	) {
 		const snp_index_t i = *iterator;
 		// insertion at the end is fastest
-		insertColumn( currentCols++, const_cast<MData&>( mData ).getXcolumn( i ) );
+		mData.getXcolumn( i, vec );
+		insertColumn( currentCols++, vec );
 	}
 
 	// now all columns are there
@@ -130,10 +140,10 @@ size_t ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec, siz
 	setCoefficients( coefficients );
 
 	// score tests for snps not yet in model
-	const size_t
-		dataSize = stop,//ERICH original: mData.getSnpNo(),
-		remainingSize = stop-start+1; //ERICH origninal dataSize - index.size();
-	                                     //da liegt aber eigentlich immer ein SNP drinnen der schon im Model ist, daher gbit es einen SNP zuviel fast immer!
+	const size_t remainingSize = stop - start + 1;
+		// ERICH origninal: dataSize - index.size();
+		// da liegt aber eigentlich immer ein SNP drinnen der schon im Model ist,
+		// daher gibt es einen SNP zuviel fast immer!
 	vector<size_t> snps( remainingSize );
 	vector<double> scores( remainingSize );
 	// Erich: Should this loop be parallelized?
@@ -145,7 +155,8 @@ size_t ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec, siz
 	//DEBUG	cerr<<"SCORE:SNP="<<i<<endl;
 		if ( ! index.contains( i ) ) {
 			snps[j] = i;
-			scores[j] = scoreTest( const_cast<MData&>( mData ).getXcolumn( i ) );
+			mData.getXcolumn( i, vec );
+			scores[j] = scoreTest( vec );
 			J = j++;
 		}
 	}

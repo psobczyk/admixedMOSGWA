@@ -220,7 +220,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   map<string, int> SNP_Names_Id;
   for (unsigned int i = 0; i < data.getSnpNo(); ++i ) 
   {
-    SNP_Names_Id.insert( pair<string, snp_index_t>(data.getSNP( i )->getSnpId(), i) );
+    SNP_Names_Id.insert( pair<string, snp_index_t>( data.getSNP( i ).getSnpId(), i ) );
   }
 
   string clusterFile_POWER( (parameter.in_files_plink + ".clu").c_str() );
@@ -252,17 +252,11 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   }
   
   correlations.resize(data.getSnpNo());
-  if ( !parameter.imp_is_imputated)
-  {
-    cout << "imp_in_imputated" << endl;
-    data.imputateMissingValues();  
-    data.writeBEDfile();
-  }
-  
+
   exclusivedSNP.reset();
   goodSNPs.reset();
   goodSNPsNo = 0;
-  while ((data.getSNP(data.getOrderedSNP(goodSNPsNo)))->getSingleMarkerTest() < 0.5)
+  while ( data.getSingleMarkerTestAt( data.getOrderedSNP( goodSNPsNo ) ) < 0.5 )
   {
     goodSNPs[data.getOrderedSNP(goodSNPsNo)] = true;
     ++goodSNPsNo;
@@ -1334,7 +1328,7 @@ void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, in
   set<snp_index_t> sPosterior;
   for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++)
   {
-    sp_sort << setw(20) << setprecision(16) << (*itM).first << " " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second )->getSnpId() << endl;
+    sp_sort << setw(20) << setprecision(16) << (*itM).first << " " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
     sPosterior.insert((*itM).second);
   }
   vector<snp_index_t> vPosterior(sPosterior.begin(), sPosterior.end());
@@ -1354,7 +1348,7 @@ void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, in
   sp_sort << "---------------------------------------" << endl;
   for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend(); itM++)
   {
-    sp_sort << setw(20) << setprecision(16) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second )->getSnpId() << endl;
+    sp_sort << setw(20) << setprecision(16) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
   }
   ssModels << sp_sort.str();  
 }
@@ -1761,7 +1755,7 @@ void GA::piMassExtract(const string &fileName, string &outFileName)
   set<snp_index_t> mySnps;    
   for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first >= 0.5; itM++)
   {
-    cout << setw(15) << setprecision(11) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second )->getSnpId() << endl;
+    cout << setw(15) << setprecision(11) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
     mySnps.insert((*itM).second);
   }
   
@@ -2344,7 +2338,7 @@ void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, ma
   for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first >= 0.5; itM++)
   {
     mySnps.insert((*itM).second);
-    cout << setw(15) << setprecision(11) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second )->getSnpId() << endl;
+    cout << setw(15) << setprecision(11) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
   }
   if (itM != Pmi_Ysort.rend())
   {  
@@ -3306,9 +3300,9 @@ void GA::makeVectCluster(map<snp_index_t, int>& mSNPid_label)
       for (set<snp_index_t>::iterator it = vectClust[i].begin(); it != vectClust[i].end(); ++it)
       {
          if (it == vectClust[i].begin())
-           ssClusters << data.getSNP( *it )->getSnpId();
+           ssClusters << data.getSNP( *it ).getSnpId();
          else
-           ssClusters << " " << data.getSNP( *it )->getSnpId();
+           ssClusters << " " << data.getSNP( *it ).getSnpId();
       }
       ssClusters << "}" << endl;
     }
@@ -3468,12 +3462,12 @@ void GA::makeCausalClasters(string fileName, vector<snp_index_t> causalSNPs)
           cerr << causalSNPs[i] << " <---> " <<  j << ":" << abscor << endl;
         }
         isCorrelated = true;
-        ssLabels <<  data.getSNP(j)->getSnpId() << "\t" << i << endl;
+        ssLabels <<  data.getSNP(j).getSnpId() << "\t" << i << endl;
       }  
     }  
     if (isCorrelated == false)
     {
-      ssLabels <<  data.getSNP(j)->getSnpId() << "\t" << causalSNPs.size() << endl;
+      ssLabels <<  data.getSNP(j).getSnpId() << "\t" << causalSNPs.size() << endl;
     }
   }
   stringstream ssClusters;
@@ -3584,29 +3578,29 @@ void GA::stronglyCorrelatedSnpsCluster(const double& threshold )
   // search for strongly correlated SNPs
   for (unsigned int ind = 0; ind < causalSNPs.size(); ++ind)
   {
-    cout << "calculation for " << causalSNPs[ind] << " >> " << data.getSNP( causalSNPs[ind] )->getSnpId() << endl;
+    cout << "calculation for " << causalSNPs[ind] << " >> " << data.getSNP( causalSNPs[ind] ).getSnpId() << endl;
     for (j = rangeFrom; j < rangeTo; j++)
     {
       abscor = fabs( data.computeCorrelation( causalSNPs[ind], j ) ); // compute correlation between model SNP and SNP j
       if (abscor  >= threshold) // add if correlation is big enough
       {
-//        ssAll << causalSNP[ind] << "\t" << j << "\t" << abscor << endl; data.getSNP( (*itM).second )->getSnpId()
-        ssAll << data.getSNP( causalSNPs[ind] )->getSnpId() << "\t" << data.getSNP( j )->getSnpId() << "\t" << abscor << "\t" << tabCl[ind] << endl;
+//        ssAll << causalSNP[ind] << "\t" << j << "\t" << abscor << endl; data.getSNP( (*itM).second ).getSnpId()
+        ssAll << data.getSNP( causalSNPs[ind] ).getSnpId() << "\t" << data.getSNP( j ).getSnpId() << "\t" << abscor << "\t" << tabCl[ind] << endl;
         if (j == rangeFrom)
-          ssClusters << endl << data.getSNP( causalSNPs[ind] )->getSnpId() << "\t" << tabCl[ind] << endl;
-        ssClusters << data.getSNP( j )->getSnpId() << "\t" << tabCl[ind] << endl;
+          ssClusters << endl << data.getSNP( causalSNPs[ind] ).getSnpId() << "\t" << tabCl[ind] << endl;
+        ssClusters << data.getSNP( j ).getSnpId() << "\t" << tabCl[ind] << endl;
       }
     }
     ssAll << endl;
   }
   abscor = fabs( data.computeCorrelation( 13, 15 ) ); 
-  ssAll << endl << data.getSNP( 13 )->getSnpId() << "\t" << data.getSNP( 15 )->getSnpId() << "\t" << abscor << endl;
+  ssAll << endl << data.getSNP( 13 ).getSnpId() << "\t" << data.getSNP( 15 ).getSnpId() << "\t" << abscor << endl;
   abscor = fabs( data.computeCorrelation( 13, 16 ) );
-  ssAll << data.getSNP( 13 )->getSnpId() << "\t" << data.getSNP( 16 )->getSnpId() << "\t" << abscor << endl;
+  ssAll << data.getSNP( 13 ).getSnpId() << "\t" << data.getSNP( 16 ).getSnpId() << "\t" << abscor << endl;
   abscor = fabs( data.computeCorrelation( 7207, 7279 ) );
-  ssAll << endl << data.getSNP( 7207 )->getSnpId() << "\t" << data.getSNP( 7279 )->getSnpId() << "\t" << abscor << endl;
+  ssAll << endl << data.getSNP( 7207 ).getSnpId() << "\t" << data.getSNP( 7279 ).getSnpId() << "\t" << abscor << endl;
   abscor = fabs( data.computeCorrelation( 15616, 15622 ) );
-  ssAll << endl << data.getSNP( 15616 )->getSnpId() << "\t" << data.getSNP( 15622 )->getSnpId() << "\t" << abscor << endl;
+  ssAll << endl << data.getSNP( 15616 ).getSnpId() << "\t" << data.getSNP( 15622 ).getSnpId() << "\t" << abscor << endl;
 
 
   

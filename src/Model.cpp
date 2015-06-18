@@ -136,7 +136,7 @@ string 	Model::getSNPId ( const snp_index_t i ) const {
 	//	throw; //simple but bad because this string is only for reporting!
 	return "ERROR SNP";
 	} else {	
-		return data_->getSNP( modelSnps_.at(i) )->getSnpId();
+		return data_->getSNP( modelSnps_.at(i) ).getSnpId();
 	}
 }
 
@@ -175,7 +175,9 @@ void Model::addSNPtoModel ( const snp_index_t snp ) {
 		}
 	
 		// add the new column at the end
-		const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( snp );
+		const size_t idvs = data_->getIdvNo();
+		AutoVector xVec( idvs );
+		data_->getXcolumn( snp, xVec );
 		for ( int i = 0; i < data_->getIdvNo(); ++i ) {
 			gsl_matrix_set( NewXMat, i, getNoOfVariables() - 1, xVec.get( i ) );
 		}
@@ -310,9 +312,13 @@ cerr<<endl;
 // cerr<<"reset="<<reset;
 	// add the new column at the end
        // gsl_matrix_set_col(XMat_,position,data_->xMat.columnVector(snp));
-		const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( snp );
-		for ( int i = 0; i < data_->getIdvNo(); ++i )//instead position reset 
+		const size_t idvs = data_->getIdvNo();
+		AutoVector xVec( idvs );
+		data_->getXcolumn( snp, xVec );
+		// TODO: Refactor to use Vector.copy
+		for ( int i = 0; i < idvs; ++i ) {	//instead position reset 
 			gsl_matrix_set( XMat_, i, reset, xVec.get( i ) );
+		}
 			gsl_vector_set(betas_,reset,0); //0 is relativ good for an unknow variable.
 		
 if(DEBUG2)
@@ -417,21 +423,19 @@ void Model::initializeModel () {
 	size_t col = 0;
 	xMat.columnVector( col++ ).fill( 1.0 );		// intercept
 	for ( size_t cov = 0; cov < data_->getCovNo(); ++cov ) {
-		const Vector covVec = const_cast<MData*>( data_ )->getCovariateColumn( cov );
 		Vector xVec = xMat.columnVector( col++ );
-		xVec.copy( covVec );
+		data_->getCovariateColumn( cov, xVec );
 	}
 	for ( size_t modelSnp = 0; modelSnp < getModelSize(); ++modelSnp ) {
 		const size_t snp = modelSnps_.at( modelSnp );
-		const Vector genotypeVec = const_cast<MData*>( data_ )->getXcolumn( snp );
 		Vector xVec = xMat.columnVector( col++ );
-		xVec.copy( genotypeVec );
+		data_->getXcolumn( snp, xVec );
 	}
 	assert( getNoOfVariables() == col );
 
 	// Set YVec_
 	Vector yVec = Vector( *YVec_ );
-	yVec.copy( const_cast<MData*>( data_ )->getY() );
+	data_->getY( yVec );
 
 	upToDateXMat_ = true;	// XMat_ is uptodate 
 	upToDateBetas_ = false; // the betas_ are not uptodate, they are just initialiesed
@@ -704,8 +708,7 @@ void Model::getYvec ( vector<bool> &out ) {
 			<<endl;
 		YVec_ = gsl_vector_alloc( data_->getIdvNo() );	//some initialisation for the YVec_
 		Vector yVec = Vector( *YVec_ );
-		yVec.copy( const_cast<MData*>( data_ )->getY() );
-		// BB: previously it was gsl_vector_set(YVec_, i, data_->getYvalue(i)-1 );}
+		data_->getY( yVec );
 	}
 	if ( out.size() < YVec_->size ) {
 		out.resize(YVec_->size);//out
@@ -730,8 +733,10 @@ void Model::printYvec ( const bool check ) {
 				Y << gsl_vector_get( YVec_, idv ) << "\n";
 			}
 		} else {
-			const Vector yVec = const_cast<MData*>( data_ )->getY();
-			for ( size_t idv = 0; idv < data_->getIdvNo(); ++idv ) {
+			const size_t idvs = data_->getIdvNo();
+			AutoVector yVec( idvs );
+			data_->getY( yVec );
+			for ( size_t idv = 0; idv < idvs; ++idv ) {
 	   			Y << yVec.get( idv ) <<endl;
 			}
 		}
@@ -761,12 +766,13 @@ void Model::printModel (
 	ss << "Nr \tSNPId       \tChr \tPos   \tbeta    \tp-Value Single Marker Test" <<endl;
 
 	for ( int i = 0; i < getModelSize(); ++i ) {
+		const SNP & snp = data_->getSNP(modelSnps_.at(i));
 		ss << modelSnps_.at(i)<< "\t" 
 				<< getSNPId(i) << "\t"
-				<< (data_->getSNP(modelSnps_.at(i)))->getChromosome()<<"\t"
-				<< setw(10)<<(data_->getSNP(modelSnps_.at(i)))->getBasePairPosition()<<"\t"   //the setw for formating 
+				<< snp.getChromosome()<<"\t"
+				<< setw(10)<<snp.getBasePairPosition()<<"\t"   //the setw for formating 
 				<< getBeta( 1 + data_->getCovNo() + i ) << "\t"
-				<< (data_->getSNP(modelSnps_.at(i)))->getSingleMarkerTest()
+				<< data_->getSingleMarkerTestAt( modelSnps_.at(i) )
 				<< endl;
 	}
         if(0==getModelSize())
@@ -902,7 +908,7 @@ for ( int i = 0; i < getModelSize(); ++i ) {
 			 if ( abscor  >= threshold ) {
 			 // if (fabs(abscor)>=threshold) {//for the signed version one is interesstet in the high correlated snps
 				StrongCor.insert(pair<double, int>(abscor, j));
-				S[line]=(data_->getSNP(j))->getSnpId().c_str();
+				S[line] = data_->getSNP(j).getSnpId().c_str();
 				zwischen[line*2]=abscor;
 				zwischen[line*2+1]=j;
 				++line;
@@ -954,12 +960,12 @@ for ( int i = 0; i < getModelSize(); ++i ) {
 	
 		for (multimap<double, int>::reverse_iterator it = StrongCor.rbegin(); it != StrongCor.rend(); it++)	
 		{
-
-
-			ss 	<< (*it).second  //das 2te von pair<double,int>
-				<< "\t" << (data_->getSNP((*it).second))->getSnpId() 
-				<< "\t" << (data_->getSNP((*it).second))->getChromosome() 
-				<< "\t" << (data_->getSNP((*it).second))->getBasePairPosition() 
+			const int snpIndex = (*it).second;
+			const SNP & snp = data_->getSNP( snpIndex );
+			ss 	<< snpIndex
+				<< "\t" << snp.getSnpId() 
+				<< "\t" << snp.getChromosome() 
+				<< "\t" << snp.getBasePairPosition() 
 				<< "\t" << (*it).first << "\n";
 		}
 		StrongCor.clear();
@@ -1123,6 +1129,7 @@ double Model::oraculateOptimalLinearForwardStep( snp_index_t *snp, size_t bound 
 	// First, intermediate step towards using linalg instead plain GSL
 	const Matrix xMat( *XMat_ );
 	const Vector yVec( *YVec_ );
+	AutoVector xVec( data_->getIdvNo() );
 
 	// Fast incremental linear regression calculator
 	QRuncher qruncher( yVec );
@@ -1144,7 +1151,7 @@ double Model::oraculateOptimalLinearForwardStep( snp_index_t *snp, size_t bound 
 		if ( modelIndex.contains( orderedSnpIndex ) ) continue;
 
 		// Prepare new column
-		const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( orderedSnpIndex );
+		data_->getXcolumn( orderedSnpIndex, xVec );
 		qruncher.pushColumn( xVec );
 
 		const double rss = qruncher.calculateRSS();
@@ -1551,7 +1558,7 @@ int newSNP=0;
           if ( parameter.detailed_selction ) {
             printLOG(
             //~ "Step " + int2str(i) + " of " + int2str(data_->getSnpNo()) +": "+
-              "ADD    SNP: " + data_->getSNP(orderedSnpIndex )->getSnpId() + " ModelSize: "
+              "ADD    SNP: " + data_->getSNP(orderedSnpIndex ).getSnpId() + " ModelSize: "
 	      + int2str( NewModel.getModelSize() ) + " MSC: " + double2str(newBIC)
             );
           }
@@ -1703,7 +1710,7 @@ int newSNP=0;
           if ( parameter.detailed_selction ) {
             printLOG(
             //~ "Step " + int2str(i) + " of " + int2str(data_->getSnpNo()) +": "+
-              "ADD    SNP: " + data_->getSNP(orderedSnpIndex )->getSnpId() + " ModelSize: "
+              "ADD    SNP: " + data_->getSNP(orderedSnpIndex ).getSnpId() + " ModelSize: "
 	      + int2str( NewModel.getModelSize() ) + " MSC: " + double2str(newBIC)
             );
           }
@@ -1773,7 +1780,8 @@ int newSNP=0;
       if ( modelIndex.contains( orderedSnpIndex ) ) continue;
       
       // Prepare new column
-	const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( orderedSnpIndex );
+	AutoVector xVec( data_->getIdvNo() );
+	data_->getXcolumn( orderedSnpIndex, xVec );
       qruncher.pushColumn( xVec );
       
       newBIC = computeMSC( selectionCriterium, qruncher.calculateRSS() ); //1 instead of selection criterion
@@ -2331,9 +2339,8 @@ bool Model::computeLogRegression () {
 
 
 double Model::computeSingleRegressorTest ( const snp_index_t snp ) {
-	
-	// Intitialisation
-	
+	// Initialisation
+
 	// check if we have an 1-SNP model
 	if ( 1 != getModelSize() ) {
 		modelSnps_.clear();
@@ -2342,10 +2349,12 @@ double Model::computeSingleRegressorTest ( const snp_index_t snp ) {
 	}
 	else // replace in 1-SNP model the old SNP with new SNP snp
 	{
+		const size_t idvs = data_->getIdvNo();
+		AutoVector xVec( idvs );
 		modelSnps_.at(0) = snp;
-		const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( snp );
+		data_->getXcolumn( snp, xVec );
 		// TODO<BB>: Use vectorial replacement instead of loop
-		for ( int i = 0; i < data_->getIdvNo(); ++i ) {
+		for ( size_t i = 0; i < idvs; ++i ) {
 			// the SNP is in the last column noOfVariables - 1		
 			gsl_matrix_set( XMat_, i, getNoOfVariables() - 1, xVec.get( i ) );
 		}
@@ -2400,7 +2409,7 @@ double Model::computeSingleLinRegressorTest ( const snp_index_t snp ) {
 		if ( 0  == gsl_matrix_get (TMat, i, i) )
 		{
 			// the matrix is not invertabele. 
-			printLOG("Error single linear regressor test for SNP "+ (data_->getSNP( snp ))->getSnpId()+ ": Regressionmatrix not invertable!" );
+			printLOG("Error single linear regressor test for SNP "+ (data_->getSNP( snp )).getSnpId()+ ": Regressionmatrix not invertable!" );
 		
 			gsl_matrix_free (TMat);
 			gsl_matrix_free (InvMat);
@@ -2557,64 +2566,60 @@ Model::~Model () {
 }
 
 void Model::printModelNew() const {
+	const size_t idvs = data_->getIdvNo();
 	ofstream	SNPL;
 	
 	SNPL.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if Logfile can be writt
 	try
 	{
 		SNPL.open( ( parameter.out_file_name + "_SNPListNew.txt" ).c_str(),  fstream::out );
-		
-		
+
+		AutoVector vec( idvs );
+
 		for ( size_t i = 0; i < getModelSize(); ++i ) {
-			const size_t snp = modelSnps_.at(i);
-			const Vector xVec = const_cast<MData*>( data_ )->getXcolumn( snp );
-			SNPL << getSNPId(i) <<" <- c(";
-			for ( size_t idv = 1; idv  < data_->getIdvNo(); ++idv ) {
+			const size_t snp = modelSnps_.at( i );
+			data_->getXcolumn( snp, vec );
+			SNPL << getSNPId( i ) <<" <- c(";
+			for ( size_t idv = 0; idv < idvs; ++idv ) {
 				SNPL << ( 0 < idv ? "," : "" );
-				SNPL << xVec.get( idv );
+				SNPL << vec.get( idv );
 			}
 			SNPL<< ")"<< endl;
-			
 		}
 
-		for ( int i = 0; i < data_->getCovNo(); ++i ) {
-			SNPL << data_->getCovMatElementName(i)<<" <- c(";
-			const Vector covVec = const_cast<MData*>( data_ )->getCovariateColumn( i );
-			SNPL <<  covVec.get( 0 );
-			for (int j= 1; j < data_->getIdvNo(); j++)
-			{
-				SNPL << "," << covVec.get( j );
+		for ( size_t i = 0; i < data_->getCovNo(); ++i ) {
+			SNPL << data_->getCovMatElementName(i) << " <- c(";
+			data_->getCovariateColumn( i, vec );
+			for ( size_t idv = 0; idv < idvs; ++idv ) {
+				if ( 0 < idv ) SNPL << ",";
+				SNPL << vec.get( idv );
 			}
 			SNPL<< ")"<< endl;	
-		
 		}
 
-			SNPL << "Y" <<" <- c(";
-			SNPL<< gsl_vector_get(YVec_,0);
-			for (int j= 1; j < data_->getIdvNo(); j++)
-			{
-				SNPL <<","<< gsl_vector_get(YVec_,j);
-			}
-			SNPL<< ")"<< endl;
+		const Vector yVec( *YVec_ );
+		SNPL << "Y" <<" <- c(";
+		for ( size_t idv = 0; idv < idvs; ++idv ) {
+			if ( 0 < idv ) SNPL << ",";
+			SNPL << yVec.get( idv );
+		}
+		SNPL<< ")"<< endl;
 		SNPL <<endl;
 		
-			SNPL << "Intercept" <<" <- c(1";
-			for (int j= 1; j < data_->getIdvNo(); j++)
-			{
-				SNPL <<","<<1;
-			}
-			SNPL<< ")"<< endl;
+		SNPL << "Intercept" <<" <- c(";
+		for ( size_t idv = 0; idv < idvs; ++idv ) {
+			if ( 0 < idv ) SNPL << ",";
+			SNPL << 1;
+		}
+		SNPL<< ")"<< endl;
 		
-		//~ SNPL << "summary(lm(Y~Dummy1 + Dummy2 + Dummy3 +";
-		SNPL <<"X <- cbind( Intercept";
-		for  (int i = 0; i< getModelSize(); i++)
-		{
-			//~ if ( it_SNPList != SNPList.begin() )
-			SNPL << ",";;
-			SNPL <<  getSNPId(i);
+		SNPL << "X <- cbind( Intercept";
+		for  ( size_t i = 0; i < getModelSize(); ++i ) {
+			if ( 0 < i ) SNPL << ",";
+			SNPL << getSNPId( i );
 		}
 		SNPL << ")"<<endl;
-		
+
 		SNPL.close();
 		printLOG( "Written R-File \"" + parameter.out_file_name + "_SNPList.txt\"." );
 	}
@@ -2622,7 +2627,6 @@ void Model::printModelNew() const {
 	{
 		cerr << "Could not write R-File" <<endl;
 	}	
-
 }
 
 /**
