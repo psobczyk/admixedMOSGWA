@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Artur Gola, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Artur Gola, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -30,7 +30,31 @@
 #include "Model.hpp"
 #include "search/Search.hpp"
 
-ostream &operator<< ( ostream &out, std::vector<snp_index_t> &v );
+ostream &operator<< ( std::ostream &out, std::vector<snp_index_t> &v );
+
+
+struct TSNP_Info 
+{
+  snp_index_t SNP;
+  unsigned int Chr;
+  int pos;
+  bool operator < (const TSNP_Info & s) const
+  {
+    return Chr < s.Chr ? true : (Chr > s.Chr ? false : pos < s.pos);
+  }
+  friend std::ostream& operator << (std::ostream &out, const TSNP_Info & t)
+  {
+    return out << "SNP: " << t.SNP << ", Chr: " << t.Chr << ", pos: " << t.pos;
+  }
+};
+
+struct TRegionSet_info
+{
+  set<TSNP_Info>* s;
+  
+  bool operator < (const TRegionSet_info &t) const;
+};
+
 
 struct TPOWER_FDR 
 { 
@@ -105,10 +129,10 @@ class GA //: public search::Search
 private:
   std::map<int, int> cs;
   const double correlationTh;
-  
-  TBitset exclusivedSNP;   // set of exclusived SNPs - for initial population
-  TBitset goodSNPs;        // 
-  int goodSNPsNo;          // number of SNPs wchich p-val are > 0.1
+
+  TBitset exclusivedSNP;   // a set of exclusived SNPs - for the initial population
+  TBitset goodSNPs;        // a set of SNPs which p-val are > 0.1
+  int goodSNPsNo;          // a number of SNPs wchich p-val are > 0.1
   
   std::ofstream poolFilePart;
   
@@ -144,6 +168,8 @@ private:
 
   /** SNPs for the correlation are from range [snp - correlationRange, snp + correlationRange] */
   int correlationRange;
+  
+  double regionMinCorrelation;  // threshold for a region method
 
   /** Mutates the model */
   void mutation ( Model *aModel, double pMutation, double threshold );
@@ -159,6 +185,17 @@ private:
 
   /** The stop criterion.*/
   int B;
+  
+  /** SNPs calculatee by MOSGWA. poolReader() sets up this variable */
+  std::vector<snp_index_t> v_mosgwa;
+
+  /**  allows to save a pool when it will have 30K (100K) models */
+  bool p_30K,
+       p_100K;
+  time_t time_start; // the start time for a pool of size 30K or 100K
+
+  bool isCluster;
+       
   
   /** Finds the best, the worst and average models */
   void statistics ( double &theBest, double &average, double &theWorst );
@@ -182,25 +219,32 @@ private:
   /** Pointer to real model */
   Model *realModel;  
   
-  std::map<snp_index_t, int> mapSNPid_label;    // Map of SNP_id -> cluster label - to calculate POWER, FDR, ...
+  std::map<snp_index_t, int> mapSNPid_label;     // Map of SNP_id -> cluster label - to calculate POWER, FDR, ...
   
-  std::map<snp_index_t, int> mapSNPid_labelLO;    // Map of SNP_id -> cluster label - for the local improvement
+  std::map<snp_index_t, int> mapSNPid_labelLO;   // Map of SNP_id -> cluster label - for the local improvement
   
-  std::map<int, long double> mapLabel_PmiY;     // Maps of label -> posterior of whole cluster (the sum) - to calculate POWER, FDR, ...
+  std::map<int, long double> mapLabel_PmiY;      // Maps of label -> posterior of whole cluster (the sum) - to calculate POWER, FDR, ...
  
-  std::vector< std::set<snp_index_t> >vectClust;      // An element of this vector is a claster - the set of snp_id
+  std::vector< set<snp_index_t> >vectClust;      // An element of this vector is a claster - the set of snp_id
   
   std::map<int, int> mapLabel_ind;               // Maps of label -> index. The index of the vector of set
   
   std::vector<int> clusterLabel;                 // clusterLabel[i] is a label of i-th cluster
                                             // clusterLabel[i] - the label of i-th cluster, vectClust[i] - the set of snp of the i-th cluster
+                                            
   static std::map<int, int> mapLabel_count;      // It is needed to count the labels of clusters for many runs of GA.
                                             
   
   /** Returns number of models which have got better msc value than the parameter mscVal */
   int isInNBestModels(double mscValue);
   
-  static std::map<snp_index_t, int> recognizedSNPs;
+  static std::map<snp_index_t, int> recognizedSNPs_Region;
+  static std::map<snp_index_t, int> recognizedSNPs_bestGA;
+  static std::map<snp_index_t, int> recognizedSNPs_mosgwa;
+  static std::map<snp_index_t, int> recognizedSNPs_posterioriModel;
+  static std::map<snp_index_t, int> recognizedSNPs_clusterMax;  
+  static std::map<snp_index_t, int> recognizedSNPs_clusterSum;  
+  static std::map<snp_index_t, int> recognizedSNPs_piMass;  
   
   /**
    * @brief Prepares vectClust, mapLabel_ind, clusterLabel
@@ -223,6 +267,7 @@ public:
     std::string fileName,
     double correlationThreshold_,
     int correlationRange,
+    double regionMinCorrelation,
     bool statisticsOnly = false
   );
 
@@ -230,7 +275,7 @@ public:
   void writePool () const;
 
   /** writes pool to log file */
-  void writePoolToFile (std::stringstream &ssModels) const;
+  void writePoolToFile (std::stringstream &ssModels, std::string postfix = "") const;
 
   /** runs genethic algorithm */
   void run ();
@@ -240,11 +285,10 @@ public:
   void selectModel ( Model& selectedModel );
   
   /** computes and writes to file (*_pProb.txt) posterior probalibities of models */
-
   void computePosteriorProbability(std::stringstream &ssModels, std::map<snp_index_t, int> &mapSNPCausal_ind, std::vector< std::multiset<long double> > &tabCausalPost,
                                     std::vector< std::multiset<long double> > &tabCausalPost_b);//, long double minPosterior);
   
-  void poolReader(std::string fileName, std::stringstream& sGATime);//, std::map<snp_index_t, int> *recognizedSNPs = 0);
+  void poolReader(std::string fileName, std::stringstream& sGATime, int real_modelsNo);//, std::map<snp_index_t, int> *recognizedSNPs = 0);
   
   /** TESTING for testing only */
 //  void tests ();
@@ -266,19 +310,28 @@ public:
   
   void calculateClusterPosterior(std::vector<snp_index_t> &clusterSNP, std::vector<long double> &clusterSNPposterior);
   
+  
+//  void calculatePOWER_FDR_clustGA(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &causalSNPs, long double &POWER, long double &FDR, unsigned int & FDcount, std::set<snp_index_t> &TP_SNPs);
+  void calculatePOWER_FDR_clustGA(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, std::set<snp_index_t> &TP_SNPs, std::map<snp_index_t, int> &recognizedSNPs);
+
+
+  // Na potrzeby 2-go artykułu
+  void calculatePOWER_FDR_clustGA_2ndArticle(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, 
+                                    unsigned int & FDcount, std::set<snp_index_t> &trueSNPs);
+  
+  
   /** the old first method, no cluster, only correlation between SNPs */
   void calculatePOWER_FDR(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, unsigned int & FDcount, std::set<snp_index_t> &trueSNPs);
   
-  void calculatePOWER_FDR_clustGA(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, unsigned int & FDcount, std::set<snp_index_t> &trueSNPs);
-  
+/* 
   void calculatePOWER_FDR_clust(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, std::map<snp_index_t, long double> &mapSNPid_Pmi_Y, 
                                 snp_index_t badSNP, std::map<snp_index_t, int> &recognizedSNPs, std::map<snp_index_t, int> &mapSNPCausal_ind,
                                 std::vector< std::multiset<long double> > &tabCausalPost);
-  
+*/  
        
   
-  void calculatePOWER_FDR_clust(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, std::map<snp_index_t, long double> &mapSNPid_Pmi_Y,
-                                std::map<snp_index_t, int> &mapSNPCausal_ind, std::vector< std::multiset<long double> > &tabCausalPost_b);
+//  void calculatePOWER_FDR_clust(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, std::map<snp_index_t, long double> &mapSNPid_Pmi_Y,
+//                                std::map<snp_index_t, int> &mapSNPCausal_ind, std::vector< std::multiset<long double> > &tabCausalPost_b);
   
   
   void calculatePOWER_FDR_clust_sum(std::vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, std::map<snp_index_t, long double> &mapSNPid_Pmi_Y, 
@@ -287,6 +340,11 @@ public:
   void calculatePOWER_FDR_clust_max(std::vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, std::map<snp_index_t, long double> &mapSNPid_Pmi_Y, 
                                 std::map<snp_index_t, int> &recognizedSNPs, std::map<snp_index_t, int> &mapSNPCausal_ind, std::vector< std::multiset<long double> > &tabCausalPost);
   
+/** test */  
+//void calculate_clusters(std::vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, std::map<snp_index_t, long double> &mapSNPid_Pmi_Y, 
+//                                std::map<snp_index_t, int> &recognizedSNPs, std::map<snp_index_t, int> &mapSNPCausal_ind, std::vector< std::multiset<long double> > &tabCausalPost, bool clusterSum);
+void calculate_clusters(std::map<snp_index_t, long double> &mapSNPid_Pmi_Y, std::vector<snp_index_t> &modelSNPs, bool clusterSum, std::string method_Name = "");
+
   
   void checkCorrelation(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &realSNPs);
   
@@ -295,9 +353,15 @@ public:
 
   void setRecognisedSNPs(); //  
   
-  static std::map<snp_index_t, int> getRecognisedSNPs() {return recognizedSNPs;}
+  static std::map<snp_index_t, int> getRecognizedSNPs_Region() {return recognizedSNPs_Region;}
+  static std::map<snp_index_t, int> getRecognizedSNPs_bestGA() {return recognizedSNPs_bestGA;}  
+  static std::map<snp_index_t, int> getRecognisedSNPs_mosgwa() {return recognizedSNPs_mosgwa;}
+  static std::map<snp_index_t, int> getRecognisedSNPs_posterioriModel() {return recognizedSNPs_posterioriModel;}
+  static std::map<snp_index_t, int> getRecognisedSNPs_clusterMax() {return recognizedSNPs_clusterMax;}
+  static std::map<snp_index_t, int> getRecognisedSNPs_clusterSum() {return recognizedSNPs_clusterSum;}
+  static std::map<snp_index_t, int> getRecognisedSNPs_piMass() {return recognizedSNPs_piMass;}
   
-  double aBestCorrelatedSNP(snp_index_t aSNP, std::set<snp_index_t> & snps, snp_index_t &bestCorrelatedSNP) const;
+//  double theBestCorrelatedSNP(snp_index_t aSNP, std::set<snp_index_t> & snps, snp_index_t &bestCorrelatedSNP) const;
   
   // tworzy klastry do obliczenia POWER dla piMassa
   void makeClusers(std::vector<std::set<snp_index_t> > &tab);
@@ -316,9 +380,22 @@ public:
   
   void setCausalCount(std::map<snp_index_t, int> &map_SNP2count);
 
-  void stronglyCorrelatedSnpsCluster(const double& threshold = 0.5);  
+//  void stronglyCorrelatedSnpsCluster(const double& threshold = 0.5);  
+  void stronglyCorrelatedSnpsCluster(const std::vector<snp_index_t> & tabSNPs, const double& threshold );
+  
+  void saveRecognizedSNPinfo(const std::vector<snp_index_t> &v, const std::string &method_Name, std::map<snp_index_t, long double> &mapSNPid_Pmi_Y);
+  
+  
+  void writePoolofSize(bool &flag, int maxSize);
+  void regionStrategy(const std::string method_Name, Model &model, std::multimap<long double, snp_index_t>& Pmi_Ysort, std::map<snp_index_t, long double> &mapSNPid_Pmi_Y, double th, std::set<TRegionSet_info> &setNewRegion);
+  void calculatePOWER_FDR_clustRegion(std::vector<snp_index_t> &realSNPs, TPOWER_FDR &powerFDR, std::set<TRegionSet_info> &setNewRegion, std::map<snp_index_t, int>& recognizedSNPs);
+  void test_region();
 };
-
+//  void calculatePOWER_FDR_clustGA(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, std::set<snp_index_t> &TP_SNPs);
 void writePosterior(std::string fileName, std::map<snp_index_t, int> &mapSNPCausal_ind, std::vector< std::multiset<long double> > &tabCausalPost, int size);
 
+
+
+
 #endif
+

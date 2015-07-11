@@ -122,26 +122,44 @@ void runGreedy () {
 	);
 }
 
-void runGA ( const int outNo, const string &modelsFileName ) {
-  unsigned int modelsNo_ = parameter.modelsNo;                   
+/**
+ * @brief Runs Genetics Algorithm as a model selection method.
+ * @param outNo - it is number of output. It is used to run GA in a loop and save all the results in the different files.
+ * @param modelsFileName - it is the file name which contains information about an initial population. 
+ *                         If a modelsFileName is empty GA creates a new initial population
+ * 
+ */
+void runGA(int outNo, const string &modelsFileName)
+{
+  cerr << "runGA" << endl;
+  unsigned int modelsNo_ = parameter.modelsNo;
   unsigned int maxNoProgressIter_ = parameter.maxNoProgressIter; 
   double pCross_ = parameter.pCross;                             
   double pMutation_ = parameter.pMutation;                       
   unsigned int tournamentSize_ = parameter.tournamentSize;       
   double correlationThreshold_ = parameter.correlationThreshold; 
   int correlationRange_ = parameter.correlationRange;           
+  double regionMinCorrelation_ = parameter.regionMinCorrelation;
   int B_ = parameter.B;
   string old_out_file_name;
+  
+  cout <<   "modelsNo_ " <<  parameter.modelsNo << endl
+       << "maxNoProgressIter_ = " << parameter.maxNoProgressIter << endl
+  << "pCross_ = " << parameter.pCross << endl
+  << "pMutation_ = " << parameter.pMutation << endl                      
+  << "tournamentSize_ = " << parameter.tournamentSize << endl
+  << "correlationThreshold_ = " << parameter.correlationThreshold << endl
+  << "correlationRange_ = " << parameter.correlationRange << endl
+  << "regionMinCorrelation_ = " <<  parameter.regionMinCorrelation << endl
+  << "B_ = " << parameter.B << endl
+  << "causalModelFilename = \"" << parameter.causalModelFilename << "\"" << endl;
   
   if (outNo >= 0)  
   {
     old_out_file_name = parameter.out_file_name;
-    parameter.out_file_name = parameter.out_file_name + "_" + int2str(outNo);
   }
 
   const time_t time_start = time(NULL);
-  
- 
   stringstream ss;
   timespec ts;
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
@@ -153,8 +171,13 @@ void runGA ( const int outNo, const string &modelsFileName ) {
   vector< multiset<long double> > tabCausalPost; 
   vector< multiset<long double> > tabCausalPost_b; 
 
-  GA ga(modelsNo_, maxNoProgressIter_, pCross_, pMutation_, tournamentSize_, B_, modelsFileName, correlationThreshold_, correlationRange_);
+  GA ga(modelsNo_, maxNoProgressIter_, pCross_, pMutation_, tournamentSize_, B_, modelsFileName, correlationThreshold_, correlationRange_, regionMinCorrelation_);
   ga.run();
+
+  ss.str("");
+  ss.clear();
+  ss << "GA time: ";
+  ga.writePoolToFile(ss);
   
   ga.initCausalPost( mapSNPCausal_ind );
   tabCausalPost.resize( mapSNPCausal_ind.size() );
@@ -165,18 +188,8 @@ void runGA ( const int outNo, const string &modelsFileName ) {
   ga.computePosteriorProbability(ssModels, mapSNPCausal_ind, tabCausalPost, tabCausalPost_b);//, minPosterior);
   writePosterior((parameter.out_file_name + "_post_12.txt").c_str(), mapSNPCausal_ind, tabCausalPost, 1);
 
-  ss.str("");
-  ss.clear();
-  ss << "GA time: ";
-
   const time_t time_end = time(NULL);          //get current calendar time
-
-  cout << "start at " << timeStamp(time_start) << endl;
-  cout << "start at " << time_start << endl;
-  cout << "end at " << timeStamp(time_end) << endl;
-  cout << "end at " << time_end << endl;
-  
-  ss << (time_end > time_start? sec2time(time_end - time_start) : sec2time(24 * 3600 + time_end - time_start)) << endl;
+  ss << (time_end > time_start? sec2time(time_end - time_start) : sec2time(24 * 3600 + time_end - time_start));
   cout << ss.str() << endl;
   ga.writePoolToFile(ss);
 
@@ -184,8 +197,8 @@ void runGA ( const int outNo, const string &modelsFileName ) {
   Pmi_YsortFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); 
   try
   {
-    Pmi_YsortFile.open( ( parameter.out_file_name + "_PjMi_YsortFile_#" + int2str(parameter.in_values_int) + ".txt" ).c_str(),  fstream::out | fstream::trunc );
-    Pmi_YsortFile << ss.str() << ssModels.str() << endl;
+    Pmi_YsortFile.open( ( parameter.out_file_name + "_PjMi_YsortFile" /*+ int2str(parameter.in_values_int)*/ + ".txt" ).c_str(),  fstream::out | fstream::trunc );
+    Pmi_YsortFile << ss.str() << endl << ssModels.str() << endl;
     Pmi_YsortFile.flush();
     Pmi_YsortFile.close();
   }
@@ -193,14 +206,12 @@ void runGA ( const int outNo, const string &modelsFileName ) {
   {
     cerr << "Could not write PMi_Y-sorted File" <<endl;
   }
-  cout << "Posterior probalibities of models are in the file: " 
-       <<  ( parameter.out_file_name + "_PjMi_YsortFile_#" + int2str(parameter.in_values_int) + ".txt" ).c_str() << endl;
-  
+  cout << "Posterior probalibities of SNPs are in the file: " 
+       <<  ( parameter.out_file_name + "_PjMi_YsortFile" /*+ int2str(parameter.in_values_int)*/ + ".txt" ).c_str() << endl;
+  cout << "A report is in the file: " <<  ( parameter.out_file_name + "_recognized_SNPs" /*+ int2str(parameter.in_values_int)*/ + ".txt" ).c_str() << endl;  
   printLOG(ss.str());   
   if (outNo >= 0)  
   {
     parameter.out_file_name = old_out_file_name;
   }
 }
-
-

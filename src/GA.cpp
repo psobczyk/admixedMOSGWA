@@ -1,19 +1,3 @@
-/********************************************************************************
- *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Artur Gola, Bernhard Bodenstorfer.		*
- *										*
- *	This program is free software; you can redistribute it and/or modify	*
- *	it under the terms of the GNU General Public License as published by	*
- *	the Free Software Foundation; either version 3 of the License, or	*
- *	(at your option) any later version.					*
- *										*
- *	This program is distributed in the hope that it will be useful,		*
- *	but WITHOUT ANY WARRANTY; without even the implied warranty of		*
- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.			*
- *	See the GNU General Public License for more details.			*
- ********************************************************************************/
-
-#include "GA.hpp"  
 #include <algorithm>
 #include <iterator>
 #include <iomanip>
@@ -22,18 +6,52 @@
 #include <set>
 #include <list>
 #include <cassert>
-
-using namespace std;
+#include "GA.hpp"  
 
 const bool printInfo = false;
 
 const int minModelSize = 3;            // minimal model size for initial population
 
 vector<vector<snp_index_t> > GA::correlations; // correlations vector
-map<snp_index_t, int> GA::recognizedSNPs;
+
+
+map<snp_index_t, int> GA::recognizedSNPs_Region;
+map<snp_index_t, int> GA::recognizedSNPs_bestGA;
+map<snp_index_t, int> GA::recognizedSNPs_mosgwa;
+map<snp_index_t, int> GA::recognizedSNPs_posterioriModel;
+map<snp_index_t, int> GA::recognizedSNPs_clusterMax;  
+map<snp_index_t, int> GA::recognizedSNPs_clusterSum;  
+map<snp_index_t, int> GA::recognizedSNPs_piMass;  
+
+
 
 map<int, int> GA::mapLabel_count;
 
+
+bool TRegionSet_info::operator < (const TRegionSet_info &t) const
+{
+  set<TSNP_Info>::iterator it_2 = t.s->begin();
+  set<TSNP_Info>::iterator it = s->begin();
+  for (; it != s->end() && it_2 != t.s->end(); ++it, ++it_2)
+  {
+    TSNP_Info s1 = *it;
+    TSNP_Info s2 = *it_2;
+    if (s1.Chr == s2.Chr)
+    {
+      if (s1.pos < s2.pos)
+        return true;
+      else
+        if (s1.pos > s2.pos)
+          return false;
+    }
+    else    
+      return s1.Chr < s2.Chr;   
+  }
+  if (it == s->end() && it_2 != t.s->end())
+    return true;  // this->s is a subset of t.s
+  else
+    return false;
+}
 
 bool compareModels(const Model *m1, const Model *m2)
 {
@@ -47,7 +65,8 @@ string timeStemple()
 {
   const time_t ltime=time(NULL);          //get current calendar time
   const tm* now = localtime(&ltime);      // struct for the day, year....
-  return int2strPadWith( now->tm_hour, 2, '0' ) + ":" + int2strPadWith( now->tm_min, 2, '0' ) + ":" + int2strPadWith( now->tm_sec, 2, '0' );  
+  return int2strPadWith( now->tm_hour, 2, '0' ) + ":" + int2strPadWith( now->tm_min, 2, '0' ) 
+         + ":" + int2strPadWith( now->tm_sec, 2, '0' );  
 }
 
 string sec2time(const time_t &t)
@@ -56,7 +75,8 @@ string sec2time(const time_t &t)
   int sec = t - hour * 3600;
   int min = sec / 60;
   sec = sec % 60;
-  return int2strPadWith( hour, 2, '0' ) + ":" + int2strPadWith( min, 2, '0' ) + ":" + int2strPadWith( sec, 2, '0' );    
+  return int2strPadWith( hour, 2, '0' ) + ":" + int2strPadWith( min, 2, '0' ) 
+         + ":" + int2strPadWith( sec, 2, '0' );    
 }
 
 
@@ -142,7 +162,6 @@ string stemp_diff(const tm* t_end, const tm* t_start)
   return int2strPadWith( now->tm_hour, 2, '0' ) + ":" + int2strPadWith( now->tm_min, 2, '0' ) + ":" + int2strPadWith( now->tm_sec, 2, '0' );    
 }
 */
-
 /** @brief For calculatation a difference between two times 
  * @param hour, min, sec, nano - calculated time
  * @param tp - start time
@@ -202,35 +221,63 @@ ostream &operator<< (ostream &out, vector<snp_index_t> &v)
  * @param correlationThreshold - correlation threshold which is used in local improvement and mutation function
 */
 GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, double pMutation_, unsigned int tournamentSize_, 
-       int B_, string fileName, double correlationThreshold_, int correlationRange_, bool statisticsOnly)
+       int B_, string fileName, double correlationThreshold_, int correlationRange_, double regionMinCorrelation, bool statisticsOnly)
 :correlationTh(0.5), models(0), modelsNo(modelsNo_), maxNoProgressIter(maxNoProgressIter_), pCross(pCross_), pMutation(pMutation_), 
- tournamentSize(tournamentSize_), correlationThreshold(correlationThreshold_), correlationRange(correlationRange_), B(B_), realModel(0)
+ tournamentSize(tournamentSize_), correlationThreshold(correlationThreshold_), correlationRange(correlationRange_), regionMinCorrelation(regionMinCorrelation), B(B_), realModel(0)
 {
+//  char c; cout << "statisticsOnly: " << statisticsOnly << ", press a key.."; cin >> c;
+  time_start = time(NULL);
+  p_30K = false;
+  p_100K = false;
+  isCluster = false;
+  ofstream file;  
+  file.open((parameter.out_file_name + "_Report.txt").c_str(), ios::trunc);
+  file.close();
+
   assert(modelsNo > 0);
   assert((unsigned int) (B) <= modelsNo);
 
   data.calculateIndividualTests();
+
+//  test_region();
+//  exit(0);
+/*  vector<snp_index_t> tab;
+  tab.push_back(697067); sprawdzenie
+  tab.push_back(599750 );
+  stronglyCorrelatedSnpsCluster(tab, .5 );
+  exit(0);  
+*/  
+//double absCorr = fabs( data.computeCorrelation( SNPs[i], SNPs[k] ) ); // compute correlation between model SNP and SNP j  
+  
+/*  data.writeBEDfile();
+  cout << "Cacluates only IndividualTests()" << endl; 
+  exit(0);
+*/  
   
   Model m0(data);
   m0.computeRegression();
   data.setLL0M( m0.getMJC() );
-
+  
   if (printInfo) printLOG("Initial population start");
-
+  
+  /*
+  int myTab[] = {242029, 302459};
+  int myTabSize = sizeof(myTab)/sizeof(myTab[0]);
+  vector<snp_index_t> tabSNPs(myTab, myTab + myTabSize);
+  stronglyCorrelatedSnpsCluster(tabSNPs, 0.5 );
+  cout << "end of Correlated" << endl;
+//  exit(0);
+  */
+  
   map<string, int> SNP_Names_Id;
   for (unsigned int i = 0; i < data.getSnpNo(); ++i ) 
   {
-    SNP_Names_Id.insert( pair<string, snp_index_t>( data.getSNP( i ).getSnpId(), i ) );
+    SNP_Names_Id.insert( pair<string, snp_index_t>(data.getSNP( i ).getSnpId(), i) );
   }
 
   string clusterFile_POWER( (parameter.in_files_plink + ".clu").c_str() );
   readClusterLabel(mapSNPid_label, clusterFile_POWER, SNP_Names_Id, &mapLabel_PmiY);
- 
-  if (statisticsOnly == true)
-  { //<TODO>  sprawdzić, czy potrzeba przydzielać pamięć dla models;
-    return;
-  }
-//  stronglyCorrelatedSnpsCluster();
+  //stronglyCorrelatedSnpsCluster();
 //  exit(0);
   if ((unsigned int) (parameter.ms_MaximalSNPsMultiForwardStep) > data.getIdvNo()/4)
     parameter.ms_MaximalSNPsMultiForwardStep = data.getIdvNo()/4;
@@ -252,17 +299,144 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   }
   
   correlations.resize(data.getSnpNo());
-
+/* 07.07  if ( !parameter.imp_is_imputated)
+  {
+    cout << "imp_in_imputated" << endl;
+    data.imputateMissingValues();  
+    data.writeBEDfile();
+  }
+*/
   exclusivedSNP.reset();
   goodSNPs.reset();
   goodSNPsNo = 0;
-  while ( data.getSingleMarkerTestAt( data.getOrderedSNP( goodSNPsNo ) ) < 0.5 )
+  double p_value_threshold = 0.1;
+  for (unsigned int i = 0; i < data.getSnpNo(); ++i)
   {
-    goodSNPs[data.getOrderedSNP(goodSNPsNo)] = true;
-    ++goodSNPsNo;
+    if ( data.getSingleMarkerTestAt( data.getOrderedSNP(goodSNPsNo) ) < p_value_threshold )
+    {
+      goodSNPs[data.getOrderedSNP(goodSNPsNo)] = true;
+      ++goodSNPsNo;
+    }
+    else
+      break;
   }
+  
+/*
+  vector<snp_index_t> causalSNPs;             // snps from the real model
+  modelReader(parameter.causalModelFilename, causalSNPs);  
+  cout << "causal model: " << causalSNPs << endl;
+  Model m(data);
+  //vector<snp_index_t> vM((realSNPs_), (realSNPs_ + realSNPsize - 1));
+  m.addManySNP(causalSNPs);
+  if (m.computeRegression())
+    m.computeMSC();
+  else
+  {
+    m.computeMSCfalseRegression();
+    cerr << "FALSE_regression" << endl;
+  }
+  
+  cout << m << endl;
+  m.printModelInMatlab ();
+  m.printModelInR ();
+//  data.printSelectedSNPsInMatlab(causalSNPs);
+  exit(0);
+*/
+  
+  
+  
   cout << "goodSNPsNo: " << goodSNPsNo << endl;
 
+  
+ /*
+  {  
+    string tabNameCSDA[] = 
+//    {"rs9525262", "rs10048748", "rs10937559", "rs8028606"};                // hmm25278 CSDA
+//      { "rs9525181", "rs10490450", "rs6441934", "rs2044109", "rs17455546"}; // hmm26651 CSDA
+    {"rs9525262", "rs17386102", "rs1370718", "rs2044109", "rs2819755", "rs13021147"}; //hmm32074 CSDA
+//    {"rs9525262", "rs10490450", "rs6441934", "rs2044109", "rs17455546", "rs3761945", "rs17326215"}; // hmm34610
+    const int tabNameCSDA_size = (sizeof(tabNameCSDA)/sizeof(tabNameCSDA[0]));
+    vector<string> output(tabNameCSDA, tabNameCSDA + tabNameCSDA_size);
+    for (unsigned int i = 0; i < output.size(); ++i ) {
+      output[i] = tabNameCSDA[i]; //getSNPId(i);
+    }
+    data.printSelectedSNPsInMatlab(output, "CSDA");
+    vector<snp_index_t> csdaSNPs;
+    data.findSNPIndex(output, csdaSNPs);
+    Model m(data);
+    if (csdaSNPs.size() > 0)
+      m.addManySNP(csdaSNPs);
+    if (m.computeRegression())
+      m.computeMSC();
+    else
+    {
+      m.computeMSCfalseRegression();
+      cerr << "FALSE_regression" << endl;
+    }
+    cout << m << endl;
+    m.printModel( "csda_hmm25278-S", Parameter::selectionCriterium_mBIC2 );
+    
+    
+//    int tabMA[] = {91647, 534917, 575306, 690497};                         // hmm25278-S
+//    int tabMA[] = {91196, 163722, 222895, 328440, 329108, 331097, 534260}; // hmm26651-S
+      int tabMA[] = {48142, 65058, 69328, 330235, 389936, 473715, 534523, 690589}; // hmm32074
+//    int tabMA[] = {22407, 122680, 138994, 199909, 276045, 330332, 535351, 576665}; // hmm34610-S
+    const int tabMA_size = (sizeof(tabMA)/sizeof(tabMA[0]));
+    vector<snp_index_t> maSNPs(tabMA, tabMA + tabMA_size);
+    Model ma(data);
+    if (maSNPs.size() > 0)
+      ma.addManySNP(maSNPs);
+    if (ma.computeRegression())
+      ma.computeMSC();
+    else
+    {
+      ma.computeMSCfalseRegression();
+      cerr << "FALSE_regression" << endl;
+    }
+    cout << "MA: " << ma << endl;
+    ma.printModel( "the_best_hmm32074-S", Parameter::selectionCriterium_mBIC2 );
+    
+    exit(0);
+  }
+*/
+    // zapisanie błędnie obliczonej korelacji dla klastrów  
+  /*
+  {
+    int snps[] = {535149, 91264, 155080, 575381};
+    const int snps_size = sizeof(snps)/sizeof(snps[0]);
+    
+    vector<snp_index_t> v(snps, snps + snps_size);
+    Model m(data);
+    m.addManySNP(v);
+    if (m.computeRegression())
+      m.computeMSC();
+    else
+    {
+      m.computeMSCfalseRegression();
+      cerr << "FALSE_regression" << endl;
+    }
+    
+    cout << m << endl;
+    m.printModelInMatlab ();
+   // saveRecognizedSNPinfo(v, "CSDA");
+  }
+//  exit(0);
+*/
+  
+  
+/*  
+//  data.writeBEDfile( 0, 0 );
+//  data.writeBEDfilePlink();
+  cout << "printSNPs ();: " << endl;
+  data.printSNPs ();
+  cout << " void printGenoData () const;" << endl;
+  ofstream genoFile((parameter.out_file_name + "_geno.txt").c_str());
+  data.printGenoDataAG (genoFile);
+  genoFile.close();
+  cout << "OK" << endl;
+  exit(0);
+*/  
+  
   vector<snp_index_t> v;
   m0.computeMSC();
   RSSo = m0.getMJC();
@@ -275,7 +449,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   {
     poolFilePart << p << "\n";
   }
-
+  
   try
   {
     models = new Model*[modelsNo];
@@ -286,6 +460,12 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
     exit(-1);
   }
 
+  if (statisticsOnly == true)
+  { //<TODO>  sprawdzić, czy potrzeba przydzielać pamięć dla models;
+    for (unsigned int i = 0; i < modelsNo; ++i)
+      models[i] = 0;
+    return;
+  }  
   // for reading an initial population from a file
   set<PoolItem> population;   
   if (fileName != "")  // reads an initial population to a set of models
@@ -294,9 +474,11 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   
   vector<snp_index_t>::iterator it;
   vector<snp_index_t> snps;
-
+  cout << "parameter.maximalModelSize: " << parameter.maximalModelSize << endl;
+//  {char c; cout << "Pres a key.."; cin >> c;}
   stringstream ss;
   // the first model is created by stepwise method
+  
   try
   {
     models[0] = new Model(data);
@@ -306,30 +488,41 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
       {
         v.clear();
         v = itPop->getPoolItem();                             
-        models[0]->addManySNP(v);
+        v_mosgwa = v;   
+        if (v.size() > 0)
+          models[0]->addManySNP(v);
         ++itPop;
       }
     }
     else                 // stepwise selection, mBIC2
     {
+      models[0]->computeRegression();
+      data.setLL0M(models[0]->getMJC());
+//      cout << "Stepwise setLLOM: " << models[0]->getMJC() << endl;;
       data.selectModel(
         models[0],
-        parameter.PValueBorder,
-        parameter.maximalModelSize,
-        Parameter::selectionCriterium_mBIC_firstRound
+        parameter.PValueBorder,                         // PValueBorder=350;
+        parameter.maximalModelSize,                     // maximalModelSize
+        Parameter::selectionCriterium_mBIC_firstRound   // uses different expected_causal_SNPs
       );
-  
-//      int maxModelSieze = 150;
       data.selectModel(
         models[0], 
-        parameter.PValueBorder, 
+        5000,
+//        350,
+//        parameter.PValueBorder, 
         parameter.maximalModelSize, 
         Parameter::selectionCriterium_mBIC2
       ); 
-      cout << "First model: " << *models[0] << endl;
+//      cout << "First model (Stepwise): " << *models[0] << endl;
+//      char chr; cout << "Press a key..."; cin >> chr;
       vector<snp_index_t> v = models[0]->getModelSnps();
+      v_mosgwa = v;
+      cout << "MOSGWA: " << v << endl;
       for (unsigned int i = 0; i < v.size(); ++i)
-        exclusivedSNP[ data.getOrderedSNP(i) ] = true;
+      {
+        exclusivedSNP[ v[i] ] = true;
+      }
+//      {cout << "Press a key.."; char c; cin >> c;}
     }  
   }
   catch (bad_alloc &ba)
@@ -338,7 +531,6 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
     exit(-1);   
   }
   // for the first half of populations
-  
   for (unsigned int i = 1; i < modelsNo/2; i++)
   {
     try
@@ -349,14 +541,16 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
         if (itPop != population.end())
         {
           v.clear();
-          v = itPop->getPoolItem();                             
-          models[i]->addManySNP(v);
+          v = itPop->getPoolItem(); 
+          if (v.size() > 0)
+            models[i]->addManySNP(v);
           ++itPop;
         }
       }
       else                 // multi forward selection with BIC     
       {
         selectModel(*models[i]);
+//        {cout << i << "> Press a key.."; char c; cin >> c;}  
       }  
     }
     catch (bad_alloc &ba)
@@ -384,8 +578,9 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
       if (itPop != population.end())
       {
         v.clear();
-        v = itPop->getPoolItem();                             
-        models[i]->addManySNP(v);
+        v = itPop->getPoolItem();  
+        if (v.size() > 0)
+          models[i]->addManySNP(v);
         ++itPop;
       }
     }
@@ -393,12 +588,19 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
     {
       set<snp_index_t> initSNP;
       int randSNP;
-      while ( initSNP.size() < (unsigned int) (models[0]->getModelSize()) && initSNP.size() < (unsigned int)(models[0]->getModelSize()) )
+      unsigned int randSNPno = 5; //models[0]->getModelSize();
+/*      if (randSNPno > 2)
+        randSNPno = models[0]->getModelSize();
+      if (randSNPno < 2)
+        randSNPno = 50;   // Pozostają drobne niuanse do rozwiązania, np. warunek, żeby liczba SNPów w populacji była mniejsza od liczby goodSNPsNo
+*/        
+      while ( initSNP.size() < randSNPno )
       { 
         randSNP = rand() % goodSNPsNo;
         if (exclusivedSNP[randSNP] == true)
           continue;
-        initSNP.insert(data.getOrderedSNP(randSNP));
+        initSNP.insert(randSNP);
+        exclusivedSNP[randSNP] = true;
       }
       models[i]->createFromSNPs(initSNP);
     }
@@ -417,9 +619,12 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
     unsigned int pSize = pool.size(); 
     v = models[i]->getModelSnps();
     PoolItem p(v, models[i]->getMSC(), h2_M, pSize + 1, 'I');
-    toPool(models[i], 'I');
+    if (i == 0)
+      toPool(models[i], 'S');
+    else  
+      toPool(models[i], 'I');
     ss << endl << (i + 1) << "). " << p;
-    cout << i << "] " << *models[i] << endl;
+    cout << i << "] " << *models[i] << "\tsize: " << models[i]->getModelSize() << endl;
   }
   printLOG("GENETICS ALGORITHM - INITIAL POPULATION:");
   printLOG(ss.str());
@@ -489,6 +694,8 @@ void GA::mutation(Model *model, double pMutation, double threshold)
         model->computeMSCfalseRegression();
     }  
     toPool(model, 'A');
+    writePoolofSize(p_30K, 30000);
+    writePoolofSize(p_100K, 100000);
   }
   else
   {  
@@ -501,6 +708,8 @@ void GA::mutation(Model *model, double pMutation, double threshold)
       else 
         model->computeMSC();
       toPool(model, 'E');
+      writePoolofSize(p_30K, 30000);
+      writePoolofSize(p_100K, 100000);
     }
     else
     { // changes a gen to anoter (if the model has got only one SNP, then this SNP is changed to another)
@@ -513,6 +722,8 @@ void GA::mutation(Model *model, double pMutation, double threshold)
       else 
         model->computeMSC();
       toPool(model, 'C');
+      writePoolofSize(p_30K, 30000);
+      writePoolofSize(p_100K, 100000);
     }
   }
 }
@@ -563,6 +774,8 @@ Model* GA::recombination(const Model & s1, const Model & s2)
       else
         modelForward->computeMSCfalseRegression();
       toPool(modelForward, 'F');
+      writePoolofSize(p_30K, 30000);
+      writePoolofSize(p_100K, 100000);
       if (modelForward->getMSC() < bestMSC)
       {
         addedSNP = *it;
@@ -613,6 +826,8 @@ Model* GA::recombination(const Model & s1, const Model & s2)
       else
         modelBackward->computeMSCfalseRegression();
       toPool(modelBackward, 'B'); 
+      writePoolofSize(p_30K, 30000);
+      writePoolofSize(p_100K, 100000);
       if (modelBackward->getMSC() < bestMSC)
       {
         bestMSC = modelBackward->getMSC();
@@ -741,7 +956,10 @@ void GA::run()
   cout << endl;
   ssBegin << "Initial population, the worst: " << worst << ", adv: " << adv << ", the best: " << best << endl;
   printLOG(ssBegin.str());
-  
+  p_30K = true;
+  p_100K = true;
+
+
   while (GAcount < maxNoProgressIter)
   {
     if (parameter.silent == false)
@@ -750,6 +968,8 @@ void GA::run()
            << ", GA count = " << setw(4) << GAcount << ", -> " << setw(5) << GAcount * 100.0 / parameter.maxNoProgressIter << "%... done            ";
       cout.flush();     
     }
+    
+
     firstParent = tournamentSelection(tournamentSize);
     do  
     {
@@ -789,15 +1009,16 @@ void GA::run()
       while (toChange < modelsNo && *childModel != *models[toChange])
          ++toChange;
       if (toChange == modelsNo && childModel->getModelSize() > 0)
-      {
-        if (childModel->getMSC() < 34128.82)
+      {  
+        
+/*        if (childModel->getMSC() < 34128.82)
         {
           for (unsigned int m = 0; m < modelsNo; ++m)
             cout << m << ") " << setprecision(15) << *models[m] << "<>" << setprecision(20) << models[m]->getMSC() << endl;
           cout << "child: " << setprecision(15) << *childModel  << "<>" << setprecision(20) << childModel->getMSC() << endl;
           char c; cout << "Press a key..."; cin >> c;
         }
-        
+*/        
         
         
         if (parameter.silent == false)
@@ -840,10 +1061,13 @@ void GA::run()
         cout << endl;
       else
       {
-        cerr << timeStemple() << progressBar(GAcount, parameter.maxNoProgressIter, 30) << "iterations: " << setw(5) << iterCount << ", the worst: " << setprecision(10) 
+        cout << timeStemple() << progressBar(GAcount, parameter.maxNoProgressIter, 30) << "iterations: " << setw(5) << iterCount << ", the worst: " << setprecision(10) 
              << worst << ", ave: " << adv << ", the best: " << best << ", poolSize: " << setw(6) << pool.size() << endl;
+        for (unsigned int m = 0; m < modelsNo; ++m)
+           cout << m << ") " << *models[m] << endl;
+             
       }       
-      ss << progressBar(GAcount, parameter.maxNoProgressIter, 30) << " iterations: " << setw(5) << iterCount << ", the worst: " << setprecision(10) 
+      ss << progressBar(GAcount, parameter.maxNoProgressIter, 30) << " iteration: " << setw(5) << iterCount << ", the worst: " << setprecision(10) 
          << worst << ", ave: " << adv << ", the best: " << best << ", poolSize: " << setw(6) << pool.size();// << endl;
       printLOG(ss.str());
     }
@@ -853,9 +1077,26 @@ void GA::run()
   if (parameter.silent == false)
     cout << endl;
   ss << "At the end of GA, after " << iterCount << " generations, " << "the worst: " << worst << ", adv: " << adv << ", the best: " << best;// << endl;
+  cout << endl << "At the end of GA, after " << iterCount << " generations, " << "the worst: " << worst << ", adv: " << adv << ", the best: " << best << endl;
   printLOG(ss.str());
   if (parameter.silent == false)
      poolFilePart << "END" << endl;
+  
+  stringstream ssFinal;
+//  ssFinal << endl << endl;
+  
+  for (unsigned int i = 0; i < modelsNo; i++)
+  {
+    if (models[i]->computeRegression() == false)
+      models[i]->computeMSCfalseRegression();
+    else
+      models[i]->computeMSC();
+    ssFinal << endl << (i + 1) << "] " << *models[i] << "\tsize: " << models[i]->getModelSize();
+  }
+  printLOG("GENETICS ALGORITHM - FINAL POPULATION:");
+  printLOG(ssFinal.str());
+
+  
 }
 
 /**
@@ -1017,6 +1258,8 @@ void GA::old_localImprovement(Model *model, double threshold, int correlationRan
       else
         model->computeMSCfalseRegression();                          // calculates MSC
       toPool(model, 'L');  
+      writePoolofSize(p_30K, 30000);
+      writePoolofSize(p_100K, 100000);
       if (model->getMSC() < bestMSC)
       {
         bestMSC = model->getMSC();
@@ -1052,23 +1295,47 @@ void GA::old_localImprovement(Model *model, double threshold, int correlationRan
  * @brief Writes the pool of models to a file
  * @param ssTime - the runtime of GA
  */
-void GA::writePoolToFile(stringstream &ssTime) const
+void GA::writePoolToFile(stringstream &ssTime, string postfix) const
 {
-  stringstream ss; 
-  ss << ssTime.str();
+  
+  
   set<PoolItem>::iterator poolIt;
   int i = 1;
   ofstream poolFile;
   poolFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
   try
   {
-    poolFile.open( ( parameter.out_file_name + "_pool_#" + int2str(parameter.in_values_int) + ".txt" ).c_str(),  fstream::out | fstream::trunc );
+    poolFile.open( ( parameter.out_file_name + "_pool" + postfix + /*+ int2str(parameter.in_values_int)*/ + ".txt" ).c_str(),  fstream::out | fstream::trunc );
+    poolFile << ssTime.str() << endl;
+//    cout << "Pool file postfix: " << postfix << endl;
     for (poolIt = pool.begin(); poolIt != pool.end(); poolIt++, ++i)
     {
       PoolItem p1 = *poolIt;
-      ss << p1 << "\n";
+      poolFile << p1 << "\n";
+//      ss << p1 << "\n";
     }  
-    ss << "END\t" << endl
+    poolFile.flush();
+    poolFile << "END\t" << endl
+       << "poolSize\t" << pool.size()  << endl
+       << "modelsNo\t" << parameter.modelsNo << endl
+       << "maxNoProgressIter\t" << parameter.maxNoProgressIter << endl
+       << "pCross\t" << parameter.pCross << endl
+       << "pMutation\t " << parameter.pMutation << endl
+       << "tournamentSize\t" << parameter.tournamentSize << endl
+       << "correlationThreshold\t" << parameter.correlationThreshold << endl
+       << "correlationRange\t" << parameter.correlationRange << endl
+       << "regionMinCorrelation_ =" <<  parameter.regionMinCorrelation << endl
+       << "causalModelFilename\t" << parameter.causalModelFilename << endl
+       << "B\t" << parameter.B << endl << endl
+       << "plink_files\t" << parameter.in_files_plink << endl
+       << "use_extra_yvalues\t" << parameter.y_value_extra_file << endl  // use_extra_yvalues", y_value_extra_file
+       << "trait_index\t" << parameter.in_values_int << endl                  // trait_index", in_values_int
+       << "multi_forward_step_max\t" << parameter.ms_MaximalSNPsMultiForwardStep << endl;
+       
+      
+       
+/*       
+    cout << "END\t" << endl
        << "poolSize\t" << pool.size()  << endl
        << "modelsNo\t" << parameter.modelsNo << endl
        << "maxNoProgressIter\t" << parameter.maxNoProgressIter << endl
@@ -1083,14 +1350,15 @@ void GA::writePoolToFile(stringstream &ssTime) const
        << "use_extra_yvalues\t" << parameter.y_value_extra_file << endl  // use_extra_yvalues", y_value_extra_file
        << "trait_index\t" << parameter.in_values_int << endl                  // trait_index", in_values_int
        << "multi_forward_step_max\t" << parameter.ms_MaximalSNPsMultiForwardStep << endl;
-    
+*/       
     poolFile.flush();
   }
   catch (ofstream::failure e)
   {
     cerr << "Could not write Pool-File" <<endl; 
   }
-  poolFile << ss.str() << endl;
+//  poolFile << ss.str() << endl;
+  
   poolFile.close();
 }
 
@@ -1174,16 +1442,16 @@ void GA::coumputeHeritability(stringstream &sp_sort, const vector<long double> &
 void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost,
                                     vector< multiset<long double> > &tabCausalPost_b)//, long double minPosterior)
 {
-  //cout << "computePosteriorProbability" << endl;
-  makeVectCluster(mapSNPid_label);
+  if (isCluster == true)
+    makeVectCluster(mapSNPid_label);
   long double minMsc, msc;//, maxMsc; 
   vector<long double> sortPool(pool.size());
   int nPool = 0;
   vector<snp_index_t> snps;
   for (set<PoolItem>::iterator it = pool.begin(); it != pool.end(); ++it, ++nPool)
   {   
-    snps = (*it).getPoolItem();                                  // takes snps from a model
-    msc = (*it).getMsc();
+    snps = it->getPoolItem();                                  // takes snps from a model
+    msc = it->getMsc();
     sortPool[nPool] = msc;
   }
   sort(sortPool.begin(), sortPool.end());
@@ -1252,86 +1520,208 @@ void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, in
   set<snp_index_t> mySnps;    
   vector<long double> clusterSNPposterior; // prawd. posteriori dla wynikowego modelu posteriori zbudowanego na postawie klastrów
                                            //
-  
   multimap<long double, snp_index_t>::reverse_iterator itM;
-  for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first >= 0.5; itM++)
+  for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++)
   {
     mySnps.insert((*itM).second);
   }
  
   // POWER, FDR, FD count
+  TPOWER_FDR powerFDR;
+    powerFDR.POWER = 0.0;
+    powerFDR.FDR = 0;
+    powerFDR.FDcount = 0;
+    powerFDR.badSNP = 0;       // the best SNP of posteriori <= 0.5
+    powerFDR.posteriorBad = 0.0;
+    powerFDR.posteriorBadCluster = 0.0;  
+  set<snp_index_t> sPosterior;
+  for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++)
+    sPosterior.insert((*itM).second);
+  vector<snp_index_t>  vPosterior(sPosterior.begin(), sPosterior.end());  
   int bestGA = 0;
   for (unsigned int i = 1; i < modelsNo; ++i)
     if (models[i]->getMSC() < models[bestGA]->getMSC())
       bestGA = i;
   set<snp_index_t> trueSNPs;                        // the set of only true positive snps
   set<snp_index_t> trueSNPsBest;                    // the set of only true positive snps - for the best model in the pool
-  if (parameter.causalModelFilename.length() > 0)   // The simulation. We have the causalModel
+  Model modelRegion(data);                          // model for a region strategy
+  set<TRegionSet_info> setNewRegion;
+  if (parameter.causalModelFilename.length() > 0 && isCluster)   // The simulation. We have the causalModel
   {
     vector<snp_index_t> realSNPs;                   // snps from the casual model
     modelReader(parameter.causalModelFilename, realSNPs);
+    
+    Model *mx = new Model(data);
     if (realSNPs.size() > 0)
-    {
-      TPOWER_FDR powerFDR;
-      Model *mx = new Model(data);
       mx->addManySNP(realSNPs);
-      if (mx->computeRegression())
-        mx->computeMSC();
-      else
-        mx->computeMSCfalseRegression();
-      ssModels << "causalModel: " << *mx << endl;
-      delete mx; mx = 0;
-      
-      //calculatePOWER_FDR_clust(mySnps, realSNPs, powerFDR, Pmi_Y, badSNP, recognizedSNPs, mapSNPCausal_ind, tabCausalPost);
-      //calculatePOWER_FDR_clust_sum(realSNPs, powerFDR, Pmi_Y, recognizedSNPs, mapSNPCausal_ind, tabCausalPost);
-      calculatePOWER_FDR_clust_max(realSNPs, powerFDR, Pmi_Y, recognizedSNPs, mapSNPCausal_ind, tabCausalPost);
-      
-      sp_sort << "POWER: " << powerFDR.POWER;
-      sp_sort << "\tFPD: " << powerFDR.FDR;
-      sp_sort << "\tFPcount: " << powerFDR.FDcount << endl;
-      sp_sort << "badSNP: " << powerFDR.badSNP;
-      sp_sort << "\tposteriori_bedSNP: " << powerFDR.posteriorBad;
-      sp_sort << "\tposteriori_cluster_bedSNP: " << powerFDR.posteriorBadCluster << endl;
-      vector<snp_index_t> v_GA = models[bestGA]->getModelSnps();  // for the best model of the pool
-      set<snp_index_t> GA_snps(v_GA.begin(), v_GA.end());         // set of snp's
-      //calculatePOWER_FDR_clust(GA_snps, realSNPs, powerFDR, Pmi_Y, mapSNPCausal_ind, tabCausalPost_b);
-      sp_sort << "POWER_bestGA: " << powerFDR.POWER;
-      sp_sort << "\tFPD_bestGA: " << powerFDR.FDR;
-      sp_sort << "\tFPcount_bestGA: " << powerFDR.FDcount << endl;;
-    }
+    if (mx->computeRegression())
+      mx->computeMSC();
     else
-    {
-      sp_sort << "POWER: " << "NA";
-      sp_sort << "\tFPD: " << "NA";
-      sp_sort << "\tFPcount: " << "NA" << endl;;
-      sp_sort << "POWER_bestGA: " << "NA";
-      sp_sort << "\tFPD_b estGA: " << "NA";
-      sp_sort << "\tFPcount_bestGA: " << "NA" << endl;;
-      cerr << "The real model size is zero!" << endl;
-      ssModels << "NO!!!!causalModel: msc: 0.0, size: 0, []" << endl;
-    }
+      mx->computeMSCfalseRegression();
+    ssModels << "causalModel: " << *mx << endl;
+    delete mx; mx = 0;
+//    vector<snp_index_t> clust_max;
+    calculatePOWER_FDR_clust_max(realSNPs, powerFDR, Pmi_Y, recognizedSNPs_clusterMax, mapSNPCausal_ind, tabCausalPost);
+
+    sp_sort << "POWER_max: " << powerFDR.POWER;
+    sp_sort << "\tFDR_max: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_max: " << powerFDR.FDcount << endl;
+    sp_sort << "badSNP_max: " << powerFDR.badSNP;
+    sp_sort << "\tposteriori_bedSNP_max: " << powerFDR.posteriorBad;
+    sp_sort << "\tposteriori_cluster_bedSNP_max: " << powerFDR.posteriorBadCluster << endl;
+   
+//    vector<snp_index_t> clust_sum;
+    calculatePOWER_FDR_clust_sum(realSNPs, powerFDR, Pmi_Y, recognizedSNPs_clusterSum, mapSNPCausal_ind, tabCausalPost);
+
+    sp_sort << "POWER_sum: " << powerFDR.POWER;
+    sp_sort << "\tFDR_sum: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_sum: " << powerFDR.FDcount << endl;
+    sp_sort << "badSNP_sum: " << powerFDR.badSNP;
+    sp_sort << "\tposteriori_bedSNP_sum: " << powerFDR.posteriorBad;
+    sp_sort << "\tposteriori_cluster_bedSNP_sum: " << powerFDR.posteriorBadCluster << endl;
+    
+    vector<snp_index_t> v_GA = models[bestGA]->getModelSnps();  // for the best model of the pool
+    set<snp_index_t> GA_snps(v_GA.begin(), v_GA.end());         // set of snp's
+    //      calculatePOWER_FDR_clustGA(GA_snps, realSNPs, powerFDR, Pmi_Y, mapSNPCausal_ind, tabCausalPost_b);
+    //      calculatePOWER_FDR_clustGA(GA_snps, , set<snp_index_t> &TP_S NPs)
+    set<snp_index_t> TP_SNPs;
+    calculatePOWER_FDR_clustGA(GA_snps, realSNPs, powerFDR, TP_SNPs, recognizedSNPs_bestGA);
+    sp_sort << "POWER_bestGA: " << powerFDR.POWER;
+    sp_sort << "\tFDR_bestGA: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_bestGA: " << powerFDR.FDcount << endl;
+    
+    set<snp_index_t> mosgwa_snps(v_mosgwa.begin(), v_mosgwa.end());         // set of snp's
+    //      calculatePOWER_FDR_clust(mosgwa_snps, realSNPs, powerFDR, Pmi_Y, mapSNPCausal_ind, tabCausalPost_b);
+    calculatePOWER_FDR_clustGA(mosgwa_snps, realSNPs, powerFDR, TP_SNPs, recognizedSNPs_mosgwa);
+    sp_sort << "POWER_MOSGWA: " << powerFDR.POWER;
+    sp_sort << "\tFDR_MOSGWA: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_MOSGWA: " << powerFDR.FDcount << endl;
+ 
+    calculatePOWER_FDR_clustGA(sPosterior, realSNPs, powerFDR, TP_SNPs, recognizedSNPs_posterioriModel);
+    sp_sort << "POWER_POSTERIORI: " << powerFDR.POWER;
+    sp_sort << "\tFDR_POSTERIORI: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_POSTERIORI: " << powerFDR.FDcount << endl;
+    
+    regionStrategy("Region:", modelRegion, Pmi_Ysort, Pmi_Y, regionMinCorrelation, setNewRegion);
+    cout << "Region: " << modelRegion << endl;
+    ssModels << "Region: " << modelRegion << endl;
+    calculatePOWER_FDR_clustRegion(realSNPs, powerFDR, setNewRegion, recognizedSNPs_Region);
+    sp_sort << "POWER_REGION: " << powerFDR.POWER;
+    sp_sort << "\tFDR_REGION: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_REGION: " << powerFDR.FDcount << endl;
+    
   }
   else
   {
     cout << "casual snps: N/A" << endl;
-    sp_sort << "POWER: " << "NA";
-    sp_sort << "\tFPD: " << "NA";
-    sp_sort << "\tFPcount: " << "NA" << endl;;
-    sp_sort << "POWER_bestGA: " << "NA";
-    sp_sort << "\tFPD_bestGA: " << "NA";
-    sp_sort << "\tFPcount_bestGA: " << "NA" << endl;
-    ssModels << "causalModel: msc: 0.0, size: 0, []" << endl;
+
+    sp_sort << "POWER_max: " << powerFDR.POWER;
+    sp_sort << "\tFDR_max: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_max: " << powerFDR.FDcount << endl;
+    sp_sort << "badSNP_max: " << powerFDR.badSNP;
+    sp_sort << "\tposteriori_bedSNP_max: " << powerFDR.posteriorBad;
+    sp_sort << "\tposteriori_cluster_bedSNP_max: " << powerFDR.posteriorBadCluster << endl;
+
+    sp_sort << "POWER_sum: " << powerFDR.POWER;
+    sp_sort << "\tFDR_sum: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_sum: " << powerFDR.FDcount << endl;
+    sp_sort << "badSNP_sum: " << powerFDR.badSNP;
+    sp_sort << "\tposteriori_bedSNP_sum: " << powerFDR.posteriorBad;
+    sp_sort << "\tposteriori_cluster_bedSNP_sum: " << powerFDR.posteriorBadCluster << endl;
+
+    sp_sort << "POWER_bestGA: " << powerFDR.POWER;
+    sp_sort << "\tFDR_bestGA: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_bestGA: " << powerFDR.FDcount << endl;
+
+    sp_sort << "POWER_REGION: " << powerFDR.POWER;
+    sp_sort << "\tFDR_REGION: " << powerFDR.FDR;
+    sp_sort << "\tFDcount_REGION: " << powerFDR.FDcount << endl;
+
+    Model *mx = new Model(data);
+    if (mx->computeRegression())
+      mx->computeMSC();
+    else
+      mx->computeMSCfalseRegression();
+    ssModels << "causalModel: " << *mx << endl;
+    delete mx;
+//    ssModels << "causalModel: [], msc: 0.0" << endl;
+    regionStrategy("Region:", modelRegion, Pmi_Ysort, Pmi_Y, regionMinCorrelation, setNewRegion);
+    cout << "Region: " << modelRegion << endl;
+    ssModels << "Region: " << modelRegion << endl;
   }
 
+  for (set<TRegionSet_info>::iterator itS = setNewRegion.begin(); itS != setNewRegion.end(); ++itS)
+  {
+    TRegionSet_info s = *itS;
+    delete s.s;
+  }
+  
+/*  // CSDA models  
+  {
+    string tabNameCSDA[] = 
+//     {"rs9525262", "rs10048748", "rs10937559", "rs8028606"};  // hmm25278 CSDA
+//     {"rs9525181", "rs10490450", "rs6441934", "rs2044109", "rs17455546"}; //  hmm26651-S CSDA
+//      {"rs9525262", "rs17386102", "rs1370718", "rs2044109", "rs2819755", "rs13021147"}; //  hmm32074-S CSDA
+      {"rs9525262", "rs10490450", "rs6441934", "rs2044109", "rs17455546", "rs3761945", "rs17326215"};  // hmm34610-S CSDA
+
+    vector<string> SNPs_list(tabNameCSDA, tabNameCSDA + (sizeof(tabNameCSDA)/sizeof(tabNameCSDA[0])));
+    data.printSelectedSNPsInMatlab(SNPs_list, "_#CSDA#");
+
+    vector<snp_index_t> v;
+    data.findSNPIndex(SNPs_list, v);
+//    int snps[] = {535149, 91264, 155080, 575381};
+ //   const int snps_size = sizeof(snps)/sizeof(snps[0]);
+    
+//    vector<snp_index_t> v(snps, snps + snps_size);
+    Model m(data);
+    m.addManySNP(v);
+    if (m.computeRegression())
+      m.computeMSC();
+    else
+    {
+      m.computeMSCfalseRegression();
+      cerr << "FALSE_regression" << endl;
+    }
+    
+    cout << m << endl;
+    m.printModelInMatlab ("#CSDA#");
+    saveRecognizedSNPinfo(v, "CSDA");
+  }
+  
+*/  
+  
   ssModels << "bestGA: " << *models[bestGA] << endl;
+
+  vector<snp_index_t> vI = models[bestGA]->getModelSnps();
+  if (isCluster == true)
+    saveRecognizedSNPinfo(vI, "bestGA", Pmi_Y);
+//  models[bestGA]->printModelInMatlab ("#bestGA#");
+  if (isCluster == true)
+    saveRecognizedSNPinfo(v_mosgwa, "mosgwa", Pmi_Y);
+  Model  *mX = new Model(data);
+  if (v_mosgwa.size() > 0)
+  {
+    mX->addManySNP(v_mosgwa);
+  }
+  if (mX->computeRegression())
+    mX->computeMSC();
+  else
+    mX->computeMSCfalseRegression();    
+  ssModels << "mosgwa: " << *mX << endl;
+  cout << "mosgwa: " << *mX << endl;
+//  mX->printModelInMatlab ("#mosgwa#");
+  delete mX;
+  
   cout << "bestGA: " << *models[bestGA] << ", models[0]: " << *(models[0]) << endl;  
-  set<snp_index_t> sPosterior;
+  
+//  set<snp_index_t> sPosterior;
+  sp_sort << "---------------------------------------" << endl;
   for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++)
   {
     sp_sort << setw(20) << setprecision(16) << (*itM).first << " " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
-    sPosterior.insert((*itM).second);
+//    sPosterior.insert((*itM).second);
   }
-  vector<snp_index_t> vPosterior(sPosterior.begin(), sPosterior.end());
+  
   Model *mx = new Model(data);
   if (vPosterior.size() > 0)
      mx->addManySNP(vPosterior);
@@ -1339,12 +1729,54 @@ void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, in
      mx->computeMSC();
   else
      mx->computeMSCfalseRegression();
-  ssModels << "postreriorModel " << *mx << endl;
+  ssModels << "posterioriModel " << *mx << endl;
+  if (isCluster == true)
+    saveRecognizedSNPinfo(vPosterior, "posterioriModel", Pmi_Y);
   if (parameter.silent == false)
-    cout << "posteriorMode: " << *mx << endl;    
+    cout << "posterioriMode: " << *mx << endl;    
   delete mx;  
   mx = 0;
+  if (isCluster == true)   
+  {
+    vector<snp_index_t> modelSNPs_max;
+    vector<snp_index_t> modelSNPs_sum;
+    bool clusterSum = true;
+    calculate_clusters(Pmi_Y, modelSNPs_max, !clusterSum, "cluster_MAX");
+    calculate_clusters(Pmi_Y, modelSNPs_sum, clusterSum, "cluster_SUM");
+    Model *mx = new Model(data);
+    if (modelSNPs_max.size() > 0)
+      mx->addManySNP(modelSNPs_max);
+    if (mx->computeRegression())
+      mx->computeMSC();
+    else
+      mx->computeMSCfalseRegression();
+    cout << "cluster_max: " << *mx << endl;
+    ssModels << "cluster_max: " << *mx << endl;
+    delete mx;    
+    mx = new Model(data);
+    if (modelSNPs_sum.size() > 0)
+      mx->addManySNP(modelSNPs_sum);
+    if (mx->computeRegression())
+      mx->computeMSC();
+    else
+      mx->computeMSCfalseRegression();
+    cout << "cluster_sum: " << *mx << endl;
+    ssModels << "cluster_sum: " << *mx << endl;
+    delete mx;
+  }
+  else
+  {
+    
+  }
   
+/*  
+    powerFDR.POWER = 0.0;
+    powerFDR.FDR = 0;
+    powerFDR.FDcount = 0;
+    powerFDR.badSNP = 0;       // the best SNP of posteriori <= 0.5
+    powerFDR.posteriorBad = 0.0;
+    powerFDR.posteriorBadCluster = 0.0;    
+*/  
   sp_sort << "---------------------------------------" << endl;
   for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend(); itM++)
   {
@@ -1362,6 +1794,7 @@ void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, in
  * @param FDcount     - returns the number of the false discovery SNPs. WARNING if FDcount is equal 0, FDposterior is unsetted
  * @param trueSNPs    - returnes the set of true discovery SNPs
  **/
+
 void GA::calculatePOWER_FDR(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, unsigned int & FDcount, set<snp_index_t> &trueSNPs)
 {
   int sumTP = 0;
@@ -1378,8 +1811,8 @@ void GA::calculatePOWER_FDR(set<snp_index_t> &mySnps, vector<snp_index_t> &realS
     {
       ++sumTP;
       trueSNPs.insert(aSNP);
-      if (recognizedSNPs.size() > 0)
-        recognizedSNPs[aSNP]++;
+      if (recognizedSNPs_piMass.size() > 0)
+        recognizedSNPs_piMass[aSNP]++;
       snp2check.erase(aSNP);
       causualSNP.erase(aSNP);
     }
@@ -1397,8 +1830,8 @@ void GA::calculatePOWER_FDR(set<snp_index_t> &mySnps, vector<snp_index_t> &realS
         ++sumTP;
         trueSNPs.insert(*itC);
         causualSNP.erase(*itC);
-        if (recognizedSNPs.size() > 0)
-          recognizedSNPs[*itC]++;
+        if (recognizedSNPs_piMass.size() > 0)
+          recognizedSNPs_piMass[*itC]++;
         TP = true;
         break;
       } 
@@ -1416,16 +1849,99 @@ void GA::calculatePOWER_FDR(set<snp_index_t> &mySnps, vector<snp_index_t> &realS
   }
   else
   {
-    FDR = -1.0;
-    FDcount = -1;
-    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
-    char ch; cout << "Press any key..."; cin >> ch;
+    FDR = 0.0;
+    FDcount = 0;
+//    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
+//    char ch; cout << "Press any key..."; cin >> ch;
   }  
+}
+
+
+
+/** 
+ *  Jeżeli SNP z modelu i przyczynowy SNP należy do tego samego klastra, to mamy TP
+ *  w przeciwnym razie FP
+ *  Jeżeli dwa lub więcej SNPów należy do tego samego klastra, który nie jest przyczynowy, to mamy 
+ *  jeden False Positive.
+ */
+void GA::calculatePOWER_FDR_clustGA(set<snp_index_t> &mySnps, vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, set<snp_index_t> &TP_SNPs, map<snp_index_t, int> &recognizedSNPs)
+{
+  const bool TEST = false;
+  TP_SNPs.clear();
+  assert(causalSNPs.size() > 0);
+  
+//    assert(mySnps.size() > 0);
+  if (mySnps.size() <= 0)
+  {
+    powerFDR.POWER = 0;
+    powerFDR.FDR = 0;
+    powerFDR.FDcount = 0;
+    return;
+  }
+  
+  set<int> causalLabels;          // etykiety SNPów przyczynowych
+  set<int> FP_LabelSet;          // etykiety klastrów zaklasyfikowanych jako False Positive
+  
+  map<int, snp_index_t> mapCausalLabel2SNP;
+  for (vector<snp_index_t>::iterator it = causalSNPs.begin(); it != causalSNPs.end(); ++it)
+  {
+    causalLabels.insert(mapSNPid_label[*it]);
+    mapCausalLabel2SNP.insert(pair<int, snp_index_t> (mapSNPid_label[*it], *it));
+  }
+  if (TEST) cout << "causal labels: " << causalLabels << endl;
+  if (TEST) cout << "GA labesl    : ";
+  
+  snp_index_t aSNP_Label;
+  for (set<snp_index_t>::iterator it = mySnps.begin(); it != mySnps.end(); ++it)
+  {
+    aSNP_Label = mapSNPid_label[*it];
+    if (causalLabels.find(aSNP_Label) != causalLabels.end())
+    {
+      TP_SNPs.insert( mapCausalLabel2SNP[aSNP_Label] );
+      if (TEST) cout << "+" << aSNP_Label << ", ";
+    }
+    else
+    {
+      FP_LabelSet.insert(aSNP_Label);
+      if (TEST) cout << "-" << aSNP_Label << ", ";
+    }
+  }
+  for (set<snp_index_t>::iterator it = TP_SNPs.begin(); it != TP_SNPs.end(); ++it)
+    ++recognizedSNPs[*it];
+  int sumTP = TP_SNPs.size();
+  int sumFP = FP_LabelSet.size();
+  
+  powerFDR.POWER = (sumTP + 0.0) / causalLabels.size();
+  if (sumFP + sumTP > 0)
+  {
+    powerFDR.FDR = (sumFP + 0.0) / (sumFP + sumTP);
+  }
+  else
+  {
+//    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
+    powerFDR.FDR = 0;
+  }  
+  powerFDR.FDcount = sumFP;
+  if (TEST) cout << endl 
+                 << "POWER: " << powerFDR.POWER << endl
+                 << "FDR:   " << powerFDR.FDR << endl
+                 << "FD:    " << powerFDR.FDcount << endl;
+/*  
+  for (set<int>::iterator it = trueLabels.begin(); it != trueLabels.end(); ++it)
+  {
+    for (unsigned int i = 0; i < causalSNPs.size(); ++i)
+      if (mapSNPid_label[ causalSNPs[i] ] == *it)
+      {
+        trueSNPs.insert( causalSNPs[i] );
+        break;
+      }
+  }
+  */
 }
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Na potrzeby 2-go artykułu
-void GA::calculatePOWER_FDR_clustGA(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, 
+void GA::calculatePOWER_FDR_clustGA_2ndArticle(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, 
                                     unsigned int & FDcount, set<snp_index_t> &trueSNPs)
 {
   assert(realSNPs.size() > 0);
@@ -1463,8 +1979,8 @@ void GA::calculatePOWER_FDR_clustGA(set<snp_index_t> &mySnps, vector<snp_index_t
   }
   else
   {
-    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
-    FDR = -1;
+//    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
+    FDR = 0;
   }  
   FDcount = sumFP;
   
@@ -1497,7 +2013,7 @@ void GA::selectModel ( Model& model ) {
  * @brief Reads the pool of models from a given file 
  * @param fileName the name of the data file
  */
-void GA::poolReader(string fileName, stringstream& sGATime)
+void GA::poolReader(string fileName, stringstream& sGATime, int real_modelsNo)
 {
   pool.clear();
   vector<snp_index_t> vBest;   // to remember the best model in the pool
@@ -1518,6 +2034,9 @@ void GA::poolReader(string fileName, stringstream& sGATime)
   poolFile.open( fileName.c_str(), ios::in );
   cout << "Try open the file: " << fileName.c_str() << endl;
   bool isTime = true;
+  int initial_population_Count = 0;
+  bool isStepwise = false;
+  vector <snp_index_t> temp_mosgwa;
   if ( poolFile.is_open() )
   {
     cout << "pool file is opened" << endl;
@@ -1540,7 +2059,9 @@ void GA::poolReader(string fileName, stringstream& sGATime)
       }  
       char char_id;
       poolFile >> char_id;  // P
-      if (char_id == 'E')  // the last row in the file - 'END'
+      if (char_id == 'I')
+        ++initial_population_Count;
+      if (char_id == 'E')  // after the last data line in the file is a line 'END'
       {
         chr = poolFile.peek();
         if (chr == 'N')
@@ -1591,6 +2112,15 @@ void GA::poolReader(string fileName, stringstream& sGATime)
       }
       poolFile >> s; // '],' for zero model
       PoolItem p(v, msc, h2, id, char_id);
+      if (id == 2)
+      {
+        v_mosgwa = v;
+      }
+      if (char_id == 'S')
+      {
+        isStepwise = true;
+        temp_mosgwa = v;
+      }
       if (msc < bestMSC || bestMSC < 0.0)
       {
         bestMSC = msc;
@@ -1616,7 +2146,18 @@ void GA::poolReader(string fileName, stringstream& sGATime)
     exit (-1);
   }
   cout << "bestMSC: " << bestMSC << ", vBest = " << vBest << endl;
-  
+  cout << "initial_population_Count: " << initial_population_Count << endl
+       << "modelsNo: " << real_modelsNo << endl;
+  if (isStepwise == true)
+  {
+    v_mosgwa = temp_mosgwa;
+  }
+  else
+    if (initial_population_Count <= real_modelsNo)
+    {
+      v_mosgwa.clear();
+      cout << "Zero model of MOSGWA: " << v_mosgwa << endl;
+    }
   if (models == 0)
   {
     models = new Model*[modelsNo];
@@ -1697,7 +2238,8 @@ void GA::modelReader(string fileName, vector<snp_index_t> &v)
   if (realModel != 0)
     delete realModel;
   realModel = new Model(data);
-  realModel->addManySNP(v);
+  if (v.size() > 0)
+    realModel->addManySNP(v);
   if (realModel->computeRegression())
     realModel->computeMSC();
   else
@@ -1753,7 +2295,7 @@ void GA::piMassExtract(const string &fileName, string &outFileName)
     Pmi_Ysort.insert(pair<long double, snp_index_t>( (*itMap).second, (*itMap).first));
   }
   set<snp_index_t> mySnps;    
-  for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first >= 0.5; itM++)
+  for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++)
   {
     cout << setw(15) << setprecision(11) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
     mySnps.insert((*itM).second);
@@ -1761,7 +2303,8 @@ void GA::piMassExtract(const string &fileName, string &outFileName)
   
   Model piMassModel(data);
   vector<snp_index_t> v_piMass(mySnps.begin(), mySnps.end());
-  piMassModel.addManySNP(v_piMass);
+  if (v_piMass.size() > 0)
+    piMassModel.addManySNP(v_piMass);
   if (piMassModel.computeRegression())
     piMassModel.computeMSC();
   else
@@ -1783,7 +2326,8 @@ void GA::piMassExtract(const string &fileName, string &outFileName)
     if (realSNPs.size() > 0)
     {
       mx = new Model(data);
-      mx->addManySNP(realSNPs);
+      if (realSNPs.size() > 0)
+        mx->addManySNP(realSNPs);
       if (mx->computeRegression())
         mx->computeMSC();
       else
@@ -2077,7 +2621,8 @@ void GA::calculateClusterPosterior(vector<snp_index_t> &clusterSNP, vector<long 
   for (unsigned int i = 0; i < originalSNPposterior.size(); ++i)
     if (originalSNPposterior[i] > 0.5)
      snps.push_back(clusterSNP[i]);
-  mx->addManySNP(snps);
+  if (snps.size() > 0)  
+    mx->addManySNP(snps);
   if (mx->computeRegression())
   {
     mx->computeMSC();
@@ -2101,7 +2646,8 @@ void GA::calculateClusterPosterior(vector<snp_index_t> &clusterSNP, vector<long 
       snps.push_back(clusterSNP[i]);
     }
   }
-  mx->addManySNP(snps);
+  if (snps.size() > 0)
+    mx->addManySNP(snps);
   if (mx->computeRegression())
   {
     mx->computeMSC();
@@ -2210,21 +2756,35 @@ void GA::checkCorrelation(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNP
 }
 
 
+
+
 void GA::setRecognisedSNPs()
 {
-  recognizedSNPs.clear();
+
+  recognizedSNPs_Region.clear();
+  recognizedSNPs_bestGA.clear();
+  recognizedSNPs_mosgwa.clear();
+  recognizedSNPs_posterioriModel.clear();
+  recognizedSNPs_clusterMax.clear();
+  recognizedSNPs_clusterSum.clear();
+
   if (parameter.causalModelFilename.length() > 0)
   {
     vector<snp_index_t> realSNPs;             // snps from real model
     modelReader(parameter.causalModelFilename, realSNPs);   
     for (unsigned int i = 0; i < realSNPs.size(); ++i)
     {
-      recognizedSNPs.insert(pair<snp_index_t, int>(realSNPs[i], 0));
+      recognizedSNPs_Region.insert(pair<snp_index_t, int>(realSNPs[i], 0));
+      recognizedSNPs_bestGA.insert(pair<snp_index_t, int>(realSNPs[i], 0));
+      recognizedSNPs_mosgwa.insert(pair<snp_index_t, int>(realSNPs[i], 0));
+      recognizedSNPs_posterioriModel.insert(pair<snp_index_t, int>(realSNPs[i], 0));
+      recognizedSNPs_clusterMax.insert(pair<snp_index_t, int>(realSNPs[i], 0));
+      recognizedSNPs_clusterSum.insert(pair<snp_index_t, int>(realSNPs[i], 0));
     } 
   }
 }
-
-double GA::aBestCorrelatedSNP(snp_index_t aSNP, set<snp_index_t> & snps, snp_index_t &bestCorrelatedSNP) const
+/*
+double GA::theBestCorrelatedSNP(snp_index_t aSNP, set<snp_index_t> & snps, snp_index_t &bestCorrelatedSNP) const
 {
   double max_correlation = 0.0;
   double abscor;
@@ -2239,7 +2799,7 @@ double GA::aBestCorrelatedSNP(snp_index_t aSNP, set<snp_index_t> & snps, snp_ind
   }  
   return max_correlation;
 }
-
+*/
 
 void GA::makeClusers(vector<set<snp_index_t> > &tab)
 {
@@ -2306,9 +2866,9 @@ void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, ma
   stringstream ss;
   map<snp_index_t, long double> Pmi_Y;
   multimap<long double, snp_index_t> Pmi_Ysort;
-  aFile.open( (fileName + "/pref.mcmc.txt").c_str(), ios::in ); 
+  aFile.open( (fileName + "/pref_#" + int2str(parameter.in_values_int) + ".mcmc.txt").c_str(), ios::in ); // pref_#1.mcmc.txt
   aFile.clear();    
-  cout << "a file: " << (fileName + "/pref.mcmc.txt").c_str() << " is opened" << endl;
+  cout << "a file: " << (fileName + "/pref_#" + int2str(parameter.in_values_int) + ".mcmc.txt").c_str() << " is opened" << endl;
   getline(aFile, line);
   stringstream sInfo;
   while (!aFile.eof())
@@ -2335,7 +2895,7 @@ void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, ma
   bool isBad = false;
   //snp_index_t badSNP;  // najlepszy snp z posteriori <= 0.5
   multimap<long double, snp_index_t>::reverse_iterator itM;
-  for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first >= 0.5; itM++)
+  for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first >  0.5; itM++)
   {
     mySnps.insert((*itM).second);
     cout << setw(15) << setprecision(11) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
@@ -2347,19 +2907,24 @@ void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, ma
   }  
   // w mySnp mamy model wynikowy piMasa
   
+  TPOWER_FDR powerFDR;
+  powerFDR.POWER = 0.0;
+  powerFDR.FDR = 0.0;
+  powerFDR.FDcount = 0;
+  powerFDR.badSNP = 0;       // the best SNP of posteriori <= 0.5
+  powerFDR.posteriorBad = 0.0;
+  powerFDR.posteriorBadCluster = 0.0;  
+  
   if (parameter.causalModelFilename.length() > 0)
   {
     vector<snp_index_t> realSNPs;             // snps from real model
     modelReader(parameter.causalModelFilename, realSNPs);  
     
-    TPOWER_FDR powerFDR;
-    //double POWER, FDR;
-    //int FDcount;
     if (realSNPs.size() > 0 && isBad == true)
     {
       set<snp_index_t> trueSNPs;
       //calculatePOWER_FDR_clust(mySnps, realSNPs, POWER, FDR, FDcount, trueSNPs, tabClust, Pmi_Y);
-       
+      cout << "causal model: OK" << endl; 
       Model m(data);
       vector<snp_index_t> vM(mySnps.begin(), mySnps.end());
       if (vM.size() > 0)
@@ -2373,28 +2938,29 @@ void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, ma
         m.computeMSCfalseRegression();
         cerr << "FALSE_regression" << endl;
       }
-        
       modelsFile << m << endl;
       modelsFile.close();
-      
-      //calculatePOWER_FDR_clust(mySnps, realSNPs, powerFDR, Pmi_Y, badSNP, recognizedSNPs, mapSNPCausal_ind, tabCausalPost);
+
+      // calculatePOWER_FDR_clust_max(realSNPs, powerFDR, Pmi_Y, recognizedSNPs_clusterMax, mapSNPCausal_ind, tabCausalPost);      
       //calculatePOWER_FDR_clust_sum(realSNPs, powerFDR, Pmi_Y, recognizedSNPs, mapSNPCausal_ind, tabCausalPost);
-      calculatePOWER_FDR_clust_max(realSNPs, powerFDR, Pmi_Y, recognizedSNPs, mapSNPCausal_ind, tabCausalPost);
+      calculatePOWER_FDR_clust_max(realSNPs, powerFDR, Pmi_Y, recognizedSNPs_piMass, mapSNPCausal_ind, tabCausalPost);
       cout << "POWER: " <<  powerFDR.POWER <<  ", FDR: " << powerFDR.FDR << ", FDcount: " << powerFDR.FDcount << endl;
+      cout << "piMassModel: " << m << endl;
       sp_sort << powerFDR.POWER << "\t" << powerFDR.FDR << "\t" << powerFDR.FDcount << "\t";
       sp_sort << powerFDR.badSNP << "\t";
       sp_sort << powerFDR.posteriorBad << "\t";
-      sp_sort << powerFDR.posteriorBadCluster << endl;
+      sp_sort << powerFDR.posteriorBadCluster << "\t";
+      sp_sort <<  m.getMSC() << endl;
     }
     else
     {
-      sp_sort << "\tPOWER: " << "NA";
-      sp_sort << "\tFPD: " << "NA" << endl;
-      cerr << "The real model size is zero!" << "\t";
-      sp_sort << "badSNP: " << "NA";
-      sp_sort << "\tposteriori: " << "NA";
-      sp_sort << "\tpost_cluster: " << "NA" << endl;
-      //          ssModels << "causalModel:msc: 0.0, size: 0, []" << endl;
+//          ssModels << "causalModel:msc: 0.0, size: 0, []" << endl;
+      cout << "causal model: 0 SNPs" << endl;      
+      sp_sort << powerFDR.POWER << "\t" << powerFDR.FDR << "\t" << powerFDR.FDcount << "\t";
+      sp_sort << powerFDR.badSNP << "\t";
+      sp_sort << powerFDR.posteriorBad << "\t";
+      sp_sort << powerFDR.posteriorBadCluster << "\t";
+      sp_sort <<  0.0 << endl;
     }
   }
   else
@@ -2402,23 +2968,48 @@ void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, ma
     cout << "casual snps: N/A" << endl;
     //causalModel:msc: 265.75508305, size: 3, [123932, 717206, 774597]
     //      ssModels << "causalModel: msc: 0.0, size: 0, []" << endl;
-    sp_sort << "\tPOWER: " << "NA";
-    sp_sort << "\tFPD: " << "NA" << "\t";    
-    sp_sort << "badSNP: " << "NA";
-    sp_sort << "\tposteriori: " << "NA";
-    sp_sort << "\tpost_cluster: " << "NA" << endl;
+    /*    sp_sort << "\tPOWER: " << "NA";
+     *    sp_sort << "\tFPD: " << "NA" << "\t";    
+     *    sp_sort << "badSNP: " << "NA";
+     *    sp_sort << "\tposteriori: " << "NA";
+     *    sp_sort << "\tpost_cluster: " << "NA" << endl;
+     */    
+    sp_sort << powerFDR.POWER << "\t" << powerFDR.FDR << "\t" << powerFDR.FDcount << "\t";
+    sp_sort << powerFDR.badSNP << "\t";
+    sp_sort << powerFDR.posteriorBad << "\t";
+    sp_sort << powerFDR.posteriorBadCluster << "\t";
+    
+    vector<snp_index_t> modelSNPs_max;
+    bool clusterSum = true;
+    calculate_clusters(Pmi_Y, modelSNPs_max, !clusterSum, "piMass_cluster_Max");
+    
+    Model *mx = new Model(data);
+    if (modelSNPs_max.size() > 0)
+    {
+      mx->addManySNP(modelSNPs_max);
+    }
+    if (mx->computeRegression())
+      mx->computeMSC();
+    else
+      mx->computeMSCfalseRegression();
+    cout << "cluster_Pimass_model: " << *mx << endl;
+    modelsFile << *mx << endl;
+    modelsFile.close();
+    sp_sort <<  mx->getMSC() << endl;
+    //      sp_sort << "cluster_max: " << *mx << endl;
+    delete mx;    
+    
   }
-  
   outFile << sp_sort.str();// << endl;    
   outFile.flush();
   outFile.close();
-  
   ofstream file;      
   file.open((outFileName + "piMassModels_result_snp.txt").c_str(), ios::out);  
   for (map<int, unsigned int>::iterator it = snp.begin(); it != snp.end(); ++it)
     file << (*it).first << "\t" << (*it).second << endl;
   file.close();  
 }
+
 
 /**
  * @brief Calculates the statistics (POWER, FDR, False Discovery count) of the given SNPs. 
@@ -2427,6 +3018,7 @@ void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, ma
  * @param powerFDR    - returns the POWER, FDR and FD count (struct)
  * @param Pmi_Y       - the map of Pmi_Y value of the snps
  **/
+/*
 void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y, 
                                 snp_index_t badSNP, map<snp_index_t, int> &recognizedSNPs, map<snp_index_t, int> &mapSNPCausal_ind,
                                 vector< multiset<long double> > &tabCausalPost)
@@ -2493,8 +3085,8 @@ void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> 
   
   stringstream ssPower;
   
-  bool isInCausal,
-       isInResult;
+  bool isInCausal;
+  bool isInResult;
   int ind;
 
   if (TEST) 
@@ -2599,8 +3191,8 @@ void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> 
   }
   else
   {
-    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
-    powerFDR.FDR = -1;
+//    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
+    powerFDR.FDR = 0;
   }  
   //powerFDR.FDR = (sumFP + 0.0) / mySnpsLabel.size();
   powerFDR.FDcount = sumFP;
@@ -2629,6 +3221,7 @@ void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> 
     file.close();
   }  
 }
+*/
 
 /** !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  * @brief Calculates the statistics (POWER, FDR, False Discovery count) of the given SNPs. 
@@ -2637,6 +3230,7 @@ void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> 
  * @param powerFDR    - returns the POWER, FDR and FD count (struct)
  * @param Pmi_Y       - the map of Pmi_Y value of the snps
  **/
+/*
 void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y,
                                 map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost_b)
 {
@@ -2804,8 +3398,8 @@ void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> 
   }
   else
   {
-    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
-    powerFDR.FDR = -1;
+//    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
+    powerFDR.FDR = 0;
   }  
   //powerFDR.FDR = (sumFP + 0.0) / mySnpsLabel.size();
   powerFDR.FDcount = sumFP;
@@ -2817,7 +3411,7 @@ void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> 
     file.close();
   }  
 }
-
+*/
 
 
 /** MAX
@@ -2834,6 +3428,7 @@ void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> 
 void GA::calculatePOWER_FDR_clust_max(vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y, 
                                 map<snp_index_t, int> &recognizedSNPs, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost)
 {
+//  cout << "POWER, FDR - cluster MAX" << endl;
   bool TEST = false;//true;
   assert(causalSNPs.size() > 0);
   int sumTP = 0;
@@ -2967,8 +3562,8 @@ void GA::calculatePOWER_FDR_clust_max(vector<snp_index_t> &causalSNPs, TPOWER_FD
   }
   else
   {
-    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
-    powerFDR.FDR = -1;
+//    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
+    powerFDR.FDR = 0;
   }  
   powerFDR.FDcount = sumFP;
   
@@ -3024,6 +3619,7 @@ void GA::calculatePOWER_FDR_clust_max(vector<snp_index_t> &causalSNPs, TPOWER_FD
 void GA::calculatePOWER_FDR_clust_sum(vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y, 
                                 map<snp_index_t, int> &recognizedSNPs, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost)
 {
+  cout << "POWER, FDR - cluster SUM" << endl;
   bool TEST = false;
   assert(causalSNPs.size() > 0);
   int sumTP = 0;
@@ -3037,6 +3633,17 @@ void GA::calculatePOWER_FDR_clust_sum(vector<snp_index_t> &causalSNPs, TPOWER_FD
     aSNP = (*it).first;
     label = mapSNPid_label[ aSNP ];
     mapLabel_PmiY[label] += mapSNPid_Pmi_Y[aSNP];
+  }
+  
+  for (map<int, long double>::iterator it = mapLabel_PmiY.begin(); it != mapLabel_PmiY.end(); ++it)
+  {
+    if (it->second > 0.5)
+    {
+      if ( mapLabel_count.find( it->first) == mapLabel_count.end() )
+        mapLabel_count[ it->first ] = 1;
+      else
+        ++mapLabel_count[ it->first ]; 
+    }
   }
   
   stringstream ssLabel_PmiY;
@@ -3146,8 +3753,8 @@ void GA::calculatePOWER_FDR_clust_sum(vector<snp_index_t> &causalSNPs, TPOWER_FD
   }
   else
   {
-    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
-    powerFDR.FDR = -1;
+//    cerr << "Something wrong: sumFP + sumTP = 0!" << endl;
+    powerFDR.FDR = 0;
   }  
   powerFDR.FDcount = sumFP;
   
@@ -3189,6 +3796,146 @@ void GA::calculatePOWER_FDR_clust_sum(vector<snp_index_t> &causalSNPs, TPOWER_FD
     file.close();
   }  
 }
+
+
+///////// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+/**
+ * @brief Calculates the statistics 
+ * Oblicza 
+ * 1. dla clusterSum = true - oblicza prawd. poster. dla klastra jako suma prawd. poster. jego SNPów
+ *    dla clusterSum = false - oblicza prawd. poster. dla klastra jako wartość maksymalna prawd. poster. jego SNPów
+ * @param mySnp       - SNPs to test
+ * @param realSNPs    - the causal SNPs
+ * @param powerFDR    - returns the POWER, FDR and FD count (struct)
+ * @param Pmi_Y       - the map of Pmi_Y value of the snps
+ * UWAGA clusterSum == otwiera plik *_recognized w trybie append
+ **/
+void GA::calculate_clusters(map<snp_index_t, long double> &mapSNPid_Pmi_Y, vector<snp_index_t> &modelSNPs, bool clusterSum, string method_Name)
+{
+  set<int>clusterSet;
+  modelSNPs.clear();
+  bool TEST = false;
+  int label;
+  snp_index_t aSNP;
+
+  for (map<snp_index_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it)
+  {
+    aSNP = (*it).first;
+    label = mapSNPid_label[ aSNP ];
+    mapLabel_PmiY[label] = 0.0;
+  }
+  // calcuates mapSNPid_Pmi_Y for the clusters    // Obliczamy prawd. a posteriori dla klastra metodą: SUM (suma prawd. a posteriori SNPów z tego klastra lub jako wartość MAX)
+  if (clusterSum == true)
+  {
+    for (map<snp_index_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it)
+    {
+      aSNP = (*it).first;
+      label = mapSNPid_label[ aSNP ];
+      mapLabel_PmiY[label] += mapSNPid_Pmi_Y[aSNP];
+    }
+  }
+  else
+  {
+    for (map<snp_index_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it)
+    {
+      aSNP = (*it).first;
+      label = mapSNPid_label[ aSNP ];
+      if (mapSNPid_Pmi_Y[aSNP] > mapLabel_PmiY[label])
+        mapLabel_PmiY[label] = mapSNPid_Pmi_Y[aSNP];
+    }
+  }
+  int ind;  
+  stringstream ssClusters;  
+  stringstream ssSNPs_ID;
+//  ssClusters << method_Name << endl;
+//  ssSNPs_ID << method_Name << endl;
+  // data.getSNP( (*itM).second ).getSnpId()
+  ofstream file;
+  for (map<int, long double>::iterator it = mapLabel_PmiY.begin(); it != mapLabel_PmiY.end(); ++it)
+  { // Counts the labels of clusters for many runs of GA.  // zlicza klastry dla wielu uruchomień GA
+    if (it->second > 0.5)
+    {
+      if ( mapLabel_count.find( it->first) == mapLabel_count.end() )
+        mapLabel_count[ it->first ] = 1;
+      else
+        ++mapLabel_count[ it->first ]; 
+      
+      ind = mapLabel_ind[ (*it).first ];
+      ssClusters << (*it).first << "\t>>\t";
+      ssSNPs_ID << (*it).first << "\t>>\t";
+
+      for (set<snp_index_t>::iterator itS = vectClust[ind].begin(); itS != vectClust[ind].end(); ++itS)
+      {
+        if (itS == vectClust[ind].begin())
+        {
+          aSNP = *itS;
+          ssClusters << *itS;
+          ssSNPs_ID << data.getSNP( *itS ).getSnpId();
+        }
+        else
+        {
+          if (mapSNPid_Pmi_Y[ *itS ] > mapSNPid_Pmi_Y[ aSNP ])
+            aSNP = *itS;
+          ssClusters << " " << *itS;
+          ssSNPs_ID << " " << data.getSNP( *itS ).getSnpId();
+        }
+      
+      }
+      if (vectClust[ind].size() > 0)
+        modelSNPs.push_back(aSNP);
+      ssClusters << endl;
+      ssSNPs_ID << endl;
+    }
+  }  
+  Model model(data);
+  if (modelSNPs.size() > 0)
+    model.addManySNP(modelSNPs);
+  if (model.computeRegression())
+    model.computeMSC();
+  else
+    model.computeMSCfalseRegression();
+  if (isCluster == true)
+    saveRecognizedSNPinfo(modelSNPs, method_Name, mapSNPid_Pmi_Y);
+  
+  stringstream ssLabel_PmiY;
+  if (TEST) 
+  {  
+    ssLabel_PmiY << "cluster label\tPmi_Y" << endl;
+    for (map<int, long double>::iterator it =  mapLabel_PmiY.begin(); it != mapLabel_PmiY.end(); ++it)
+    {
+      ssLabel_PmiY << (*it).first << "\t" << (*it).second << endl;
+    }
+  }
+  if (TEST) 
+  {
+    file.open((parameter.out_file_name +  "_Label_PmiY.txt").c_str(), ios::trunc);
+    file << ssLabel_PmiY.str() << endl;
+    file.close();
+  }  
+  stringstream ssPower;
+  if (TEST) 
+  {
+    stringstream ssClusters;  
+    for (map<int, long double>::iterator it =  mapLabel_PmiY.begin(); it != mapLabel_PmiY.end(); ++it)
+    {
+      ind = mapLabel_ind[ (*it).first ];
+      ssClusters << ind << ")\t" <<  (*it).first << "\t => {";
+      for (set<snp_index_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end(); ++itSet)
+      {
+        if (itSet == vectClust[ind].begin())
+          ssClusters << *itSet;
+        else
+          ssClusters << " " << *itSet;
+      }
+      ssClusters << "}" << endl;
+    }
+    file.open((parameter.out_file_name + "_myClusters.txt").c_str(), ios::trunc);
+    file << ssClusters.str() << endl;
+    file.close();
+  }
+}
+
 
 /**
  * @brief Local improvement of a given model
@@ -3239,7 +3986,8 @@ void GA::localImprovement(Model &model, double threshold, int correlationRange)
       newSnps.insert(*itSNP);
     }
     v.assign(newSnps.begin(), newSnps.end());
-    newModel->addManySNP(v);
+    if (v.size() > 0)
+      newModel->addManySNP(v);
     if (newModel->computeRegression())
       newModel->computeMSC();
     else
@@ -3248,6 +3996,8 @@ void GA::localImprovement(Model &model, double threshold, int correlationRange)
       theBestModel = *newModel;
     // to write a model to the pool  
     toPool(newModel, 'L');
+    writePoolofSize(p_30K, 30000);
+    writePoolofSize(p_100K, 100000);
     if (TEST) cout << "a new snps  " << newSnps << endl;
     if (TEST) cout << "a new model " << *newModel << endl << endl;
     delete newModel;
@@ -3316,23 +4066,22 @@ void GA::makeVectCluster(map<snp_index_t, int>& mSNPid_label)
 /**
  * @brief Reads a file of clusters (of format: SNP_id, label) and prepares 2 maps: SNP_id -> label, and label - > Pmi_Y (the sum of the posteriors)
  * @param mapSNPid_label - reference to the map SNP_id -> label
- * ...
+ * 
  * readClusterLabel(mapSNPid_label, clusterFile_POWER, SNP_Names_Id, &mapLabel_PmiY);
  */ 
 void GA::readClusterLabel(map<snp_index_t, int>& mapSNPid_label, const string& fileName, map<string, int>& SNP_Names_Id, map<int, long double>* mapLabel_PmiY)
 {
-  ofstream errFile;
-  errFile.open((parameter.out_file_name +  fileName + "_missing.txt").c_str());
   stringstream ssError;
   ifstream aFile;
   string SNPname;
   int label;
-  set<int>labels;
+  set<int> labels;
   aFile.open( fileName.c_str(), ios::in );
   aFile.clear();
   int badName = 0;
   if ( aFile.is_open())
   {
+
     while (!aFile.eof())
     {
       aFile >> SNPname;
@@ -3358,8 +4107,8 @@ void GA::readClusterLabel(map<snp_index_t, int>& mapSNPid_label, const string& f
   }
   else
   {
-    cerr << "readClusterLabel: could not open file: " << fileName << endl;
-    exit(-1);
+    printLOG( "No clusters file" );
+    return;
   }
   if (mapLabel_PmiY != 0)
   {
@@ -3369,8 +4118,11 @@ void GA::readClusterLabel(map<snp_index_t, int>& mapSNPid_label, const string& f
     }
     
   }
+  ofstream errFile;
+  errFile.open((parameter.out_file_name +  fileName + "_missing.txt").c_str());
   errFile << "bad names: " << badName << endl << "missing SNPs:\r\n " << ssError.str();
   errFile.close();
+  isCluster = true;
 }
 
 /** @brief creates map snp_i -> index
@@ -3397,7 +4149,7 @@ void GA::initCausalPost( map<snp_index_t, int> &mapSNPCausal_ind )
   else
   {
     cerr << "initCausalPost(): no real model! causalModelFilename: " << parameter.causalModelFilename << endl;
-    exit(-1);
+    //exit(-1);
   }
 }
 
@@ -3555,14 +4307,16 @@ void GA::setCausalCount(map<snp_index_t, int> &map_SNP2count)
  * @param threshold - threshold value of correlation. 
  * @return vector of snps with a correlation above threshold
  */
-void GA::stronglyCorrelatedSnpsCluster(const double& threshold )
+void GA::stronglyCorrelatedSnpsCluster(const vector<snp_index_t> & tabSNPs, const double& threshold)
 {
   stringstream ss;
   
-  int tabCl[] = {46, 448, 884, 1275, 1642, 2013, 2416, 2749, 3043, 3352, 3712, 4096, 4448, 4848, 5185, 5570, 5960, 6378, 6764, 7254};
-  
-  vector<snp_index_t> causalSNPs;             // snps from real model
-  modelReader(parameter.causalModelFilename, causalSNPs);  
+//  int tabCl[] = // 20SNPs {46, 448, 884, 1275, 1642, 2013, 2416, 2749, 3043, 3352, 3712, 4096, 4448, 4848, 5185, 5570, 5960, 6378, 6764, 7254};
+  //{25, 314, 592, 846, 1107, 1388, 1618, 1822, 2093, 2366, 2592, 2818, 3006, 3238, 3452, 3675, 3926, 4193, 4414, 4691, 4921, 5153, 5393, 5675, 5939, 6199, 6484, 6726, 7003, 7280};
+//  {242029, 302459};
+
+//  vector<snp_index_t> causalSNPs;             // snps from real model
+//  modelReader(parameter.causalModelFilename, causalSNPs);  
 
   stringstream ssAll;                 // to save the output
   ssAll << "causalSNP\tclusterSNP\tcorrelation" << endl;
@@ -3573,26 +4327,58 @@ void GA::stronglyCorrelatedSnpsCluster(const double& threshold )
   unsigned int j;                           
   
   
-  unsigned int rangeFrom = 0,
-               rangeTo = data.getSnpNo();
-  // search for strongly correlated SNPs
-  for (unsigned int ind = 0; ind < causalSNPs.size(); ++ind)
+  //  697067,  599750
+  
+  vector<snp_index_t> tabSpr;
+  tabSpr.push_back(130633);
+  tabSpr.push_back(267614);
+  tabSpr.push_back(267621);
+  tabSpr.push_back(267637);
+
+  for (unsigned int ind = 0; ind < tabSNPs.size(); ++ind)
   {
-    cout << "calculation for " << causalSNPs[ind] << " >> " << data.getSNP( causalSNPs[ind] ).getSnpId() << endl;
-    for (j = rangeFrom; j < rangeTo; j++)
+    cout << "calculation for " << tabSNPs[ind] << " <<>> " << data.getSNP( tabSNPs[ind] ).getSnpId() << endl;
+    for (j = 0; j < tabSpr.size(); j++)
     {
-      abscor = fabs( data.computeCorrelation( causalSNPs[ind], j ) ); // compute correlation between model SNP and SNP j
+      abscor = fabs( data.computeCorrelation( tabSNPs[ind], tabSpr[j] ) ); // compute correlation between model SNP and SNP j
       if (abscor  >= threshold) // add if correlation is big enough
       {
 //        ssAll << causalSNP[ind] << "\t" << j << "\t" << abscor << endl; data.getSNP( (*itM).second ).getSnpId()
-        ssAll << data.getSNP( causalSNPs[ind] ).getSnpId() << "\t" << data.getSNP( j ).getSnpId() << "\t" << abscor << "\t" << tabCl[ind] << endl;
-        if (j == rangeFrom)
-          ssClusters << endl << data.getSNP( causalSNPs[ind] ).getSnpId() << "\t" << tabCl[ind] << endl;
+        ssAll << data.getSNP( tabSNPs[ind] ).getSnpId() << "\t" << data.getSNP( tabSpr[j] ).getSnpId() << "\t" << abscor << "\t" << endl; // tabCl[ind] << endl;
+        cout << data.getSNP( tabSNPs[ind] ).getSnpId() << "\t" << data.getSNP( tabSpr[j] ).getSnpId() << "\t" << abscor << "\t" << endl; // tabCl[ind] << endl;
+/*        if (j == rangeFrom)
+          ssClusters << endl << data.getSNP( tabSNPs[ind] ).getSnpId() << "\t" << tabCl[ind] << endl;
         ssClusters << data.getSNP( j ).getSnpId() << "\t" << tabCl[ind] << endl;
+*/        
+      }
+    }
+    ssAll << endl;
+    cout << endl;
+  }
+  /*
+  unsigned int rangeFrom = 0,
+               rangeTo = data.getSnpNo();
+  // search for strongly correlated SNPs
+  for (unsigned int ind = 0; ind < tabSNPs.size(); ++ind)
+  {
+    cout << "calculation for " << tabSNPs[ind] << " <<>> " << data.getSNP( tabSNPs[ind] ).getSnpId() << endl;
+    for (j = rangeFrom; j < rangeTo; j++)
+    {
+      abscor = fabs( data.computeCorrelation( tabSNPs[ind], j ) ); // compute correlation between model SNP and SNP j
+      if (abscor  >= threshold) // add if correlation is big enough
+      {
+//        ssAll << causalSNP[ind] << "\t" << j << "\t" << abscor << endl; data.getSNP( (*itM).second ).getSnpId()
+        ssAll << data.getSNP( tabSNPs[ind] ).getSnpId() << "\t" << data.getSNP( j ).getSnpId() << "\t" << abscor << "\t" << endl; // tabCl[ind] << endl;
+  //      if (j == rangeFrom)
+     //    ssClusters << endl << data.getSNP( tabSNPs[ind] ).getSnpId() << "\t" << tabCl[ind] << endl;
+    //    ssClusters << data.getSNP( j ).getSnpId() << "\t" << tabCl[ind] << endl;
+        
       }
     }
     ssAll << endl;
   }
+  */
+  /*
   abscor = fabs( data.computeCorrelation( 13, 15 ) ); 
   ssAll << endl << data.getSNP( 13 ).getSnpId() << "\t" << data.getSNP( 15 ).getSnpId() << "\t" << abscor << endl;
   abscor = fabs( data.computeCorrelation( 13, 16 ) );
@@ -3601,14 +4387,14 @@ void GA::stronglyCorrelatedSnpsCluster(const double& threshold )
   ssAll << endl << data.getSNP( 7207 ).getSnpId() << "\t" << data.getSNP( 7279 ).getSnpId() << "\t" << abscor << endl;
   abscor = fabs( data.computeCorrelation( 15616, 15622 ) );
   ssAll << endl << data.getSNP( 15616 ).getSnpId() << "\t" << data.getSNP( 15622 ).getSnpId() << "\t" << abscor << endl;
-
+*/
 
   
   ofstream  outFile;
   outFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
   try
   {
-    outFile.open((parameter.out_file_name + "_corrAG.txt").c_str(),  fstream::out | fstream::trunc );
+    outFile.open((parameter.out_file_name + "_corrAG_Example.txt").c_str(),  fstream::out | fstream::trunc );
     outFile << ssAll.str() << endl;
     outFile.flush();
     outFile.close();
@@ -3621,7 +4407,7 @@ void GA::stronglyCorrelatedSnpsCluster(const double& threshold )
   
   try
   {
-    outFile.open((parameter.out_file_name + "_cluAG.clu").c_str(),  fstream::out | fstream::trunc );
+    outFile.open((parameter.out_file_name + "_cluAG_30.clu").c_str(),  fstream::out | fstream::trunc );
     outFile << ssClusters.str() << endl;
     outFile.flush();
     outFile.close();
@@ -3634,3 +4420,581 @@ void GA::stronglyCorrelatedSnpsCluster(const double& threshold )
 }  
 
 //SNP_A-1828353 SNP_A-2157434 SNP_A-1794641 SNP_A-1815281 SNP_A-2202441 SNP_A-2309459 SNP_A-2160092 SNP_A-1850477 SNP_A-2289125 SNP_A-1829559 SNP_A-2208065 SNP_A-1786242
+
+
+void GA::saveRecognizedSNPinfo(const vector<snp_index_t> &v, const string &method_Name, map<snp_index_t, long double> &mapSNPid_Pmi_Y)
+{
+  stringstream ssClusters;  
+  stringstream ssSNPs_ID;  
+  
+  TSNP_Info aSNP_info;
+  set<TSNP_Info> aRegion;
+  stringstream ssInfo;
+  
+  ssInfo << setw(7) << "Nr" << "\t" << setw(15) << "SNP Id" << "\t" << setw(4) << "Chr" << "\t" << setw(12) << "Pos" << "\t" << setw(12) << "posteriori" << "\t" 
+         << endl << endl;  
+  double sum, max;
+/*   //orig
+  stringstream ssInfo_orig;
+  ssInfo_orig << "Original" << endl;
+  for (unsigned int i = 0; i < v.size(); ++i)
+  {
+    max = 0.0;
+    sum = 0.0;
+    int cluster_label = mapSNPid_label[ v[i] ];
+    int ind = mapLabel_ind[ cluster_label ];
+    aRegion.clear();
+    for (set<snp_index_t>::iterator itS = vectClust[ind].begin(); itS != vectClust[ind].end(); ++itS)
+    {
+      aSNP_info.SNP = *itS;
+      aSNP_info.Chr = (data.getSNP(*itS))->getChromosome();
+      aSNP_info.pos = (data.getSNP(*itS)).getBasePairPosition();
+      aRegion.insert(aSNP_info);
+      if (mapSNPid_Pmi_Y[ *itS ] > max)
+        max = mapSNPid_Pmi_Y[ *itS ];
+      sum += mapSNPid_Pmi_Y[ *itS ];
+    }
+    for (set<TSNP_Info>::iterator it = aRegion.begin(); it != aRegion.end(); ++it)
+    {
+      ssInfo_orig << setw(7) << it->SNP << "\t" << setw(17) << data.getSNP( it->SNP ).getSnpId() << "\t" << setw(4) << it->Chr << "\t" << setw(12) << it->pos << "\t" 
+             << setw(12) << mapSNPid_Pmi_Y[ it->SNP ] << endl;
+    }
+    ssInfo_orig << setw(7) << cluster_label << "\t" << setw(17) << "cluster(sum, max)" << "\t" << setw(4) << "->" << "\t"
+           << setw(12) << sum << "\t" << setw(12) << max << endl << endl;
+  }
+*/  
+  set<TSNP_Info> *aRegionPtr;
+  set<TRegionSet_info> setNewRegion;
+  for (unsigned int i = 0; i < v.size(); ++i)
+  {
+    int cluster_label = mapSNPid_label[ v[i] ];
+    int ind = mapLabel_ind[ cluster_label ];
+    aRegion.clear();
+    aRegionPtr = new set<TSNP_Info>;
+    for (set<snp_index_t>::iterator itS = vectClust[ind].begin(); itS != vectClust[ind].end(); ++itS)
+    {
+      aSNP_info.SNP = *itS;
+      aSNP_info.Chr = (data.getSNP(*itS)).getChromosome();
+      aSNP_info.pos = (data.getSNP(*itS)).getBasePairPosition();
+      aRegion.insert(aSNP_info);
+      aRegionPtr->insert(aSNP_info);
+      if (mapSNPid_Pmi_Y[ *itS ] > max)
+        max = mapSNPid_Pmi_Y[ *itS ];
+      sum += mapSNPid_Pmi_Y[ *itS ];
+    }
+    TRegionSet_info anItem;
+    anItem.s = aRegionPtr;
+    setNewRegion.insert(anItem);
+  }
+  
+  for (set<TRegionSet_info>::iterator itS = setNewRegion.begin(); itS != setNewRegion.end(); ++itS)
+  {
+    TRegionSet_info s = *itS;
+    set<TSNP_Info> *aSNP = s.s;
+    sum = 0.0;
+    max = 0.0;
+//    int cluster_label = mapSNPid_label[ aSNP->begin()->SNP ];
+    for (set<TSNP_Info>::iterator it = aSNP->begin(); it != aSNP->end(); ++it)
+    {
+      ssInfo << setw(7) << it->SNP << "\t" << setw(17) << data.getSNP( it->SNP ).getSnpId() << "\t" << setw(4) << it->Chr << "\t" << setw(12) << it->pos << "\t" 
+             << setw(12) << mapSNPid_Pmi_Y[ it->SNP ] << endl;  
+      if (mapSNPid_Pmi_Y[ it->SNP ] > max)
+        max = mapSNPid_Pmi_Y[ it->SNP ];
+      sum += mapSNPid_Pmi_Y[ it->SNP ];             
+    }        
+    if (method_Name.compare("cluster_SUM") == 0 || method_Name.compare("cluster_MAX") == 0 || method_Name.compare("piMass_cluster_Max") == 0)
+    {
+      ssInfo << setw(7) << " " << "\t" << setw(17) << "cluster(sum, max)" << "\t" << setw(4) << "-->" << "\t"
+             << setw(12) << sum << "\t" << setw(12) << max << endl << endl;
+    }
+    else
+      ssInfo << endl;
+    delete s.s;
+  }
+ 
+  Model model(data);
+  if (v.size() > 0)
+    model.addManySNP(v);
+  if (model.computeRegression())
+    model.computeMSC();
+  else
+  {
+    model.computeMSCfalseRegression();
+  }  
+  ofstream file;
+  file.open((parameter.out_file_name + "_Report.txt").c_str(), ios::app);
+  file << method_Name << endl << endl;
+  file << ssInfo.str() 
+       << model << endl;
+//       << "+++++++++++++++++++++++++++++++++" << endl;
+//  file << ssInfo_orig.str() << endl;
+  file << "________________________________________________________________________________" << endl << endl;
+  file.close(); 
+}
+
+
+/**
+ * @brief writes pool of size 30K or 100K to the file
+ * 
+ */
+void GA::writePoolofSize(bool &flag, int maxSize)
+{ 
+  if (maxSize == 30000)
+  {
+    if (flag && pool.size() >= 30000)
+    {
+      stringstream ss;
+      const time_t time_end = time(NULL);
+      ss << "GA time: " << (time_end > time_start? sec2time(time_end - time_start) : sec2time(24 * 3600 + time_end - time_start));  
+      writePoolToFile(ss, "_30K");
+      flag = false;
+      
+    }
+  }
+  else
+  {
+    if (flag && pool.size() >= 100000)
+    {
+      stringstream ss;
+      const time_t time_end = time(NULL);
+      ss << "GA time: " << (time_end > time_start? sec2time(time_end - time_start) : sec2time(24 * 3600 + time_end - time_start));  
+      writePoolToFile(ss, "_100K");
+      flag = false;
+      printLOG( ("100K" + ss.str() + "\n\r") );
+    }
+  }
+}
+
+/**
+ * @brieb wyznacza SNPy, 
+ * @param th - próg
+*/
+void GA::regionStrategy(const string method_Name, Model &model, multimap<long double, snp_index_t>& Pmi_Ysort, map<snp_index_t, long double> &mapSNPid_Pmi_Y, double th, set<TRegionSet_info> &setNewRegion)
+{
+//  cout << "th: " << th << endl;
+//  cout << "Pmi_Ysort.size(): " << Pmi_Ysort.size() << endl;
+//  cout << "mapSNPid_Pmi_Y.size(): " << mapSNPid_Pmi_Y.size() << endl;  
+  
+  const bool TEST = false;
+  map<snp_index_t, unsigned int> mapSNP2ind;   // odwzorowanie SNP -> indeks w tablicy tabCorr oraz tablicy tabCorr[]
+  vector<vector<double> > tabCorr;
+  vector<snp_index_t> SNPs;                    // SNPy, które biorą udział w operacji, odwzorowanie index tablicy -> SNP
+  vector< set<snp_index_t> > tabRegionSNPs;    // tablica zawierająca SNPy, które należą do rejonu
+  vector<double> SNPs_posteriori;              // posteriori rejonu
+  snp_index_t aSNP;
+  double absCorr;
+  unsigned int i = 0;
+  multimap<long double, snp_index_t>::reverse_iterator itM;
+  vector<double> vv;
+  vector<snp_index_t> v_all;
+  set<snp_index_t>s;
+  ofstream  outFile;
+  if (TEST) outFile.open((parameter.out_file_name + "_region_mapSNP2ind.txt").c_str(),  fstream::out | fstream::trunc );
+  if (TEST) outFile << "aSNP" << "\t" << "mapSNP2ind" << "\t" << "mapSNPid_Pmi_Y" << endl;
+  for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > th; ++itM)
+  {
+    aSNP = itM->second;
+    mapSNP2ind.insert(pair<snp_index_t, unsigned int> (aSNP, i));
+    tabCorr.push_back(vv);
+    SNPs.push_back(aSNP);
+    SNPs_posteriori.push_back(mapSNPid_Pmi_Y[aSNP]);
+    tabRegionSNPs.push_back(s);
+    if (TEST) outFile << aSNP << "\t" << mapSNP2ind[aSNP] << "\t" << mapSNPid_Pmi_Y[aSNP] << endl;
+    if (i != 0)
+      tabCorr[i].resize(i);
+    for (unsigned int k = 0; k < i; k++)
+    {
+      absCorr = fabs( data.computeCorrelation( SNPs[i], SNPs[k] ) ); // compute correlation between model SNP and SNP j     
+      tabCorr[ mapSNP2ind[aSNP] ][k] = absCorr;
+    }
+    ++i;
+  }
+  outFile.close();
+  if (TEST)
+  {
+    outFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
+    try
+    {
+      outFile.open((parameter.out_file_name + "_regionStrategy.txt").c_str(),  fstream::out | fstream::trunc );
+      
+      for (i = 0; i < tabCorr.size(); ++i)
+      {
+        aSNP = SNPs[i];
+        outFile << i << "\t" << aSNP << "\t" << SNPs_posteriori[i];
+        for (unsigned int k = 0; k < i; ++k)
+        {
+          outFile << "\t" << tabCorr[i][k];
+        }
+        outFile << endl;
+      }
+      // the last line
+      outFile << "no\tSNP_ind \tpost. \t";
+      
+      for (unsigned int k = 0; k < i; ++k)
+      {
+        outFile << "\t" << k;
+      }
+      outFile << endl;    
+      
+      outFile.flush();
+      outFile.close();
+    } 
+    catch (ofstream::failure e)
+    {
+      cerr << "Could not write a _regionStrategy file" <<endl;
+      exit(-1);
+    }
+    outFile.open((parameter.out_file_name + "_regionStrategy.txt").c_str(),  fstream::out | fstream::app );
+    outFile << endl;
+    outFile << "SNP_ind\tposter.\tposter(region)\tregion" << endl;
+  }
+  // for each SNP which is correlated each other we sum up a posteriori probability
+  for (i = 0; i < tabCorr.size(); ++i)
+  {
+    aSNP = SNPs[i];
+    for (unsigned int k = 0; k < i; ++k)
+    {
+      if (tabCorr[i][k] > 0.5  && (data.getSNP( SNPs[i] )).getChromosome() == (data.getSNP( SNPs[k] )).getChromosome() )  
+      {                                                                                                     // 3 conditions: 1. correlations > 0.5, 2. the same getChromosome, 
+        if ( fabs((data.getSNP(SNPs[i])).getBasePairPosition() - (data.getSNP(SNPs[k])).getBasePairPosition()) < 10000000) // 3. distance
+        {
+          SNPs_posteriori[i] += mapSNPid_Pmi_Y[ SNPs[k] ];
+          SNPs_posteriori[k] += mapSNPid_Pmi_Y[ SNPs[i] ];
+          tabRegionSNPs[i].insert(k);
+          tabRegionSNPs[k].insert(i);
+        }
+      }
+    }
+  }
+  vector<double> SNPs_posteriori_orig = SNPs_posteriori;
+  
+  vector<snp_index_t> v;
+  v_all.clear();
+  TSNP_Info aSNP_info;
+  set<TSNP_Info> aRegion;
+  set<TSNP_Info> *aRegionPtr;// = new set<TSNP_Info>;
+  stringstream ssInfo;
+
+  ssInfo << setw(7) << "Nr" << "\t" << setw(15) << "SNP Id" << "\t" << setw(4) << "Chr" << "\t" << setw(12) << "Pos" << "\t" << setw(12) << "posteriori" << "\t" 
+         << setw(12) << "posteriori (region)" << endl << endl;
+//  set<TRegionSet_info> setNewRegion;
+  for (i = 0; i < SNPs.size(); ++i)
+  {
+    if (SNPs_posteriori[i] > 0.5)  // If a posteriori probability of a region is greater than 0.5 we report this region.
+    { 
+      if (TEST) outFile << SNPs[i] << "\t" << mapSNPid_Pmi_Y[ SNPs[i] ] << "\t" << SNPs_posteriori[i] << "\t";
+      if (TEST) outFile << SNPs[i];
+      v.push_back(SNPs[i]);
+      for (set<snp_index_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it)
+      {
+          if (TEST) outFile << " " << SNPs[*it];
+          if ( mapSNPid_Pmi_Y[ SNPs[*it] ] > mapSNPid_Pmi_Y[ v[v.size() -1] ] )
+            v[v.size() -1] = SNPs[*it];    // wybór najlepszego SNPa z danego rejonu, żeby reprezentował ten rejon w modelu
+      }
+      v_all.push_back(SNPs[i]);
+      if (TEST)  
+      {
+        outFile << endl;  
+        outFile << "\t" << data.getSNP( SNPs[i] ).getSnpId();
+        for (set<snp_index_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it)
+          outFile << " " << data.getSNP( SNPs[*it] ).getSnpId(); 
+        outFile << endl;
+      }
+      aRegionPtr = new set<TSNP_Info>;
+      aRegion.clear();
+      aSNP_info.SNP = SNPs[i];
+      aSNP_info.Chr = (data.getSNP(SNPs[i])).getChromosome();
+      aSNP_info.pos = (data.getSNP(SNPs[i])).getBasePairPosition();
+      aRegion.insert(aSNP_info);
+      aRegionPtr->insert(aSNP_info);
+      for (set<snp_index_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it)
+      {
+        aSNP_info.SNP = SNPs[*it];
+        aSNP_info.Chr = (data.getSNP(SNPs[*it])).getChromosome();
+        aSNP_info.pos = (data.getSNP(SNPs[*it])).getBasePairPosition();
+        aRegion.insert(aSNP_info);
+        aRegionPtr->insert(aSNP_info);
+      }
+      TRegionSet_info anItem;
+      anItem.s = aRegionPtr;
+      setNewRegion.insert(anItem);
+      /*
+      for (set<TSNP_Info>::iterator it = aRegion.begin(); it != aRegion.end(); ++it)
+      {
+        SNPs_posteriori[ mapSNP2ind[it->SNP] ] = -1;
+      }
+      */
+    }
+  }    
+
+  for (set<TRegionSet_info>::iterator itS = setNewRegion.begin(); itS != setNewRegion.end(); ++itS)
+  {
+    TRegionSet_info s = *itS;
+    set<TSNP_Info> *aSNP = s.s;
+    for (set<TSNP_Info>::iterator it = aSNP->begin(); it != aSNP->end(); ++it)
+    {
+      ssInfo << setw(7) << it->SNP << "\t" << setw(15) << data.getSNP( it->SNP ).getSnpId() << "\t" << setw(4) << it->Chr << "\t" << setw(12) << it->pos << "\t" 
+             << setw(12) << mapSNPid_Pmi_Y[ it->SNP ] << "\t" << setw(12) << SNPs_posteriori_orig[ mapSNP2ind[it->SNP] ] << endl;  
+    }        
+    ssInfo << endl;
+  }
+  
+  
+  ///// a compact raport
+  SNPs_posteriori = SNPs_posteriori_orig;
+
+  // zwolnić pamięć dla aRegionPtr
+  for (set<TRegionSet_info>::iterator itS = setNewRegion.begin(); itS != setNewRegion.end(); ++itS)
+  {
+    TRegionSet_info s = *itS;
+    delete s.s;
+    s.s = 0;
+  }  
+  
+  
+  setNewRegion.clear();
+  for (i = 0; i < SNPs.size(); ++i)
+  {
+    if (SNPs_posteriori[i] > 0.5)  // If a posteriori probability of a region is greater than 0.5 we report this region.
+    { 
+      aRegionPtr = new set<TSNP_Info>;
+      aRegion.clear();
+      aSNP_info.SNP = SNPs[i];
+      aSNP_info.Chr = (data.getSNP(SNPs[i])).getChromosome();
+      aSNP_info.pos = (data.getSNP(SNPs[i])).getBasePairPosition();
+      aRegion.insert(aSNP_info);
+      aRegionPtr->insert(aSNP_info);
+      for (set<snp_index_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it)
+      {
+        aSNP_info.SNP = SNPs[*it];
+        aSNP_info.Chr = (data.getSNP(SNPs[*it])).getChromosome();
+        aSNP_info.pos = (data.getSNP(SNPs[*it])).getBasePairPosition();
+//        cout << i << "\taSNP_info: SNP:" << aSNP_info.SNP << "\t" << aSNP_info.Chr << "\t" << aSNP_info.pos << endl;
+        aRegion.insert(aSNP_info);
+        aRegionPtr->insert(aSNP_info);
+
+      }
+      TRegionSet_info anItem;
+      anItem.s = aRegionPtr;
+      setNewRegion.insert(anItem);
+      for (set<TSNP_Info>::iterator it = aRegion.begin(); it != aRegion.end(); ++it)
+      {
+        SNPs_posteriori[ mapSNP2ind[it->SNP] ] = -1;
+//        cout << "SNP: " << it->SNP << ", SNPs_posteriori[ mapSNP2ind[it->SNP] ]: " << SNPs_posteriori[ mapSNP2ind[it->SNP] ] << endl;
+      }
+    }
+  }
+  
+  stringstream ssInfo_Compact;
+  ssInfo_Compact << setw(7) << "Nr" << "\t" << setw(15) << "SNP Id" << "\t" << setw(4) << "Chr" << "\t" << setw(12) << "Pos" << "\t" << setw(12) << "posteriori" << "\t" 
+         << setw(12) << "posteriori (region)" << endl << endl;
+
+  for (set<TRegionSet_info>::iterator itS = setNewRegion.begin(); itS != setNewRegion.end(); ++itS)
+  {
+    TRegionSet_info s = *itS;
+    set<TSNP_Info> *aSNP = s.s;
+    for (set<TSNP_Info>::iterator it = aSNP->begin(); it != aSNP->end(); ++it)
+    {
+      ssInfo_Compact << setw(7) << it->SNP << "\t" << setw(15) << data.getSNP( it->SNP ).getSnpId() << "\t" << setw(4) << it->Chr << "\t" << setw(12) << it->pos << "\t" 
+                     << setw(12) << mapSNPid_Pmi_Y[ it->SNP ] << "\t" << setw(12) << SNPs_posteriori_orig[ mapSNP2ind[it->SNP] ] << endl;  
+    }        
+    ssInfo_Compact << endl;
+  }
+
+  Model m(data);
+  if (v.size() > 0)
+    m.addManySNP(v);
+  if (m.computeRegression())
+    m.computeMSC();
+  else
+    m.computeMSCfalseRegression();
+  if (v_all.size() > 0)
+    model.addManySNP(v_all);
+  if (model.computeRegression())
+    model.computeMSC();
+  else
+  {
+    model.computeMSCfalseRegression();
+  }  
+  if (TEST) outFile << model << endl;
+  if (TEST) outFile.close();
+  ofstream file;
+  file.open((parameter.out_file_name + "_Report.txt").c_str(), ios::app);
+  file << method_Name << " (compact report)"<< endl << endl;
+  file << ssInfo_Compact.str()
+       << m << endl;
+  file << "________________________________________________________________________________" << endl << endl;  
+  
+  file << method_Name << " (full report)"<< endl << endl;
+  file << ssInfo.str()
+       << m << endl;
+  file << "________________________________________________________________________________" << endl << endl;  
+
+  
+  file.close();            
+  model = m;
+}
+
+
+void GA::calculatePOWER_FDR_clustRegion(vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, set<TRegionSet_info> &setNewRegion, map<snp_index_t, int>& recognizedSNPs)
+{
+  assert(causalSNPs.size() > 0);
+  bool isTP;
+  set<int> TP_Set;
+  int FP = 0;
+  set<int> causal_Set(causalSNPs.begin(), causalSNPs.end());
+  for (set<TRegionSet_info>::iterator itS = setNewRegion.begin(); itS != setNewRegion.end(); ++itS)
+  {
+    TRegionSet_info s = *itS;
+    set<TSNP_Info> *aInfo = s.s;
+    isTP = false;
+    for (set<TSNP_Info>::iterator it = aInfo->begin(); it != aInfo->end(); ++it)
+    {
+      if (causal_Set.find(it->SNP) != causal_Set.end())
+      {
+        recognizedSNPs[it->SNP]++;
+        TP_Set.insert(it->SNP);
+        isTP = true;
+        break;
+      }
+    }
+    if (isTP == false)
+      ++FP;
+  }
+  int sumTP = TP_Set.size();
+  int sumFP = FP;
+  
+  powerFDR.POWER = (sumTP + 0.0) / causalSNPs.size();
+  if (sumFP + sumTP > 0)
+  {
+    powerFDR.FDR = (sumFP + 0.0) / (sumFP + sumTP);
+  }
+  else
+  {
+    powerFDR.FDR = 0;
+  }  
+  powerFDR.FDcount = sumFP;
+}
+
+
+void GA::test_region()
+{
+/* 
+  157462       rs7666489    4      4497328  1.53703e-07     0.835508
+ 194054       rs6553419    4    170282434  1.26595e-07     0.835497
+ 203492      rs10866471    5     10272168  1.66906e-05     0.835584
+ 203495       rs4701866    5     10276371   1.8096e-07      0.83554
+ 203496       rs4702680    5     10276423  1.86269e-06     0.835584
+ 203497      rs12653646    5     10277631  3.87043e-06     0.835584
+ 203500       rs1355096    5     10279025  1.79843e-07     0.835524
+ 203504        rs906686    5     10281825  2.11606e-07     0.835543
+ 203506       rs7720661    5     10283270  2.35151e-07     0.835543
+ 203517       rs2445872    5     10316692  5.82796e-07     0.835589
+ 203520      rs10074613    5     10322935  2.21168e-07     0.835559
+ 203521      rs10053516    5     10323505  2.65332e-07     0.835561
+ 450882       rs2862465   11     42336068  1.59971e-06     0.835561
+ 511769       rs2776982   13     28979384   5.2529e-07     0.835523
+ 511771       rs2482093   13     28998007   6.2172e-07       0.8355
+ 652626       rs6044502   20     16832497  4.33657e-07     0.835495
+ 652628       rs2208146   20     16845102  1.14033e-06      1.51687
+ 652630       rs2208150   20     16851467  4.04198e-07     0.835547
+ 652655       rs6075165   20     16986263   4.9917e-07     0.835556
+ 652656       rs2011424   20     16987629  4.10683e-07      0.83556
+ 652657       rs6080544   20     16987959  4.59708e-07     0.835546
+ 652666      rs11700038   20     17000919  5.30952e-07     0.835472
+ 697044       rs6635091   23    134665706  2.40151e-07     0.835524
+ 697063       rs7882434   23    134842709  2.53974e-05     0.835494
+ 697067       rs4829804   23    134858912     0.835469     0.835577
+ 697074        rs903143   23    134976149  1.46358e-06     0.835556
+ 697075       rs5929713   23    134976949  3.58562e-06     0.835554
+ 697076       rs5975658   23    134977630  9.23227e-07      0.83552
+ 697077       rs6635218   23    134979824  2.59903e-06     0.835547
+ 697078       rs6633796   23    134981217  2.86623e-06     0.835521
+ 697079       rs5929715   23    134985417  1.83803e-05     0.835562
+ 697080       rs6528335   23    134988715  2.64183e-06     0.835524
+ 697082       rs5975665   23    134998159  3.25724e-06     0.835548
+ 697083       rs5930859   23    135000657  1.54988e-05     0.835559
+*/ 
+
+  int tab[] = {
+               157462, 194054, 203492, 203495, 203496, 203497, 203500, 203504, 203506, 203517, 
+               203520, 203521, 450882, 511769, 511771, 652626, 652628, 652630, 652655, 652656, 
+               652657, 652666, 697044, 697063, 697067, 697074, 697075, 697076, 697077, 697078, 
+               697079, 697080, 697082, 697083
+              };
+  const int tab_size = sizeof(tab)/sizeof(tab[0]);
+  vector<snp_index_t> SNPs(tab, tab + tab_size);                    // SNPy, które biorą udział w operacji, odwzorowanie index tablicy -> SNP
+  map<snp_index_t, unsigned int> mapSNP2ind;   // odwzorowanie SNP -> indeks w tablicy tabCorr oraz tablicy tabCorr[]
+  vector<vector<double> > tabCorr(SNPs.size());
+  vector< set<snp_index_t> > tabRegionSNPs;    // tablica zawierająca SNPy, które należą do rejonu
+  snp_index_t aSNP;
+  double absCorr;
+
+  ofstream  outFile;
+  outFile.open((parameter.out_file_name + "_region_TEST_mapSNP2ind.txt").c_str(),  fstream::out | fstream::trunc );
+  outFile << "mapSNP2ind" << "\t" << "aSNP" << endl;
+  for (  unsigned int i = 0; i < SNPs.size(); ++i)
+  {
+    aSNP = SNPs[i];
+    mapSNP2ind.insert(pair<snp_index_t, unsigned int> (aSNP, i));
+    outFile << mapSNP2ind[aSNP] << "\t" << aSNP << "\t" << endl;
+    if (i != 0)
+      tabCorr[i].resize(i);
+    for (unsigned int k = 0; k < i; k++)
+    {
+      absCorr = fabs( data.computeCorrelation( SNPs[i], SNPs[k] ) ); // compute correlation between model SNP and SNP j     
+      tabCorr[ mapSNP2ind[aSNP] ][k] = absCorr;
+    }
+  }
+  outFile.close();
+  outFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
+  try
+  {
+    outFile.open((parameter.out_file_name + "_regionStrategy_TEST.txt").c_str(),  fstream::out | fstream::trunc );
+    
+    for (unsigned i = 0; i < tabCorr.size(); ++i)
+    {
+      aSNP = SNPs[i];
+      outFile << i << "\t" << aSNP; // << "\t" << SNPs_posteriori[i];
+      for (unsigned int k = 0; k < i; ++k)
+      {
+        outFile << "\t" << tabCorr[i][k];
+      }
+      outFile << endl;
+    }
+    // the last line
+    outFile << "no\tSNP_ind \tpost. \t";
+    
+    for (unsigned int k = 0; k < tabCorr.size(); ++k)
+    {
+      outFile << "\t" << k;
+    }
+    outFile << endl;    
+    
+    outFile.flush();
+    outFile.close();
+  } 
+  catch (ofstream::failure e)
+  {
+    cerr << "Could not write a _regionStrategy file" <<endl;
+    exit(-1);
+  }
+  outFile.open((parameter.out_file_name + "_regionStrategy_TEST.txt").c_str(),  fstream::out | fstream::app );
+  outFile << endl;
+  outFile << "SNP_ind\tposter.\tposter(region)\tregion" << endl;
+  outFile.close();
+  
+  outFile.open((parameter.out_file_name + "_correlation_TEST.txt").c_str(),  fstream::out | fstream::trunc );
+  outFile << "no\tSNP_Id\tSNP_ind \t SNP_ind\t correlation" << endl;
+  for (  unsigned int i = 0; i < SNPs.size(); ++i)
+  {
+    absCorr = fabs( data.computeCorrelation( SNPs[i], 697067 ) ); // compute correlation between model SNP and SNP j     
+    outFile << i << "\t" << data.getSNP( SNPs[i] ).getSnpId() << "\t" << SNPs[i] << "\t" << 697067 << "\t" << absCorr << endl;
+    cout << i << "\t" << data.getSNP( SNPs[i] ).getSnpId() << "\t" << SNPs[i] << "\t" << 697067 << "\t" << absCorr << endl;
+    
+  }
+  outFile.close();
+}
+
+
+  
