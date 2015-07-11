@@ -275,27 +275,10 @@ void runPiMassConvert()
   //string gensNamesTab[gensNo] = {"0", "1"};
   //int gensIDNo[gensNo] = {1, 2};
   
-/*  
-  MData data;
-  if ( ! parameter.imp_is_imputated ) 
-  {
-    data.imputateMissingValues();
-    data.writeBEDfile();
-  }
-  data.calculateIndividualTests();
-  */
-//  cout << "Only calculateIndividualTests() in void runPiMassConvert()" << endl;
-//  exit(0);
-  
   const string in_file_name = parameter.in_files_plink + "_Plink.txt";
   cout << "in_file_name: " << in_file_name << endl;
   
   MData data;
-  if ( ! parameter.imp_is_imputated ) 
-  {
-//    data.imputateMissingValues();
-//    data.writeBEDfile();
-  }
   data.calculateIndividualTests();    
   
   
@@ -1339,11 +1322,6 @@ void generateY()
 {
   MData data ;
   
-  if ( ! parameter.imp_is_imputated )
-  {     
-// 07.07    data.imputateMissingValues(); //data.writeBEDfile(); das ist ein schlechte file für plink
-// 07.07   data.writeBEDfilePlink();
-  }  
   Model firstmodel(data);//an  more or less empty model
   data.calculateIndividualTests();  
 //  exit(0);

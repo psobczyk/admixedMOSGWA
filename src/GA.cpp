@@ -299,13 +299,6 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   }
   
   correlations.resize(data.getSnpNo());
-/* 07.07  if ( !parameter.imp_is_imputated)
-  {
-    cout << "imp_in_imputated" << endl;
-    data.imputateMissingValues();  
-    data.writeBEDfile();
-  }
-*/
   exclusivedSNP.reset();
   goodSNPs.reset();
   goodSNPsNo = 0;
