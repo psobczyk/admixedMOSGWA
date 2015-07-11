@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "Parameter.hpp"
 #include "Helpfull.hpp"
@@ -28,6 +29,7 @@
 #include "linalg/AutoVector.hpp"
 #include "linalg/AutoMatrix.hpp"
 #include "io/Input.hpp"
+#include "io/CachedInput.hpp"
 #include "deprecate.h"
 
 #include "Model.hpp" // ag
@@ -43,6 +45,9 @@ class MData {
 
 	/** Where to fetch input data from. E.g. Genotype data is read only on demand. */
 	io::Input *input;
+
+	/** Input cache; only used for genotype vectors. */
+	std::auto_ptr<io::CachedInput> inputCache;
 
 	/** Whether the input was given as <code>NULL</code> and thus has been allocated. */
 	const bool allocateInput;

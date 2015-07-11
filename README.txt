@@ -83,6 +83,9 @@ expected_causal_snps_MBIC	lets the first step with the relaxed selection criteri
 
 Further useful options:
 
+[input]
+cache_limit		integer		how many genotype vectors may be cached in memory, default 1000
+
 [output]
 correlation_threshold	double		restricts the listing of closely correlated SNPs, default 0.999
 

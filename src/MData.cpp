@@ -37,7 +37,7 @@ using namespace io;
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 void MData::getXcolumn ( const size_t snp, Vector& vector ) const {
-	input->retrieveGenotypeVector( snp, vector );
+	inputCache->retrieveGenotypeVector( snp, vector );
 }
 
 const string& MData::getCovMatElementName( const size_t cov ) const {
@@ -68,6 +68,7 @@ MData::MData ( io::Input * const externalInput ) : input( externalInput ), alloc
 			input = new Hdf5Input( parameter.in_file_hdf5.c_str(), parameter.cov_extra_file );
 		}
 	}
+	inputCache.reset( new CachedInput( *input, parameter.cache_limit ) );
 
 	const size_t
 		snps = input->countSnps(),
