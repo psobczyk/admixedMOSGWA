@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -53,6 +53,12 @@ public:
 	* for errors!!
 	*/
         std::string models_file;	
+
+	/** Cache size limit in number of vectors.
+	* It is interpreted as unsigned. Thus, as a side effect, negative means almost limitless.
+	*/
+	int cache_limit;
+
 //+++++++++++++
 // Parameters describing the Data
 
@@ -84,18 +90,6 @@ public:
 
 	/** Threshold used in the display of "strongly correlated" SNPs. */
 	double correlation_threshold;
-
-//++++++++++++
-//Imputation:
-
-	/** the Neighbourhood of SNPs considered for Imputation */
-	int imp_Neighbours_No;
-
-	/** the closed matching SNPs considered for Imputation */
-	int imp_Best_SNPs_No;
-
-	/** if the Genom-Data is already imputaded */
-	bool imp_is_imputated;
 
 //++++++++++++
 //ModelSelection:

@@ -36,6 +36,8 @@ Parameter::Parameter () {
 	declare( "input", "control_value", control_value); //the control are normally 0
 	declare( "input", "case_value", case_value); //the case are normally 1
 	declare( "input", "models_file", models_file);
+	declare( "input", "cache_limit", cache_limit = 1000 );
+
 	// input data settings
 	declare( "data", "trait_index", in_values_int );
 	{
@@ -54,11 +56,6 @@ Parameter::Parameter () {
 	// log settings
 	declare( "log", "silent", silent );
 	declare( "log", "detailed", detailed_selction );
-
-	// imputation settings
-	declare( "imputation", "data_is_imputated", imp_is_imputated );
-	declare( "imputation", "consider_n_neighbours", imp_Neighbours_No );
-	declare( "imputation", "consider_n_close_snps", imp_Best_SNPs_No );
 
 	// single marker test settings
 	{
