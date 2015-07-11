@@ -1,3 +1,7 @@
+Version 1.1.4
+-------------
+Incorporated updates to search strategy with genetic algorithms.
+
 Version 1.1.3
 -------------
 New parameter correlation_threshold in section [output].

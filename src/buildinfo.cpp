@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2013, Bernhard Bodenstorfer.					*
+ *	Copyright ©2013–2015, Bernhard Bodenstorfer.					*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -15,5 +15,5 @@
 
 #include "buildinfo.hpp"
 
-const char * buildinfo::timestamp = "2015-06-17 21:56:33 CEST";
-const char * buildinfo::version = "1.1.3";
+const char * buildinfo::timestamp = "2015-07-11 09:08:17 CEST";
+const char * buildinfo::version = "1.1.4";

@@ -132,6 +132,7 @@ Parameter::Parameter () {
   declare( "genetic_algorithm", "correlationThreshold", correlationThreshold);
   declare( "genetic_algorithm", "correlationRange", correlationRange);
   declare( "genetic_algorithm", "causalModelFilename", causalModelFilename);
+  declare( "genetic_algorithm", "regionMinCorrelation", regionMinCorrelation);  
   
 //Erichs testcase gearatator  
 declare( "TESTING", "replications", replications ); //how many Y vectors should be produced  
@@ -218,5 +219,26 @@ singlefile=out_file_name; //this is for simulators which need in every run the g
 	if (case_value==control_value)
 	{cerr<<"ERROR case und control have the same value";
 	 exit(2);}	
-	      
+
+  // Default values for GA
+  if (modelsNo == 0)
+    modelsNo = 40;
+  if (maxNoProgressIter == 0)
+    maxNoProgressIter = 1000;
+  if (B == 0)
+    B = 3;
+  if (pCross == 0)
+    pCross = 0.90;
+  if (pMutation == 0)
+    pMutation = 0.05;
+  if (tournamentSize == 0)
+    tournamentSize = 2;
+  if (correlationThreshold == 0)
+    correlationThreshold = 0.5;
+  if (correlationRange == 0)
+    correlationRange = 50;
+  if (causalModelFilename == "")
+    causalModelFilename = "";
+  if (regionMinCorrelation == 0.0)
+    regionMinCorrelation = 0.01;
 }

@@ -169,7 +169,7 @@ public:
   double correlationThreshold;
   int correlationRange;
   std::string causalModelFilename; // a file name where a causal model is written. Only in case of simulations
-  
+  double regionMinCorrelation;  
 
 // TEST 
 	int  replications; 
