@@ -25,4 +25,8 @@ add_library( io OBJECT
 	Hdf5Input.cpp
 	Hdf5Output.hpp
 	Hdf5Output.cpp
+	CachedInput.hpp
+	CachedInput.cpp
+	VectorCache.hpp
+	VectorCache.cpp
 )
