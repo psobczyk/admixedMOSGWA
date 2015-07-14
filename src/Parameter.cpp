@@ -36,7 +36,7 @@ Parameter::Parameter () {
 	declare( "input", "control_value", control_value); //the control are normally 0
 	declare( "input", "case_value", case_value); //the case are normally 1
 	declare( "input", "models_file", models_file);
-	declare( "input", "cache_limit", cache_limit = 1000 );
+	declare( "input", "cache_limit", cache_limit = 1024 );
 
 	// input data settings
 	declare( "data", "trait_index", in_values_int );
