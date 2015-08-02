@@ -1,3 +1,7 @@
+Version 1.1.6
+-------------
+Internal code improvements which should simplify and slightly speed up the program.
+
 Version 1.1.5
 -------------
 Added genotype caching to complement 1.1.3 memory use with higher speed. (Mind the new option cache_limit.)
