@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Erich Dolejsi, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -121,7 +121,8 @@ double GenotypeFreq::calculateChiSquare () const {
 	cout<<"calculateChiSquare"<<chi2<<endl;
 */	
 	// return p-value
-	return gsl_cdf_chisq_Q( chi2, 2 ); // Q(x) = \int_{x}^{+\infty} p(x') dx'
+	// return gsl_cdf_chisq_Q( chi2, 2 ); // Q(x) = \int_{x}^{+\infty} p(x') dx'
+	return exp( chi2 * -0.5 );	// BB: in case of 2 degrees of freedom, chisquare greatly simplifies
 }
 
 /** Cochran-Armitage trend Test (CATT),
@@ -165,21 +166,22 @@ double GenotypeFreq::calculateCATT () const {
 		+ x[2] * theta[2];
 	const double SSumDen2 = SSumDen * SSumDen;
 
-	// TODO<BB> check whether double() function is equivalent typecast
 	// TODO<BB> simplify sqrt expression.
-	const double Zx
-		= ( sqrt( double(n_) ) * SumNom )
-		/
-		sqrt(
-			( (double) n_ / r_ + (double) n_ / s_ )
-			*
-			( SumDenS - SSumDen2 )
-		);
+	// As to "C-like" casts: http://cs.txstate.edu/~br02/cs1428/SupportFiles/Programming/TypeCasting.htm
+	const double Zx = SumNom * sqrt(
+		n_ / (
+			(
+				static_cast<double>( n_ ) / r_
+				+
+				static_cast<double>( n_ ) / s_
+			) * ( SumDenS - SSumDen2 )
+		)
+	);
 	if ( Zx != Zx ) {	// checks if NaN is returned in case of 0/0; TODO<BB> check this idiom
 		                // look at: http://stackoverflow.com/questions/570669/checking-if-a-double-or-float-is-nan-in-c
 		return 1.0;
 	}
 
 	// return p-value
-	return gsl_cdf_ugaussian_P(-fabs(Zx)) + gsl_cdf_ugaussian_Q(fabs(Zx));
+	return 2 * gsl_cdf_ugaussian_P(-fabs(Zx));
 }
