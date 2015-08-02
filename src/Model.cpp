@@ -2245,19 +2245,12 @@ bool Model::computeLogRegression () {
 	// and all parameters for the C function have to be set  
 //~ cout << "in log reg"<< endl;
 	int 	i, j;
-	int intboolfalse = 0;		// plain C has no type "boolen", 0 is "false", every other int is "true"
-	int intbooltrue	= 1;
-	
 	int 	n = data_->getIdvNo();	// # of rows
 	int 	k = getNoOfVariables();	// # of columns
 	//double 	x[n*k]; 		// an array representing XMat_
 	int		y[n];		// an array representing YVec_ // implicit cast! YVec_ is double, but should only contain 0, 1
 	double 	beta_array[k];		// the coefficicents
-	int 	col_fit[k];				
 	double 	pi[n];
-	double 	weight[n];
-	double 	offset[n];
-	double 	var[k*k];
 	double 	H[n];
 	double 	loglik=0;		        // the log-likelihood
 	int 	iter, evals;
@@ -2270,29 +2263,24 @@ bool Model::computeLogRegression () {
 	//		x[i*k + j] = gsl_matrix_get(XMat_, i, j);// copy XMat_ to array
 	//	}
 		y[i] = int(gsl_vector_get(YVec_, i)); 		// copy YVec_ to array	 
-		offset[i] = 0;			                // set offset to 0
-		weight[i]=1;		    	                // set weights to 1
-		
 	}
 	
 	for (j=0; j < k; j++)
 	{
 		beta_array[j] = gsl_vector_get(betas_,j); 	//  initialize according to old model //intialize beta as 0
 	//	cout<<beta_array[j]<<",";  //DEBUG
-		col_fit[j] = 1; 	// use every column
 	}
                //cout<<endl; DEBUG
 	// logistic firth regression 
 	if ( 
 		logistffit(
 					// Input
-					&k, // # of rows of X (# of variables) BB: I'd rather call that "columns"
-					&n, // # of columns of X (# of samples) BB: I'd rather call that "rows"
+					k, // # of rows of X (# of variables) BB: I'd rather call that "columns"
+					n, // # of columns of X (# of samples) BB: I'd rather call that "rows"
 					XMat_,//x, // 
 					y,  //
 					// Output
 					beta_array, 
-					var, // 
 					pi, //
 					H, // 
 					&loglik, 
@@ -2302,19 +2290,16 @@ bool Model::computeLogRegression () {
 					&ret_max_U_star, //
 					&ret_max_delta,			
 					//// optional Input
-					weight, // the weights
-					offset, 	// offset
-					&intbooltrue,	//  use firth-regression
-					col_fit, // a "boolean" vector indication which colums to use
+					true,	//  use firth-regression
 					beta_array,	// initial values for beta
-					&intboolfalse,	// only evaluate likelihood
+					false,	// only evaluate likelihood
 					//// Control Parameters
-					&parameter.logrC_maxit,	
-					&parameter.logrC_maxhs,	
-					&parameter.logrC_maxstep,
-					&parameter.logrC_lconv,
-					&parameter.logrC_gconv,
-					&parameter.logrC_xconv	
+					parameter.logrC_maxit,	
+					parameter.logrC_maxhs,	
+					parameter.logrC_maxstep,
+					parameter.logrC_lconv,
+					parameter.logrC_gconv,
+					parameter.logrC_xconv	
 				)
 		)
 	{

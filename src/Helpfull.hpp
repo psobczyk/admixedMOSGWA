@@ -66,13 +66,12 @@ double log_factorial( int i );
  All Parameters are needed to be set!!! */
 bool logistffit(
 	// Input
-	const int		*in_k,		// # of rows of x (# of varibles) BB: I'd rather call that "columns"
-	const int		*in_n,		// # of columns of x (# of samples) BB: I'd rather call that "rows"
+	const int		k,		// # of rows of x (# of varibles) BB: I'd rather call that "columns"
+	const int		n,		// # of columns of x (# of samples) BB: I'd rather call that "rows"
 	const gsl_matrix *	x,		// design matrix ( n * k )
 	const int*		y,		// target vector ( n )
 	// Output
 	double*			beta,		// regression coefficients (vector k)
-	double*			var,		// var matrix ( k * k )
 	double*			pi,		// probabilities for target ( n )
 	double*			H,		// diag of H matrix vector (n)
 	double*			out_loglik,	// log-likelihood of the model
@@ -82,19 +81,16 @@ bool logistffit(
 	double*			ret_max_U_star,
 	double*			ret_max_delta,
 	// Optional Input
-	const double*		weight,		// the weights
-	const double*		offset,		// offset
-	const int*		firth,		// use firth-regression
-	const int*		col_fit,	// a "boolean" vector indication which colums to use
+	const bool		firth,		// use firth-regression
 	const double*		init,		// initial values for beta
-	const int*		eval_llh,	// only evaluate likelihood
+	const bool		eval_llh,	// only evaluate likelihood
 	// Control Parameters
-	const int*		maxit,
-	const int*		maxhs,
-	const int*		maxstep,
-	const double*	lconv,
-	const double*	gconv,
-	const double*	xconv
+	const int		maxit,
+	const int 		maxhs,
+	const int 		maxstep,
+	const double	lconv,
+	const double	gconv,
+	const double	xconv
 );
 
 #endif
