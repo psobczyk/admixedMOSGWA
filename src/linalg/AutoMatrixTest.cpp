@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2012–2015, Bernhard Bodenstorfer.				*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -17,7 +17,7 @@
 #include "AutoVector.hpp"
 #include "AutoPermutation.hpp"
 #include "../TestSuite.hpp"
-#include <math.h>
+#include <cmath>
 
 using namespace std;
 using namespace unitpp;
@@ -46,6 +46,7 @@ namespace test {
 		void testGemmTransposed ();
 		void testFactorizeQR ();
 		void testFactorizeQRP ();
+		void testFactorizeLUP ();
 
 		public:
 
@@ -68,6 +69,7 @@ namespace test {
 			addTestMethod( "AutoMatrixTest::testGemmTransposed", this, &AutoMatrixTest::testGemmTransposed );
 			addTestMethod( "AutoMatrixTest::testFactorizeQR", this, &AutoMatrixTest::testFactorizeQR );
 			addTestMethod( "AutoMatrixTest::testFactorizeQRP", this, &AutoMatrixTest::testFactorizeQRP );
+			addTestMethod( "AutoMatrixTest::testFactorizeLUP", this, &AutoMatrixTest::testFactorizeLUP );
 		}
 	} * matrixTest = new AutoMatrixTest();	// automatically freed by unit++
 
@@ -850,6 +852,48 @@ namespace test {
 		assert_true( "b2[0,1]", fabs( v.get( 0 ) - b.get( 0, 1 ) ) < 1e-8 );
 		assert_true( "b2[1,1]", fabs( v.get( 1 ) - b.get( 1, 1 ) ) < 1e-8 );
 		assert_true( "b2[2,1]", fabs( v.get( 2 ) - b.get( 2, 1 ) ) < 1e-8 );
+	}
+
+	/** Test {@link Matrix::factorizeLUP}, {@link Matrix::lnAbsDetLU} and {@link Matrix::invertLUP}. */
+	void AutoMatrixTest::testFactorizeLUP () {
+		// 1 2	=	1 0	*	1 2
+		// 1 4		1 1		0 2
+		// inverse is
+		// 4 -2 times 0.5
+		// -1 1
+		const double dataA[] = {
+			1, 2,
+			1, 4
+		};
+		AutoMatrix
+			a( 2, 2 ),
+			inv( 2, 2 );
+		AutoPermutation permutation( 2 );
+
+		a.fill( dataA );
+		a.factorizeLUP( permutation );
+
+		// permutation is identity
+		assert_eq( "permutation[0]", 0, permutation.get( 0 ) );
+		assert_eq( "permutation[1]", 1, permutation.get( 1 ) );
+
+		// left lower triangular part is L
+		assert_eq( "a[1,0]", 1.0, a.get( 1, 0 ) );
+
+		// right upper triangular part is U
+		assert_eq( "a[0,0]", 1.0, a.get( 0, 0 ) );
+		assert_eq( "a[0,1]", 2.0, a.get( 0, 1 ) );
+		assert_eq( "a[1,1]", 2.0, a.get( 1, 1 ) );
+
+		// det = ln abs det
+		assert_close( "ln abs det a", M_LN2, a.lnAbsDetLU() );
+
+		// inverse
+		inv.invertLUP( a, permutation );
+		assert_eq( "inv[0,0]", 2.0, inv.get( 0, 0 ) );
+		assert_eq( "inv[0,1]", -1.0, inv.get( 0, 1 ) );
+		assert_eq( "inv[1,0]", -0.5, inv.get( 1, 0 ) );
+		assert_eq( "inv[1,1]", 0.5, inv.get( 1, 1 ) );
 	}
 
 }

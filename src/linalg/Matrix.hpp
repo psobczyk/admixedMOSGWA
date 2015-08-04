@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2012–2015, Bernhard Bodenstorfer.				*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -171,9 +171,10 @@ namespace linalg {
 		void householderTransform ( const double tau, const Vector& householder );
 
 		/** Performs a gemm operation:
-		* add alpha A * B to beta times this;
-		* or with A and/or B transposed,
-		* depending on whether transposeA and transposeB are false or true.
+		* add $$ \alpha A \cdot B $$ to $$ \beta $$ times <code>this</code>;
+		* or similarly with $$A$$ and/or $$B$$ transposed,
+		* depending on whether <code>transposeA</code> and <code>transposeB</code>
+		* are <code>false</code> or <code>true</code>.
 		*/
 		void gemm (
 			const double alpha,
@@ -183,20 +184,21 @@ namespace linalg {
 		);
 
 		/** QR-decomposition.
-		* The matrix is decomposed into $$ Q\cdot R $$ with orthogonal Q and right upper triangular R.
+		* The matrix is decomposed into $$ Q\cdot R $$
+		* with orthogonal $$Q$$ and right upper triangular $$R$$.
 		* The factorisation result is stored in <code>this</code> matrix and <code>tau</code>:
-		* R is the right upper part of <code>this</code>; and <code>tau</code> and the left lower
-		* remainder of <code>this</code> encodes the Householder vectors representing Q.
+		* $$R$$ is the right upper part of <code>this</code>; and <code>tau</code> and the left lower
+		* remainder of <code>this</code> encodes the Householder vectors representing $$Q$$.
 		*/
 		void factorizeQR ( Vector& tau );
 
 		/** QR-decomposition with column pivoting.
 		* The matrix is decomposed into $$ Q\cdot R\cdot P^T $$
-		* with orthogonal Q, right upper triangular R and permutation P.
+		* with orthogonal $$Q$$, right upper triangular $$R$$ and permutation $$P$$.
 		* The factorisation result is stored in <code>this</code> matrix,
 		* <code>tau</code> and <code>permutation</code>:
-		* R is the right upper part of <code>this</code>; and <code>tau</code> and the left lower
-		* remainder of <code>this</code> encodes the Householder vectors representing Q.
+		* $$R$$ is the right upper part of <code>this</code>; and <code>tau</code> and the left lower
+		* remainder of <code>this</code> encodes the Householder vectors representing $$Q$$.
 		*/
 		void factorizeQRP ( Vector& tau, Permutation& permutation );
 
@@ -211,6 +213,25 @@ namespace linalg {
 		* @see #factorizeQR
 		*/
 		void extractQ ( const Vector& tau, const Matrix& qr );
+
+		/** LU-decomposition with row pivoting.
+		* The matrix $$A$$ is decomposed into $$ P\cdot A = L\cdot U $$
+		* with left lower triangular $$L$$, right upper triangular $$R$$ and permutation $$P$$.
+		* The factorisation result is stored in <code>this</code> matrix
+		* and <code>permutation</code>.
+		* The diagonal elements of $$L$$ are unity, and are not stored.
+		*/
+		void factorizeLUP ( Permutation& permutation );
+
+		/** Logarithm of the absolute value of the determinant,
+		* provided <code>this</code> is already LU decomposed.
+		*/
+		double lnAbsDetLU () const;
+
+		/** Invert <code>that</code> matrix,
+		* provided it is already LU decomposed with pivoting by the given <code>permutation</code>.
+		*/
+		void invertLUP ( const Matrix& that, const Permutation& permutation );
 
 		/** Create a string representation. Mainly for debugging. */
 		std::string toString () const;

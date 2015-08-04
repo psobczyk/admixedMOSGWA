@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2012–2015, Bernhard Bodenstorfer.				*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -183,6 +183,24 @@ namespace linalg {
 				const_cast<Matrix&>( qr ).columnVector( col ).subVector( col, rows - col )
 			);
 		}
+	}
+
+
+	void Matrix::factorizeLUP ( Permutation& permutation ) {
+		int sign;
+		gsl_linalg_LU_decomp( &matrix, &permutation, &sign );
+	}
+
+	double Matrix::lnAbsDetLU () const {
+		return gsl_linalg_LU_lndet( const_cast<gsl_matrix*>( &matrix ) );
+	}
+
+	void Matrix::invertLUP ( const Matrix& that, const Permutation& permutation ) {
+		gsl_linalg_LU_invert (
+			&that.matrix,
+			&permutation,
+			&matrix
+		);
 	}
 
 	string Matrix::toString () const {
