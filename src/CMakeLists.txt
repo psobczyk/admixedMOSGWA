@@ -16,10 +16,10 @@ add_subdirectory( io )
 add_subdirectory( io/hdf5 )
 add_subdirectory( linalg )
 add_subdirectory( search )
-add_subdirectory( imputation )
 add_subdirectory( parser )
 add_subdirectory( valuation )
 add_subdirectory( util )
+add_subdirectory( log )
 add_subdirectory( minimization )
 add_subdirectory( lookup )
 
@@ -52,10 +52,10 @@ set( core_libraries
 	$<TARGET_OBJECTS:io>
 	$<TARGET_OBJECTS:linalg>
 	$<TARGET_OBJECTS:search>
-	$<TARGET_OBJECTS:imputation>
 	$<TARGET_OBJECTS:parser>
 	$<TARGET_OBJECTS:valuation>
 	$<TARGET_OBJECTS:util>
+	$<TARGET_OBJECTS:log>
 	$<TARGET_OBJECTS:minimization>
 	$<TARGET_OBJECTS:lookup>
 )
