@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2015, Bernhard Bodenstorfer.					*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -13,34 +13,24 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#ifndef EXCEPTION_HPP
-#define EXCEPTION_HPP
+#include "FileLogger.hpp"
 
-#include <string>
-#include <exception>
+using namespace std;
 
-extern const size_t MAX_MSG_SIZE;
+namespace log {
 
-/** Error reporting mechanism.
-* @author Bernhard Bodenstorfer
-* @see std::exception
-*/
-class Exception : public std::exception {
+	FileLogger::FileLogger ( const char * const filename )
+	:
+		file( filename, ios_base::app )
+	{
+	}
 
-	std::string message;
+	void FileLogger::write ( const char * const text ) {
+		file << text << endl;
+	}
 
-	public:
+	FileLogger::~FileLogger () {
+		file.close();
+	}
 
-	/** Initialise with a given message.
-	* The arguments work like for <code>printf</code>.
-	*/
-	Exception ( const char * format, ... );
-
-	/** Retrieve the message. */
-	virtual const char * what () const throw ();
-
-	virtual ~Exception () throw ();
-
-};
-
-#endif	/* EXCEPTION_HPP */
+}

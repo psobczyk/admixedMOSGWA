@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2012–2013, Bernhard Bodenstorfer.				*
+ *	Copyright ©2015, Bernhard Bodenstorfer.					*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -13,34 +13,37 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#ifndef EXCEPTION_HPP
-#define EXCEPTION_HPP
+#ifndef LOG_FILELOGGER_HPP
+#define LOG_FILELOGGER_HPP
 
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 #include <string>
-#include <exception>
 
-extern const size_t MAX_MSG_SIZE;
+#include "Logger.hpp"
 
-/** Error reporting mechanism.
-* @author Bernhard Bodenstorfer
-* @see std::exception
-*/
-class Exception : public std::exception {
+namespace log {
 
-	std::string message;
+	/** Logs to a file. */
+	class FileLogger : public Logger {
 
-	public:
+		std::ofstream file;
 
-	/** Initialise with a given message.
-	* The arguments work like for <code>printf</code>.
-	*/
-	Exception ( const char * format, ... );
+		public:
 
-	/** Retrieve the message. */
-	virtual const char * what () const throw ();
+		/** Opens file for appending logs. */
+		FileLogger ( const char * const filename );
 
-	virtual ~Exception () throw ();
+		/** Destructor closes the file. */
+		virtual ~FileLogger ();
 
-};
+		protected:
 
-#endif	/* EXCEPTION_HPP */
+		/** Implement this abstract facility to actually log a line. */
+		virtual void write ( const char * const text );
+	};
+
+}
+
+#endif
