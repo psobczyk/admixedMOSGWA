@@ -23,6 +23,7 @@ namespace log {
 	:
 		file( filename, ios_base::app )
 	{
+		file.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
 	}
 
 	void FileLogger::write ( const char * const text ) {
