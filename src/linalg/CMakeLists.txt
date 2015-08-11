@@ -1,1 +1,16 @@
-add_library( linalg OBJECT AutoMatrix.cpp AutoMatrix.hpp AutoPermutation.cpp AutoPermutation.hpp AutoVector.cpp AutoVector.hpp Matrix.cpp Matrix.hpp package.cpp package.hpp Permutation.cpp Permutation.hpp Vector.cpp Vector.hpp )
+add_library( linalg OBJECT
+	AutoMatrix.hpp
+	AutoMatrix.cpp
+	AutoPermutation.hpp
+	AutoPermutation.cpp
+	AutoVector.hpp
+	AutoVector.cpp
+	Matrix.hpp
+	Matrix.cpp
+	package.hpp
+	package.cpp
+	Permutation.hpp
+	Permutation.cpp
+	Vector.hpp
+	Vector.cpp
+)

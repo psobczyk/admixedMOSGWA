@@ -1,1 +1,10 @@
-add_library( lookup OBJECT ModelIndex.cpp ModelIndex.hpp MutableModelIndex.cpp MutableModelIndex.hpp package.cpp package.hpp ResultStore.cpp ResultStore.hpp )
+add_library( lookup OBJECT
+	package.hpp
+	package.cpp
+	ModelIndex.hpp
+	ModelIndex.cpp
+	MutableModelIndex.hpp
+	MutableModelIndex.cpp
+	ResultStore.hpp
+	ResultStore.cpp
+)

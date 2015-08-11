@@ -1,2 +1,13 @@
-add_library( util OBJECT Array.hpp Cache.cpp Cache.hpp ReferenceCounted.cpp ReferenceCounted.hpp LogFactorial.cpp LogFactorial.hpp )
-add_dependencies( util Array.tpl )
+add_library( util OBJECT
+	Array.hpp
+	Cache.hpp
+	Cache.cpp
+	ReferenceCounted.hpp
+	ReferenceCounted.cpp
+	LogFactorial.hpp
+	LogFactorial.cpp
+)
+
+add_dependencies( util
+	Array.tpl
+)

@@ -1,1 +1,11 @@
-add_library( minimization OBJECT GslMinimizerHolder.cpp GslMinimizerHolder.hpp GslMinimizerRetriever.cpp GslMinimizerRetriever.hpp Minimizable.cpp Minimizable.hpp Minimizer.cpp Minimizer.hpp package.hpp )
+add_library( minimization OBJECT
+	package.hpp
+	GslMinimizerHolder.hpp
+	GslMinimizerHolder.cpp
+	GslMinimizerRetriever.hpp
+	GslMinimizerRetriever.cpp
+	Minimizable.hpp
+	Minimizable.cpp
+	Minimizer.hpp
+	Minimizer.cpp
+)

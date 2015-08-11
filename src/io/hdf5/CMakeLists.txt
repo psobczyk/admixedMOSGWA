@@ -1,2 +1,23 @@
-add_library( io_hdf5 OBJECT Dataset.cpp Dataset.hpp Dataspace.hpp Datatype.cpp Datatype.hpp DoubleList.cpp DoubleList.hpp DoubleTable.cpp DoubleTable.hpp File.cpp File.hpp Id.cpp Id.hpp Object.hpp StringList.cpp StringList.hpp )
-add_dependencies( io_hdf5 Dataspace.tpl Object.tpl )
+add_library( io_hdf5 OBJECT
+	Dataset.hpp
+	Dataset.cpp
+	Dataspace.hpp
+	Datatype.hpp
+	Datatype.cpp
+	DoubleList.hpp
+	DoubleList.cpp
+	DoubleTable.hpp
+	DoubleTable.cpp
+	File.hpp
+	File.cpp
+	Id.hpp
+	Id.cpp
+	Object.hpp
+	StringList.hpp
+	StringList.cpp
+)
+
+add_dependencies( io_hdf5
+	Dataspace.tpl
+	Object.tpl
+)
