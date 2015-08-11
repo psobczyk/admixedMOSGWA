@@ -94,28 +94,33 @@ namespace test {
 			*info = "INFO\tWhoafo";
 		TestLogger logger;
 
+		assert_eq( "Default limit INFO", Logger::INFO, logger.getLimit() );
+
 		logger.setLimit( Logger::ERROR );
+		assert_eq( "New limit ERROR", Logger::ERROR, logger.getLimit() );
 		logger.setExpect( NULL );
-		logger.log( Logger::INFO, "1" );
-		logger.log( Logger::WARNING, "2" );
+		logger.info( "1" );
+		logger.warning( "2" );
 		logger.setExpect( error );
-		logger.log( Logger::ERROR, "Whorror" );
+		logger.error( "Whorror" );
 
 		logger.setLimit( Logger::WARNING );
+		assert_eq( "New limit WARNING", Logger::WARNING, logger.getLimit() );
 		logger.setExpect( NULL );
-		logger.log( Logger::INFO, "3" );
+		logger.info( "3" );
 		logger.setExpect( warning );
-		logger.log( Logger::WARNING, "Whoaning" );
+		logger.warning( "Whoaning" );
 		logger.setExpect( error );
-		logger.log( Logger::ERROR, "Whorror" );
+		logger.error( "Whorror" );
 
 		logger.setLimit( Logger::INFO );
+		assert_eq( "New limit INFO", Logger::INFO, logger.getLimit() );
 		logger.setExpect( info );
-		logger.log( Logger::INFO, "Whoafo" );
+		logger.info( "Whoafo" );
 		logger.setExpect( warning );
-		logger.log( Logger::WARNING, "Whoaning" );
+		logger.warning( "Whoaning" );
 		logger.setExpect( error );
-		logger.log( Logger::ERROR, "Whorror" );
+		logger.error( "Whorror" );
 	}
 
 }

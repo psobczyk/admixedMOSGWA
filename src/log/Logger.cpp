@@ -16,18 +16,24 @@
 #include "Logger.hpp"
 #include "../Exception.hpp"	// MAX_MSG_SIZE
 #include <cstdio>
-#include <cstdarg>
 #include <ctime>
 
 using namespace std;
 
 namespace log {
 
+	Logger::Logger () : minimumLevel( INFO ) {
+	}
+
 	void Logger::setLimit ( const Severity minimumLevel ) {
 		this->minimumLevel = minimumLevel;
 	}
 
-	void Logger::log ( const Severity level, const char * const format, ... ) {
+	Logger::Severity Logger::getLimit () const {
+		return minimumLevel;
+	}
+
+	void Logger::log ( const Severity level, const char * const format, va_list arguments ) {
 		if ( level >= minimumLevel ) {
 			char
 				buffer[MAX_MSG_SIZE],
@@ -53,18 +59,36 @@ namespace log {
 			if ( MAX_MSG_SIZE <= timestampNeeds ) {
 				write( "logging buffer used up by timestamp" ); // should not occur in near future
 			} else {
-				va_list arguments;
-				va_start( arguments, format );
 				vsnprintf(
 					buffer + timestampNeeds,
 					MAX_MSG_SIZE - timestampNeeds,
 					format,
 					arguments
 				);
-				va_end( arguments );
 				write( buffer );
 			}
 		}
+	}
+
+	void Logger::info ( const char * const format, ... ) {
+		va_list arguments;
+		va_start( arguments, format );
+		log( INFO, format, arguments );
+		va_end( arguments );
+	}
+
+	void Logger::warning ( const char * const format, ... ) {
+		va_list arguments;
+		va_start( arguments, format );
+		log( WARNING, format, arguments );
+		va_end( arguments );
+	}
+
+	void Logger::error ( const char * const format, ... ) {
+		va_list arguments;
+		va_start( arguments, format );
+		log( ERROR, format, arguments );
+		va_end( arguments );
 	}
 
 	Logger::~Logger () {}

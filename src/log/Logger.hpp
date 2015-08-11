@@ -16,6 +16,8 @@
 #ifndef LOG_LOGGER_HPP
 #define LOG_LOGGER_HPP
 
+#include <cstdarg>
+
 /** A very simple abstract logging interface.
 * @author Bernhard Bodenstorfer
 */
@@ -29,16 +31,52 @@ namespace log {
 		/** Message severity encoding. */
 		typedef enum { INFO = 0, WARNING = 1, ERROR = 2 } Severity;
 
-		/** Limit from below the severity of messages to be actually logged. */
+		/** Construct with default severity limit <code>INFO</code> */
+		Logger ();
+
+		/** Limit from below the severity of messages to be actually logged.
+		* @see getLimit
+		*/
 		void setLimit ( const Severity minimumLevel );
 
-		/** Push a log message, use format similar as in <code>printf</code>. */
-		virtual void log ( const Severity level, const char * const format, ... );
+		/** Query the lower severity limit for messages to be actually logged.
+		* @see setLimit
+		*/
+		Severity getLimit () const;
+
+		/** Convenience method to {@link log} with severity {@link INFO}.
+		* Use in analogy to <code>printf</code>.
+		* @see log regarding security advice
+		*/
+		void info ( const char * const format, ... );
+
+		/** Convenience method to {@link log} with severity {@link WARNING}.
+		* Use in analogy to <code>printf</code>.
+		* @see log regarding security advice
+		*/
+		void warning ( const char * const format, ... );
+
+		/** Convenience method to {@link log} with severity {@link ERROR}.
+		* Use in analogy to <code>printf</code>.
+		* @see log regarding security advice
+		*/
+		void error ( const char * const format, ... );
 
 		/** Destructor frees any internal resources. */
 		virtual ~Logger ();
 
 		protected:
+
+		/** Push a log message, use format similar as in <code>vprintf</code>.
+		* Security advice: never log using code like
+		* <code>logger.log( Logger::INFO, variablemessage )</code>
+		* unless you have full control over <code>variablemessage</code>,
+		* because the second argument will be interpreted as format string.
+		* Rather use code like
+		* <code>logger.log( Logger::INFO, "%s", variablemessage )</code>
+		* for the purpose of logging potentially untrusted strings.
+		*/
+		virtual void log ( const Severity level, const char * const format, va_list arguments );
 
 		/** Implement this abstract facility to actually log a line. */
 		virtual void write ( const char * const text ) = 0;

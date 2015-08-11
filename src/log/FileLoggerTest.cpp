@@ -79,16 +79,16 @@ namespace test {
 		{
 			FileLogger logger( path );
 			logger.setLimit( Logger::WARNING );
-			logger.log( Logger::INFO, "This goes nowhere: %u", 3u );
-			logger.log( Logger::WARNING, "This goes to file: %u = %s", 12u, "12" );
-			logger.log( Logger::ERROR, "This goes to file, too: %d = %s", -1, "-1" );
+			logger.info( "This goes nowhere: %u", 3u );
+			logger.warning( "This goes to file: %u = %s", 12u, "12" );
+			logger.error( "This goes to file, too: %d = %s", -1, "-1" );
 		}
 		{
 			FileLogger logger( path );
 			logger.setLimit( Logger::ERROR );
-			logger.log( Logger::INFO, "This goes nowhere again: %u", 3u );
-			logger.log( Logger::WARNING, "This now goes nowhere: %u = %s", 14u, "14" );
-			logger.log( Logger::ERROR, "This, finally, goes to file: %d = %s", -10, "-10" );
+			logger.info( "This goes nowhere again: %u", 3u );
+			logger.warning( "This now goes nowhere: %u = %s", 14u, "14" );
+			logger.error( "This, finally, goes to file: %d = %s", -10, "-10" );
 		}
 
 		ifstream infile( path );
