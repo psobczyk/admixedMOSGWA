@@ -47,7 +47,7 @@ namespace test {
 		/** Remove test setup. */
 		void tearDown ( const string& testFilename );
 
-		/** Test interface methods for reading. */
+		/** Test interface methods for writing. */
 		void testWrite ();
 
 		public:
