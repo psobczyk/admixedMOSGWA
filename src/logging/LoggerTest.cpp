@@ -21,7 +21,7 @@
 
 using namespace std;
 using namespace unitpp;
-using namespace log;
+using namespace logging;
 
 namespace test {
 
@@ -70,7 +70,7 @@ namespace test {
 		}
 	}
 
-	/** Tests the class {@link log::Logger}. */
+	/** Tests the class {@link logging::Logger}. */
 	class LoggerTest : public TestSuite {
 
 		/** Test interface methods for reading. */

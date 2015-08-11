@@ -21,7 +21,7 @@
 /** A very simple abstract logging interface.
 * @author Bernhard Bodenstorfer
 */
-namespace log {
+namespace logging {
 
 	/** Abstract interface to logging. */
 	class Logger {

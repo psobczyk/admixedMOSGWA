@@ -20,12 +20,12 @@
 #include <cstdio>
 
 using namespace std;
-using namespace log;
+using namespace logging;
 using namespace unitpp;
 
 namespace test {
 
-	/** Tests the class {@link log::FileLogger}. */
+	/** Tests the class {@link logging::FileLogger}. */
 	class FileLoggerTest : public TestSuite {
 
 		/** Name template for temporary test directory. */

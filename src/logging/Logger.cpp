@@ -20,7 +20,7 @@
 
 using namespace std;
 
-namespace log {
+namespace logging {
 
 	Logger::Logger () : minimumLevel( INFO ) {
 	}

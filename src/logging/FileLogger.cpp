@@ -17,7 +17,7 @@
 
 using namespace std;
 
-namespace log {
+namespace logging {
 
 	FileLogger::FileLogger ( const char * const filename )
 	:

@@ -23,7 +23,7 @@
 
 #include "Logger.hpp"
 
-namespace log {
+namespace logging {
 
 	/** Logs to a file. */
 	class FileLogger : public Logger {
