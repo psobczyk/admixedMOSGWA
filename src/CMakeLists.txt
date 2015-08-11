@@ -55,7 +55,7 @@ set( core_libraries
 	$<TARGET_OBJECTS:parser>
 	$<TARGET_OBJECTS:valuation>
 	$<TARGET_OBJECTS:util>
-	$<TARGET_OBJECTS:log>
+	$<TARGET_OBJECTS:logging>
 	$<TARGET_OBJECTS:minimization>
 	$<TARGET_OBJECTS:lookup>
 )
