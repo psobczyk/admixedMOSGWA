@@ -19,7 +19,7 @@ add_subdirectory( search )
 add_subdirectory( parser )
 add_subdirectory( valuation )
 add_subdirectory( util )
-add_subdirectory( log )
+add_subdirectory( logging )
 add_subdirectory( minimization )
 add_subdirectory( lookup )
 
