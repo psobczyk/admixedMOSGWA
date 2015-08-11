@@ -19,6 +19,7 @@
 #include "VariableParslet.hpp"
 #include "BoolParslet.hpp"
 #include "IntParslet.hpp"
+#include "SizeTypeParslet.hpp"
 #include "DoubleParslet.hpp"
 #include "StringParslet.hpp"
 #include "VectorStringParslet.hpp"
@@ -188,6 +189,10 @@ namespace parser {
 
 	void ConfigParser::declare ( const string &sectionName, const string &variableName, int &variable ) {
 		declare( sectionName, variableName, new IntParslet( variable ) );
+	}
+
+	void ConfigParser::declare ( const string &sectionName, const string &variableName, size_t &variable ) {
+		declare( sectionName, variableName, new SizeTypeParslet( variable ) );
 	}
 
 	void ConfigParser::declare ( const string &sectionName, const string &variableName, double &variable ) {

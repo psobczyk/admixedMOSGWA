@@ -1,1 +1,30 @@
-add_library( parser OBJECT BoolParslet.cpp BoolParslet.hpp ChoiceParslet.cpp ChoiceParslet.hpp ConfigParser.cpp ConfigParser.hpp DoubleParslet.cpp DoubleParslet.hpp IntParslet.cpp IntParslet.hpp NameParslet.cpp NameParslet.hpp Parslet.cpp Parslet.hpp ParsletTemplate.cpp ParsletTemplate.hpp SectionParslet.cpp SectionParslet.hpp StringParslet.cpp StringParslet.hpp VariableParslet.cpp VariableParslet.hpp VectorParslet.cpp VectorParslet.hpp VectorStringParslet.cpp VectorStringParslet.hpp )
+add_library( parser OBJECT
+	BoolParslet.hpp
+	BoolParslet.cpp
+	ChoiceParslet.hpp
+	ChoiceParslet.cpp
+	ConfigParser.hpp
+	ConfigParser.cpp
+	DoubleParslet.hpp
+	DoubleParslet.cpp
+	IntParslet.hpp
+	IntParslet.cpp
+	SizeTypeParslet.hpp
+	SizeTypeParslet.cpp
+	NameParslet.hpp
+	NameParslet.cpp
+	Parslet.hpp
+	Parslet.cpp
+	ParsletTemplate.hpp
+	ParsletTemplate.cpp
+	SectionParslet.hpp
+	SectionParslet.cpp
+	StringParslet.hpp
+	StringParslet.cpp
+	VariableParslet.hpp
+	VariableParslet.cpp
+	VectorParslet.hpp
+	VectorParslet.cpp
+	VectorStringParslet.hpp
+	VectorStringParslet.cpp
+)

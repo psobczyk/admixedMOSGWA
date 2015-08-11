@@ -79,6 +79,13 @@ namespace parser {
 			int &variable
 		);
 
+		/** Declare a size_t configuration variable in the given section. */
+		void declare (
+			const std::string &sectionName,
+			const std::string &variableName,
+			size_t &variable
+		);
+
 		/** Declare a double precision numeric configuration variable in the given section. */
 		void declare (
 			const std::string &sectionName,

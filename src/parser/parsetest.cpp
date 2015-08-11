@@ -24,6 +24,7 @@
 #include "VariableParslet.hpp"
 #include "BoolParslet.hpp"
 #include "IntParslet.hpp"
+#include "SizeTypeParslet.hpp"
 #include "DoubleParslet.hpp"
 #include "StringParslet.hpp"
 #include "ChoiceParslet.hpp"
@@ -88,6 +89,19 @@ int main () {
 	cout << i << endl;
 	cout << ip.get() << "\t" << text << endl;
 
+	size_t u(0);
+	SizeTypeParslet up( u );
+	cout << up.type() << endl;
+	cout << u << endl;
+	cout << up.get() << endl;
+	up.set( 17u );
+	cout << u << endl;
+	cout << up.get() << endl;
+	text = "-1";
+	up.parse( text );
+	cout << u << endl;
+	cout << up.get() << "\t" << text << endl;
+
 	double d(0);
 	DoubleParslet dp( d );
 	cout << dp.type() << endl;
@@ -141,6 +155,7 @@ int main () {
 	cfp.declare( "section", "variable", v );
 	cfp.declare( "section", "boolean", b );
 	cfp.declare( "section", "integer", i );
+	cfp.declare( "section", "size_t", u );
 	cfp.declare( "section", "double", d );
 	cfp.declare( "section", "string", s );
 	cfp.parse( cin, "stdin" );
