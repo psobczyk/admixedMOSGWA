@@ -33,6 +33,7 @@ namespace test {
 		void testOperators ();
 		void testGetSet ();
 		void testFill ();
+		void testCopy ();
 		void testIsNull ();
 		void testResizePacked ();
 		void testResizeNonPacked ();
@@ -59,6 +60,7 @@ namespace test {
 			addTestMethod( "AutoVectorTest::testOperators", this, &AutoVectorTest::testOperators );
 			addTestMethod( "AutoVectorTest::testGetSet", this, &AutoVectorTest::testGetSet );
 			addTestMethod( "AutoVectorTest::testFill", this, &AutoVectorTest::testFill );
+			addTestMethod( "AutoVectorTest::testCopy", this, &AutoVectorTest::testCopy );
 			addTestMethod( "AutoVectorTest::testIsNull", this, &AutoVectorTest::testIsNull );
 			addTestMethod( "AutoVectorTest::testResizePacked", this, &AutoVectorTest::testResizePacked );
 			addTestMethod( "AutoVectorTest::testResizeNonPacked", this, &AutoVectorTest::testResizeNonPacked );
@@ -170,6 +172,76 @@ namespace test {
 		assert_eq( "v'[1]", -2, v.get( 1 ) );
 		assert_eq( "v'[2]", -3, v.get( 2 ) );
 		assert_eq( "v'[3]", -4, v.get( 3 ) );
+
+		// Test that fill respects spread
+		AutoMatrix m( 2, 2 );
+		Vector
+			c = m.columnVector( 0 ),
+			r = m.rowVector( 0 ),
+			d = m.diagonalVector();
+
+		m.fill( 0.0 );
+		c.fill( data );
+		assert_eq( "c trace [0,0]", -1., m.get( 0, 0 ) );
+		assert_eq( "c trace [0,1]", 0., m.get( 0, 1 ) );
+		assert_eq( "c trace [1,0]", -2., m.get( 1, 0 ) );
+		assert_eq( "c trace [1,1]", 0., m.get( 1, 1 ) );
+
+		m.fill( 0.0 );
+		r.fill( data );
+		assert_eq( "r trace [0,0]", -1., m.get( 0, 0 ) );
+		assert_eq( "r trace [0,1]", -2., m.get( 0, 1 ) );
+		assert_eq( "r trace [1,0]", 0., m.get( 1, 0 ) );
+		assert_eq( "r trace [1,1]", 0., m.get( 1, 1 ) );
+
+		m.fill( 0.0 );
+		d.fill( 5. );
+		assert_eq( "d trace [0,0]", 5., m.get( 0, 0 ) );
+		assert_eq( "d trace [0,1]", 0., m.get( 0, 1 ) );
+		assert_eq( "d trace [1,0]", 0., m.get( 1, 0 ) );
+		assert_eq( "d trace [1,1]", 5., m.get( 1, 1 ) );
+	}
+
+	/** Test {@link Vector::copy}. */
+	void AutoVectorTest::testCopy () {
+		const double data[] = { -1, -2, -3, -4 };
+		AutoVector v( 4 ), w( 4 );
+
+		v.fill( data );
+		w.copy( v );
+		assert_eq( "w[0]", -1, w.get( 0 ) );
+		assert_eq( "w[1]", -2, w.get( 1 ) );
+		assert_eq( "w[2]", -3, w.get( 2 ) );
+		assert_eq( "w[3]", -4, w.get( 3 ) );
+
+		// Test that copy respects spread
+		AutoMatrix m( 2, 2 );
+		Vector
+			v2 = v.subVector( 0, 2 ),
+			c = m.columnVector( 0 ),
+			r = m.rowVector( 0 ),
+			d = m.diagonalVector();
+
+		m.fill( 0.0 );
+		c.copy( v2 );
+		assert_eq( "c trace [0,0]", -1., m.get( 0, 0 ) );
+		assert_eq( "c trace [0,1]", 0., m.get( 0, 1 ) );
+		assert_eq( "c trace [1,0]", -2., m.get( 1, 0 ) );
+		assert_eq( "c trace [1,1]", 0., m.get( 1, 1 ) );
+
+		m.fill( 0.0 );
+		r.copy( v2 );
+		assert_eq( "r trace [0,0]", -1., m.get( 0, 0 ) );
+		assert_eq( "r trace [0,1]", -2., m.get( 0, 1 ) );
+		assert_eq( "r trace [1,0]", 0., m.get( 1, 0 ) );
+		assert_eq( "r trace [1,1]", 0., m.get( 1, 1 ) );
+
+		m.fill( 0.0 );
+		d.copy( v2 );
+		assert_eq( "d trace [0,0]", -1., m.get( 0, 0 ) );
+		assert_eq( "d trace [0,1]", 0., m.get( 0, 1 ) );
+		assert_eq( "d trace [1,0]", 0., m.get( 1, 0 ) );
+		assert_eq( "d trace [1,1]", -2., m.get( 1, 1 ) );
 	}
 
 	/** Test {@link Vector::isNull()}. */
