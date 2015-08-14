@@ -79,6 +79,10 @@ namespace linalg {
 		}
 	}
 
+	void Matrix::copy ( const Matrix& that ) {
+		gsl_matrix_memcpy( &matrix, &that.matrix );
+	}
+
 	size_t Matrix::countRows () const {
 		return matrix.size1;
 	}

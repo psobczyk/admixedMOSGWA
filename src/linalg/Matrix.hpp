@@ -90,6 +90,11 @@ namespace linalg {
 		*/
 		void fill ( const double *array );
 
+		/** Copy the values from another matrix.
+		* Both matrices must have the same numbers of dimensions.
+		*/
+		void copy ( const Matrix& that );
+
 		/** Get the number of logical rows. */
 		size_t countRows () const;
 

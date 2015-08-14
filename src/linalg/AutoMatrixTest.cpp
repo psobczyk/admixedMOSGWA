@@ -34,6 +34,7 @@ namespace test {
 		void testAssignmentExtraData ();
 		void testGetSet ();
 		void testFill ();
+		void testCopy ();
 		void testResizePacked ();
 		void testResizeNonPacked ();
 		void testUpSize ();
@@ -57,6 +58,7 @@ namespace test {
 			addTestMethod( "AutoMatrixTest::testAssignmentExtraData", this, &AutoMatrixTest::testAssignmentExtraData );
 			addTestMethod( "AutoMatrixTest::testGetSet", this, &AutoMatrixTest::testGetSet );
 			addTestMethod( "AutoMatrixTest::testFill", this, &AutoMatrixTest::testFill );
+			addTestMethod( "AutoMatrixTest::testCopy", this, &AutoMatrixTest::testCopy );
 			addTestMethod( "AutoMatrixTest::testResizePacked", this, &AutoMatrixTest::testResizePacked );
 			addTestMethod( "AutoMatrixTest::testResizeNonPacked", this, &AutoMatrixTest::testResizeNonPacked );
 			addTestMethod( "AutoMatrixTest::testUpSize", this, &AutoMatrixTest::testUpSize );
@@ -227,6 +229,55 @@ namespace test {
 		assert_eq( "m32[1,1]", -4.0, m32.get( 1, 1 ) );
 		assert_eq( "m32[2,0]", -5.0, m32.get( 2, 0 ) );
 		assert_eq( "m32[2,1]", -6.0, m32.get( 2, 1 ) );
+	}
+
+	/** Test {@link Matrix::copy}. */
+	void AutoMatrixTest::testCopy () {
+		const double data[] = {
+			-1., -2., -3.,
+			-4., -5., -6.,
+			-7., -8., -9.
+		};
+		AutoMatrix m( 3, 3 );
+		m.fill( data );
+		AutoMatrix
+			a( 2, 2 ),
+			b( 3, 2 ),
+			c( 2, 3 ),
+			d( 3, 3 );
+		a.copy( m.subMatrix( 0, 0, 2, 2 ) );
+		b.copy( m.subMatrix( 0, 0, 3, 2 ) );
+		c.copy( m.subMatrix( 0, 0, 2, 3 ) );
+		d.copy( m );
+
+		assert_eq( "a[0,0]", -1., a.get( 0, 0 ) );
+		assert_eq( "a[0,1]", -2., a.get( 0, 1 ) );
+		assert_eq( "a[1,0]", -4., a.get( 1, 0 ) );
+		assert_eq( "a[1,1]", -5., a.get( 1, 1 ) );
+
+		assert_eq( "b[0,0]", -1., b.get( 0, 0 ) );
+		assert_eq( "b[0,1]", -2., b.get( 0, 1 ) );
+		assert_eq( "b[1,0]", -4., b.get( 1, 0 ) );
+		assert_eq( "b[1,1]", -5., b.get( 1, 1 ) );
+		assert_eq( "b[2,0]", -7., b.get( 2, 0 ) );
+		assert_eq( "b[2,1]", -8., b.get( 2, 1 ) );
+
+		assert_eq( "c[0,0]", -1., c.get( 0, 0 ) );
+		assert_eq( "c[0,1]", -2., c.get( 0, 1 ) );
+		assert_eq( "c[0,2]", -3., c.get( 0, 2 ) );
+		assert_eq( "c[1,0]", -4., c.get( 1, 0 ) );
+		assert_eq( "c[1,1]", -5., c.get( 1, 1 ) );
+		assert_eq( "c[1,2]", -6., c.get( 1, 2 ) );
+
+		assert_eq( "d[0,0]", -1., d.get( 0, 0 ) );
+		assert_eq( "d[0,1]", -2., d.get( 0, 1 ) );
+		assert_eq( "d[0,2]", -3., d.get( 0, 2 ) );
+		assert_eq( "d[1,0]", -4., d.get( 1, 0 ) );
+		assert_eq( "d[1,1]", -5., d.get( 1, 1 ) );
+		assert_eq( "d[1,2]", -6., d.get( 1, 2 ) );
+		assert_eq( "d[2,0]", -7., d.get( 2, 0 ) );
+		assert_eq( "d[2,1]", -8., d.get( 2, 1 ) );
+		assert_eq( "d[2,2]", -9., d.get( 2, 2 ) );
 	}
 
 	/** Test resizing a matrix with rows == tda. */
@@ -829,7 +880,7 @@ namespace test {
 		a.factorizeQRP( tau, permutation );
 
 		// right upper triangular part is R
-		assert_eq( "a2[0,0]", 13.0, fabs( a.get( 0, 0 ) ) );
+		assert_close( "a2[0,0]", 13.0, fabs( a.get( 0, 0 ) ), 1e-14 );
 		// No easy expected values for a2[0,1] and a2[1,1]; simulating Gram-Schmidt orthogonalisation
 		assert_true( "a2[0,1]", fabs( v.innerProduct( w ) / sqrt( w.sumSquares() ) - fabs( a.get( 0, 1 ) ) ) < 1e-8 );
 		v.axpy( - v.innerProduct( w ) / w.sumSquares(), w );
