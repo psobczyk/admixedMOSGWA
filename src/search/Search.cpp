@@ -15,12 +15,16 @@
 
 #include "Search.hpp"
 
-using namespace io;
-using namespace lookup;
+using namespace logging;
 
 namespace search {
 
-	Search::Search ( Input& input, lookup::ResultStore& resultStore ) : input( input ), resultStore( resultStore ) {}
+	Search::Search (
+		Logger& logger,
+		Parameter& parameter
+	) :
+		logger( logger ), parameter( parameter )
+	{}
 
 	Search::~Search () {}
 

@@ -16,8 +16,8 @@
 #ifndef SEARCH_SEARCH_HPP
 #define SEARCH_SEARCH_HPP
 
-#include "../io/Input.hpp"
-#include "../lookup/ResultStore.hpp"
+#include "../logging/Logger.hpp"
+#include "../Parameter.hpp"
 
 /** Search algorithms. These try to find optimal {@link Model}s for given {@link io::Input} data.
 * @author Bernhard Bodenstorfer
@@ -29,14 +29,14 @@ namespace search {
 
 		protected:
 
-		/** The source of data with regard to which to search. */
-		io::Input& input;
+		/** Log target. */
+		logging::Logger& logger;
 
-		/** Already calculated model selection criteria. */
-		lookup::ResultStore& resultStore;
+		/** The source of configuration data. */
+		Parameter& parameter;
 
-		/** Construct with reference to data and result store. */
-		Search ( io::Input& input, lookup::ResultStore& resultStore );
+		/** Construct with reference to logging and parameters. */
+		Search ( logging::Logger& logger, Parameter& parameter );
 
 		public:
 
