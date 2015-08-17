@@ -15,7 +15,8 @@
 
 #include "QRuncher.hpp"
 #include "linalg/AutoPermutation.hpp"
-#include <assert.h>
+#include <cmath>
+#include <cassert>
 
 using namespace std;
 using namespace linalg;
@@ -46,7 +47,7 @@ QRuncher::QRuncher ( const Vector& yVec ) : yMat( yVec.countDimensions(), 1 ), h
 	yMat.columnVector( 0 ).copy( yVec );
 }
 
-bool QRuncher::pushColumn ( const Vector& xVec ) {
+double QRuncher::pushColumn ( const Vector& xVec ) {
 	// dimensions sanity checks
 	const size_t
 		rows = hrMat.countRows(),
@@ -98,7 +99,6 @@ bool QRuncher::pushColumn ( const Vector& xVec ) {
 		// If the new column was linearly dependent,
 		// rank has not changed by adding the new column.
 		ranks.push_back( rank );
-		return false;
 	} else {
 		ranks.push_back( rank + 1 );
 		// If the new column was linearly independent,
@@ -108,8 +108,10 @@ bool QRuncher::pushColumn ( const Vector& xVec ) {
 		// and apply apply that.
 		Vector subYnew = yNew.subVector( rank, rows - rank );
 		subYnew.householderTransform( tauVec.get( cols ), w );
-		return true;
 	}
+	// after householderisation, w[0] this is the norm of remainder orthogonal to previous columns
+	const double rLowerRight = w.get( 0 );
+	return fabs( rLowerRight );
 }
 
 bool QRuncher::popColumn () {
@@ -148,10 +150,11 @@ double QRuncher::calculateRSS () const {
 * the cumbersome copying of the coefficient vector should be elegantly avoided
 * using a move constructor for {@link linalg::AutoMatrix}.
 */
-AutoVector QRuncher::calculateCoefficients () const {
+void QRuncher::calculateCoefficients ( Vector& coefficients ) const {
 	const size_t
 		cols = hrMat.countColumns(),
 		rank = getRank();
+	assert( coefficients.countDimensions() == cols );
 	Matrix
 		r0 = const_cast<AutoMatrix&>( hrMat ).subMatrix( 0, 0, rank, cols ),
 		*rp = &r0;	// to efficiently deal with linear in/dependent cases
@@ -190,25 +193,22 @@ AutoVector QRuncher::calculateCoefficients () const {
 		}
 	}
 
-	AutoVector x( cols );
 	Vector
-		px = x.subVector( 0, rank ),
-		nx = x.subVector( rank, cols - rank );
-	px.solveR( *rp, qTy );
-	nx.fill( 0.0 );
+		pcoefficients = coefficients.subVector( 0, rank ),
+		ncoefficients = coefficients.subVector( rank, cols - rank );
+	pcoefficients.solveR( *rp, qTy );
+	ncoefficients.fill( 0.0 );
 
 	// in case of linearly dependent columns
-	// re-permute x
+	// re-permute coefficients
 	// and clean up extra resources
 	if ( pp != NULL ) {
 		if ( permuteMatrix ) {
-			x.permute( *pp, false );		// backpermute x
+			coefficients.permute( *pp, false );		// backpermute x
 			delete rp;	// using the virtual destructor -> AutoMatrix
 		}
 		delete pp;	// using the virtual destructor -> AutoPermutation
 	}
-
-	return x;
 }
 
 /** The algorithm exploits the fact that the R-Matrix with a column deleted still is almost triangular.

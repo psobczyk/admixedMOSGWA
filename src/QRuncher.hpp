@@ -86,10 +86,15 @@ class QRuncher {
 	* with which the <code>QRuncher</code> has been constructed.
 	* @param xVec must have the same number of dimensions as the <code>yVec</code>
 	* with which the <code>QRuncher</code> has been constructed.
-	* @returns whether the added column was linearly independent from the previous columns.
+	* @returns as a measure of linear independence,
+	* the right lower diagonal
+	* (or in case of previously detected linear dependence, appropriate superdiagonal)
+	* entry of the matrix R as added by the present column.
+	* Actually, the absolute value of that is taken
+	* to simulate the Cholesky algorithm condition on diagonal entries.
 	* @see {@link QRuncher::QRuncher( const Vector& )}
 	*/
-	bool pushColumn ( const linalg::Vector& xVec );
+	double pushColumn ( const linalg::Vector& xVec );
 
 	/** Diminish the regression matrix at its right end by one column.
 	* @returns whether there was still a column left to chop away.
@@ -103,9 +108,10 @@ class QRuncher {
 	* In case of linearly dependent column vectors,
 	* one particular solution is found,
 	* where the coefficients for linearly dependent columns are set 0.
-	* @returns a coefficient vector for the currently pushed column vectors
+	* @param coefficients upon exit
+	* solves the linear regression for the currently pushed column vectors.
 	*/
-	linalg::AutoVector calculateCoefficients () const;
+	void calculateCoefficients ( linalg::Vector& coefficients ) const;
 
 	/** Quickly calculate the residual sum of squares (RSS)
 	* if the given column in the push hierarchy (0 being the oldest push) had been skipped.
