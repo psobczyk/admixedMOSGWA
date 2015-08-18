@@ -91,7 +91,8 @@ namespace test {
 		const char
 			*error = "ERROR\tWhorror",
 			*warning = "WARNING\tWhoaning",
-			*info = "INFO\tWhoafo";
+			*info = "INFO\tWhoafo",
+			*debug = "DEBUG\tWobog";
 		TestLogger logger;
 
 		assert_eq( "Default limit INFO", Logger::INFO, logger.getLimit() );
@@ -99,6 +100,7 @@ namespace test {
 		logger.setLimit( Logger::ERROR );
 		assert_eq( "New limit ERROR", Logger::ERROR, logger.getLimit() );
 		logger.setExpect( NULL );
+		logger.debug( "0" );
 		logger.info( "1" );
 		logger.warning( "2" );
 		logger.setExpect( error );
@@ -107,7 +109,8 @@ namespace test {
 		logger.setLimit( Logger::WARNING );
 		assert_eq( "New limit WARNING", Logger::WARNING, logger.getLimit() );
 		logger.setExpect( NULL );
-		logger.info( "3" );
+		logger.debug( "3" );
+		logger.info( "4" );
 		logger.setExpect( warning );
 		logger.warning( "Whoaning" );
 		logger.setExpect( error );
@@ -115,6 +118,18 @@ namespace test {
 
 		logger.setLimit( Logger::INFO );
 		assert_eq( "New limit INFO", Logger::INFO, logger.getLimit() );
+		logger.setExpect( info );
+		logger.debug( "5" );
+		logger.info( "Whoafo" );
+		logger.setExpect( warning );
+		logger.warning( "Whoaning" );
+		logger.setExpect( error );
+		logger.error( "Whorror" );
+
+		logger.setLimit( Logger::DEBUG );
+		assert_eq( "New limit DEBUG", Logger::DEBUG, logger.getLimit() );
+		logger.setExpect( debug );
+		logger.debug( "Wobog" );
 		logger.setExpect( info );
 		logger.info( "Whoafo" );
 		logger.setExpect( warning );

@@ -17,6 +17,7 @@
 #define LOG_LOGGER_HPP
 
 #include <cstdarg>
+#include <memory>
 
 /** A very simple abstract logging interface.
 * @author Bernhard Bodenstorfer
@@ -28,8 +29,10 @@ namespace logging {
 
 		public:
 
-		/** Message severity encoding. */
-		typedef enum { INFO = 0, WARNING = 1, ERROR = 2 } Severity;
+		/** Message severity encoding.
+		* The numeric values may change, only the ascending order is part of the contract.
+		*/
+		typedef enum { DEBUG = 0, INFO = 1, WARNING = 2, ERROR = 3 } Severity;
 
 		/** Construct with default severity limit <code>INFO</code> */
 		Logger ();
@@ -43,6 +46,12 @@ namespace logging {
 		* @see setLimit
 		*/
 		Severity getLimit () const;
+
+		/** Convenience method to {@link log} with severity {@link DEBUG}.
+		* Use in analogy to <code>printf</code>.
+		* @see log regarding security advice
+		*/
+		void debug ( const char * const format, ... );
 
 		/** Convenience method to {@link log} with severity {@link INFO}.
 		* Use in analogy to <code>printf</code>.
@@ -86,6 +95,9 @@ namespace logging {
 		/** The current minimum log level. */
 		Severity minimumLevel;
 	};
+
+	/** To be initialised to point to a globally shared logger object */
+	extern std::auto_ptr<Logger> logger;
 
 }
 

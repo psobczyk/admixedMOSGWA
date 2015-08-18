@@ -35,12 +35,24 @@ namespace logging {
 
 	void Logger::log ( const Severity level, const char * const format, va_list arguments ) {
 		if ( level >= minimumLevel ) {
+			const char* levelText;
 			char
 				buffer[MAX_MSG_SIZE],
 				*cursor;
 			const time_t t = time(NULL);
 			struct tm time;
 			localtime_r( &t, &time );
+			switch( level ) {
+				case DEBUG: levelText = "DEBUG";
+					break;
+				case INFO: levelText = "INFO";
+					break;
+				case WARNING: levelText = "WARNING";
+					break;
+				case ERROR: levelText = "ERROR";
+					break;
+				default: levelText = "FATAL";
+			}
 			const size_t timestampNeeds = snprintf(
 				buffer,
 				MAX_MSG_SIZE,
@@ -51,10 +63,7 @@ namespace logging {
 				time.tm_hour,
 				time.tm_min,
 				time.tm_sec,
-				INFO == level ? "INFO"
-					: WARNING == level ? "WARNING"
-						: ERROR == level ? "ERROR"
-							: "FATAL"
+				levelText
 			);
 			if ( MAX_MSG_SIZE <= timestampNeeds ) {
 				write( "logging buffer used up by timestamp" ); // should not occur in near future
@@ -68,6 +77,13 @@ namespace logging {
 				write( buffer );
 			}
 		}
+	}
+
+	void Logger::debug ( const char * const format, ... ) {
+		va_list arguments;
+		va_start( arguments, format );
+		log( DEBUG, format, arguments );
+		va_end( arguments );
 	}
 
 	void Logger::info ( const char * const format, ... ) {
