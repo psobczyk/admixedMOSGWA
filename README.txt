@@ -83,6 +83,9 @@ expected_causal_snps_MBIC	lets the first step with the relaxed selection criteri
 
 Further useful options:
 
+[log]
+level			choice		DEBUG, INFO (default), WARNING, ERROR: how much to log
+
 [input]
 cache_limit		integer		genotype data for how many SNPs may be cached in memory, default 1024
 
@@ -101,7 +104,7 @@ mBIC_expected_causal_SNPs	integer		parameter for second round of model search, w
 EBIC_gamma		double		parameter in the EBIC criterium, defaults to 1 - log( #individuals ) / ( 2 * log( #SNPs ) )
 search_strategy		choice		greedy (default), genetic_algorithm
 maximalModelSize	integer		limits the search to models of size up to the given; saves time
-PValueBorder		integer		only so many SNPs are considered in multi-forward steps, ranked by p-value
+PValueBorder		size_type	only so many SNPs are considered in multi-forward steps, ranked by p-value
 forward_step_max	integer		bounds the numer of SNPs in the forward step from the empty model
 fast_multi_forward	integer		bounds the numer of SNPs in the forward step from nonempty models
 nSNPKriterium		integer		useful for running with a subset of top-ranking SNPs: the original number #SNPs of SNPs, to be used by the selection criteria
