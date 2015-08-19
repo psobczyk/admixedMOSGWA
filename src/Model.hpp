@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Erich Dolejsi, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -21,7 +21,6 @@
 #include "types.hpp"
 #include "Parameter.hpp"
 #include "Helpfull.hpp"
-#include "Log.hpp"
 #include "MData.hpp"
 #include "lookup/ModelIndex.hpp"
 #include "linalg/AutoVector.hpp"
@@ -50,23 +49,20 @@ class Model {
 private:
 
 	/** a pointer to the MData whereupon the model is based */
-	const MData * data_;
+	const MData* data_;
 
 	/** the position-no of the SNPs in the Model (for faster access), size is modelSize_ */
 	vector<snp_index_t> modelSnps_;
 
-	/** the design matrix X for the model (data_->getIdvNo() rows, noOfVariables_ columns) */
-	gsl_matrix* XMat_;
+	/** the design matrix X for the model (data.getIdvNo() rows, noOfVariables columns) */
+	linalg::AutoMatrix xMat;
 public:
-	/** the target vector Y (size is data_->getIdvNo()) */
-	gsl_vector* YVec_;
+	/** the target vector Y (size is data.getIdvNo()) */
+	linalg::AutoVector yVec;
 private:
 	/** the regression coefficients (size is noOfVariables_) */
-	gsl_vector* betas_;
+	linalg::AutoVector beta;
 public:
-	/** states if XMat_ is up-to-date */
-	bool upToDateXMat_;
-private:
 	/** states if betas_ is up-to-date */
 	bool upToDateBetas_;
 
@@ -83,9 +79,6 @@ private:
 	/** msc of the model. calculateMSC() set up msc value */
 	double msc;                         //  FOR GA. 
 	
-//++++++++++++
-// private methods:
-
 	/** load data from MData (plink-format) to Model (gsl-format) */
 	void initializeModel ();
 
@@ -108,9 +101,16 @@ private:
 	bool computeLinRegression ();
 
 	bool computeLogRegression ();
-	double computeSingleLinRegressorTest ( const snp_index_t snp );
 
-       	double computeSingleLogRegressorTest ( const snp_index_t snp );
+	/** Calculate P value of a 1 SNP model.
+	* Precondition: Model holds exactly one SNP.
+	*/
+	double computeSingleLinRegressorTest ();
+
+	/** Calculate selection value of a 1 SNP model.
+	* Precondition: Model holds exactly one SNP.
+	*/
+       	double computeSingleLogRegressorTest ();
 
 //++++++++++++
 // public methods:
@@ -119,7 +119,7 @@ public:
 	Model ( const MData & mData );
 
 	/** Assignment operator */
-	Model& operator= ( const Model & orig );
+	DEPRECATED( Model& operator= ( const Model & orig ); );
 
 	/** Destructor */
 	~Model ();
@@ -150,7 +150,7 @@ public:
             the \betas should be  gsl_vector* Beta     
           */
 
-        void setBeta ( gsl_vector* & Beta);
+	void setBeta ( const linalg::Vector& newBeta );
 
 	// Output
 	/** outputs the Model information, string out is a title */
@@ -160,17 +160,11 @@ public:
 		const std::string& filemodifier = ""
 	);
 
-	/** TESTING: outputs the Model in a form readable by R */
-	void printModelInR () const;
-
-	/** TESTING: outputs the Model in a form readable by MATLAB */
-	void printModelInMatlab ( const std::string& dummy ="") const;
-
 	void printModelNew () const;
 
 	bool replaceModelSNPbyNearFromCAT (
 		int currentPosition,
-		int PValueBorder,
+		const size_t PValueBorder,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 
@@ -179,29 +173,19 @@ public:
 
 	/** outputs for every SNP in the model SNPs with a correlation above const double threshold */
 	void printStronglyCorrelatedSnps ( const double threshold, string extra ="" ) const;
-	/**  printStronglyCorrelatedSnps2 is for  replaceModelSNPbyNearCorrelated when the second  variable should be checked against the original SNP */
-        void printStronglyCorrelatedSnps2 (const int which_snp, const double threshold, vector<unsigned int>& zwischen, int fenster =10, bool all=false ) const; 
 	/* sortSNPsAccordingBetas does exactly what is says*/
 	void sortSNPsAccordingBetas();
 	// change model Size
 	/** add SNP to Model, snp is absolute postion in MData::snps_ */
 	void addSNPtoModel ( const snp_index_t snp);
       bool replaceSNPinModel ( const snp_index_t snp,  const snp_index_t  position );
-      bool printXmat(const std::string& extra="");//extra is astring wich is eg the index of the model printed
 		void addManySNP ( std::vector<snp_index_t> selected );
-/**  This generates a Y vector
-     Input is XMat_ $=:X$ and $\beta$/
-     then $p=\frac{e^{A\beta}}{1+e^{A\beta}}$
-     from this p we generate an $Y$
-*/
-  void expXbeta();
   
-	/** Continous Y */
-  void Ycontinous();
+	/** Continous Y
+	* @deprecated test data generation will be removed from class Model
+	*/
+	DEPRECATED( void Ycontinous(); );
   
-	/** binary Y  expXbeta will be called */
-  void Ybinary();
-
 	/** remove SNP from Model, snp is relativ position at vector modelSnps_
 	* @returns true if SNP removed, and false if an error occors */
 	bool removeSNPfromModel ( const snp_index_t snp );
@@ -219,7 +203,7 @@ public:
 	bool finalizeModelSelection (
 		Model &backwardModel,
 		bool improvement,
-		int PValueBorder,
+		const size_t PValueBorder,
 		int *startIndex,
 		vector<int> score,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
@@ -227,45 +211,69 @@ public:
 	bool finalizeModelSelection (
 		Model &backwardModel,
 		bool improvment,
-		int PValueBorder,
+		const size_t PValueBorder,
 		int *startIndex,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 	bool makeForwardStepLinear (
 		Model *forwardModel,
 		double* bestMSC,
-		int PValueBorder,
+		const size_t PValueBorder,
 		int *startIndex,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 	/**  makeForwardStepLogistic replaces the code in selectModel*/
 	bool makeForwardStepLogistic (
 		double *bestMSC,
-		int PValueBorder,
+		const size_t PValueBorder,
 		int *startIndex,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 /**makeForwardStepLogistic score version */
 	bool makeForwardStepLogistic (
 		double *bestMSC,
-		int PValueBorder,
+		const size_t PValueBorder,
 		int *startIndex,
 		vector<int> score,
 		int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 
-        bool makeMFFS (int PValueBorder,int *startIndex); //with linear
+        bool makeMFFS (
+		const size_t PValueBorder,
+		int *startIndex
+	); //with linear
+
 	bool makeMFFL (
-		int PValueBorder,
+		const size_t PValueBorder,
 		int *startIndex,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
-	bool makeMFFL (int PValueBorder,int *startIndex, vector<int> score,int criterium=0); //with logistic+score
 
-        bool makeMultiForwardStepScore ( int PValueBorder, int selectionCriterium, int* startIndex, vector<int> scores);
+	bool makeMFFL (
+		const size_t PValueBorder,
+		int *startIndex,
+		vector<int> score,
+		int criterium = 0
+	); //with logistic+score
+
+        bool makeMultiForwardStepScore (
+		size_t PValueBorder,
+		int selectionCriterium,
+		int* startIndex,
+		vector<int> scores
+	);
+
         /** makeMultiForwardStep take the PValueBorder, an selection Criterium, the default Value is 1 for BIC in the initial ForwardStep and an  an exclusivedSNP set,*/ 
-	bool makeMultiForwardStep ( int PValueBorder = 0, int selectionCriterium =1, int *startIndex= NULL ,  TBitset * exclusivedSNP = 0, TBitset * goodSNPs = 0 );
+	bool makeMultiForwardStep (
+		size_t PValueBorder = 0,
+		int selectionCriterium = 1,
+		int *startIndex = NULL,
+		TBitset * exclusivedSNP = 0,
+		TBitset * goodSNPs = 0
+	);
+
 	bool makeMultiBackwardStep ();
+
 	bool saveguardbackwardstep (
 		Model &smallerModel,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
@@ -275,30 +283,26 @@ public:
 
 	bool selectModel (
 		Model &startFromModel,
-		int border=100,
-		int maxModel=parameter.maximalModelSize,
+		size_t PValueBorder = 100,
+		int maxModel=parameter->maximalModelSize,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 	/** Compute Regression for Model.
 	* @returns false on error */
 	bool computeRegression ();
-        /** scoreTest runs trhe score Test from Bernhard*/
-	bool scoreTest(string add="");
-	size_t scoreTestWithOneSNPless ( size_t SNPindex, SortVec &score );
-	/** computes single marker test for SNP snp (absolut postition)
-	* @returns the p-value of the according teststatistic */
-	double computeSingleRegressorTest ( const snp_index_t snp );
-        
-	/** computes the YVec from Model created by expXbeta then set
-	 * which true 
-	 * when wanting the Y from theplink file then set it to 
-	 * which false
-	 */
-	void printYvec(bool which);
 
-        /** getYvec  for Hyper one need this information outside of Model
-	  */
-	void getYvec(vector<bool> & sel);
+        /** scoreTest runs the score tests from Bernhard */
+	void scoreTest ( const string& extra = "" );
+
+	size_t scoreTestWithOneSNPless ( size_t SNPindex, SortVec &score );
+        
+	/** computes single marker test for a one-SNP model.
+	* Precondition: <code>this</code> holds exactly one SNP.
+	* @returns the p-value of the according teststatistic */
+	double computeSingleRegressorTest ();
+
+	/** print the yVec from Model to file. */
+	void printYvec ();
 
 	/** Calculate the model selection criterion. */
 	double computeMSC ( const int selectionCriterium = Parameter::selectionCriterium_mBIC2 );
