@@ -97,6 +97,7 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 	sortVec.fillVec( remainingSize, &snps[0], &scores[0], false );
 }
 
+/** TODO: unite this Erich-routine with the standard score test. */
 size_t ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec, size_t start, size_t stop ) {
 	const ModelIndex index = model.getIndex();
 	const size_t
@@ -151,7 +152,7 @@ size_t ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec, siz
 	// But be careful with the conditional increment ++j.
 	// I think it may not be worthwhile for the remaining experiments.
 	size_t J = 0;
-	for ( size_t i = start, j = 0; i <= stop; ++i ) {
+	for ( size_t i = start, j = 0; i < stop; ++i ) {
 	//DEBUG	cerr<<"SCORE:SNP="<<i<<endl;
 		if ( ! index.contains( i ) ) {
 			snps[j] = i;
