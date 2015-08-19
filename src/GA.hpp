@@ -24,7 +24,6 @@
 #include <sstream>
 #include <time.h> 
 
-#include "Log.hpp"
 #include "Pool.hpp"
 #include "MData.hpp"
 #include "Model.hpp"
