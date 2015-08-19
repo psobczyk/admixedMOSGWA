@@ -2,15 +2,17 @@
 #include <iterator>
 #include <iomanip>
 #include <cstdlib>                     // for random number
-#include "SNP.hpp"
 #include <set>
 #include <list>
 #include <cassert>
 #include "GA.hpp"  
-#include "logging/Logger.hpp"  
-#include "Parameter.hpp"  
+#include "../../SNP.hpp"
+#include "../../logging/Logger.hpp"  
+#include "../../Parameter.hpp"  
 
 using namespace logging;
+
+namespace genetica {
 
 const int minModelSize = 3;            // minimal model size for initial population
 
@@ -5001,5 +5003,4 @@ void GA::test_region()
   outFile.close();
 }
 
-
-  
+}

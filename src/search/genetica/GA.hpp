@@ -24,13 +24,14 @@
 #include <sstream>
 #include <time.h> 
 
-#include "Pool.hpp"
-#include "MData.hpp"
-#include "Model.hpp"
-#include "search/Search.hpp"
+#include "../../Pool.hpp"
+#include "../../MData.hpp"
+#include "../../Model.hpp"
+#include "../../search/Search.hpp"
 
 ostream &operator<< ( std::ostream &out, std::vector<snp_index_t> &v );
 
+namespace genetica {
 
 struct TSNP_Info 
 {
@@ -393,8 +394,7 @@ void calculate_clusters(std::map<snp_index_t, long double> &mapSNPid_Pmi_Y, std:
 //  void calculatePOWER_FDR_clustGA(std::set<snp_index_t> &mySnps, std::vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, std::set<snp_index_t> &TP_SNPs);
 void writePosterior(std::string fileName, std::map<snp_index_t, int> &mapSNPCausal_ind, std::vector< std::multiset<long double> > &tabCausalPost, int size);
 
-
-
+}
 
 #endif
 

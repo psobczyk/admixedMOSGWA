@@ -14,7 +14,7 @@
  ********************************************************************************/
 
 #include "GeneticAlgorithm.hpp"
-#include "../../GA.hpp"
+#include "GA.hpp"
 #include <sstream>
 #include <fstream>
 #include <string>
