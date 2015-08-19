@@ -19,12 +19,7 @@ using namespace logging;
 
 namespace search {
 
-	Search::Search (
-		Logger& logger,
-		Parameter& parameter
-	) :
-		logger( logger ), parameter( parameter )
-	{}
+	Search::Search () {}
 
 	Search::~Search () {}
 

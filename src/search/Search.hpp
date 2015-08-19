@@ -29,14 +29,8 @@ namespace search {
 
 		protected:
 
-		/** Log target. */
-		logging::Logger& logger;
-
-		/** The source of configuration data. */
-		Parameter& parameter;
-
-		/** Construct with reference to logging and parameters. */
-		Search ( logging::Logger& logger, Parameter& parameter );
+		/** Construct search machinery. */
+		Search ();
 
 		public:
 
