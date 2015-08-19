@@ -21,12 +21,12 @@
 #include <fstream>
 #include <string>
 
-#include "Logger.hpp"
+#include "StreamLogger.hpp"
 
 namespace logging {
 
 	/** Logs to a file. */
-	class FileLogger : public Logger {
+	class FileLogger : public StreamLogger {
 
 		std::ofstream file;
 
@@ -37,11 +37,6 @@ namespace logging {
 
 		/** Destructor closes the file. */
 		virtual ~FileLogger ();
-
-		protected:
-
-		/** Implement this abstract facility to actually log a line. */
-		virtual void write ( const char * const text );
 	};
 
 }

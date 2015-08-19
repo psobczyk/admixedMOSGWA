@@ -13,22 +13,39 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#include "FileLogger.hpp"
+#ifndef LOG_STREAMLOGGER_HPP
+#define LOG_STREAMLOGGER_HPP
 
-using namespace std;
+#include <iostream>
+#include <iomanip>
+#include <string>
+
+#include "Logger.hpp"
 
 namespace logging {
 
-	FileLogger::FileLogger ( const char * const filename )
-	:
-		file( filename, ios_base::app )
-	{
-		file.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
-		setStream( file );
-	}
+	/** Logs to a C++ output stream. */
+	class StreamLogger : public Logger {
 
-	FileLogger::~FileLogger () {
-		file.close();
-	}
+		std::ostream * stream;
+
+		public:
+
+		/** Connect to stream for appending logs. */
+		StreamLogger ( std::ostream& stream = std::cerr );
+
+		/** Destructor. */
+		virtual ~StreamLogger ();
+
+		protected:
+
+		/** Change the stream to log to. */
+		void setStream ( std::ostream& stream = std::cerr );
+
+		/** Implement this abstract facility to actually log a line. */
+		virtual void write ( const char * const text );
+	};
 
 }
+
+#endif

@@ -13,22 +13,24 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#include "FileLogger.hpp"
+#include "StreamLogger.hpp"
 
 using namespace std;
 
 namespace logging {
 
-	FileLogger::FileLogger ( const char * const filename )
-	:
-		file( filename, ios_base::app )
-	{
-		file.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
-		setStream( file );
+	StreamLogger::StreamLogger ( ostream& stream ) {
+		setStream( stream );
 	}
 
-	FileLogger::~FileLogger () {
-		file.close();
+	void StreamLogger::setStream ( ostream& stream ) {
+		this->stream = &stream;
 	}
+
+	void StreamLogger::write ( const char * const text ) {
+		( *stream ) << text << endl;
+	}
+
+	StreamLogger::~StreamLogger () {}
 
 }
