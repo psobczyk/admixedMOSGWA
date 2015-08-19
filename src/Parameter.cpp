@@ -16,14 +16,14 @@
 #include "Parameter.hpp"
 #include <cmath>
 #include <limits>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sstream>  //for stringstream
 
-#include "Helpfull.hpp" //int2str und printLOG
-#include "Log.hpp" //printLOG
+#include "logging/Logger.hpp"
 
 using namespace std;
 using namespace parser;
+using namespace logging;
 
 /** Internally declares the configuration variables. */
 Parameter::Parameter () {
@@ -54,6 +54,14 @@ Parameter::Parameter () {
 	declare( "output", "correlation_threshold", correlation_threshold = 0.999 );
 
 	// log settings
+	{
+		map< const string, int > choice;
+		choice[ "DEBUG" ] = 0;
+		choice[ "INFO" ] = 1;
+		choice[ "WARNING" ] = 2;
+		choice[ "ERROR" ] = 3;
+		declare( "log", "level", log_level = 1, choice );
+	}
 	declare( "log", "silent", silent );
 	declare( "log", "detailed", detailed_selction );
 
@@ -129,7 +137,9 @@ Parameter::Parameter () {
   declare( "genetic_algorithm", "correlationThreshold", correlationThreshold);
   declare( "genetic_algorithm", "correlationRange", correlationRange);
   declare( "genetic_algorithm", "causalModelFilename", causalModelFilename);
-  declare( "genetic_algorithm", "regionMinCorrelation", regionMinCorrelation);  
+	declare( "genetic_algorithm", "regionMinCorrelation", regionMinCorrelation );
+	declare( "genetic_algorithm", "modelsFilename", modelsFilename );
+	declare( "genetic_algorithm", "outNo", outNo );
   
 //Erichs testcase gearatator  
 declare( "TESTING", "replications", replications ); //how many Y vectors should be produced  
@@ -163,8 +173,7 @@ void Parameter::setParameters ( const int argn, const char* argv[] ) {
 			exit( 255 );
 		}
 	}
-	//ED: Helpfull.hpp 
-	printLOG("y_value_extra_file="+int2str(y_value_extra_file)+",position "+int2str(in_values_int));
+	logger->info( "y_value_extra_file=%d, position=%d", y_value_extra_file, in_values_int );
 //this creates an unique file for all yvm and of course also in the version without 
 //this has to be done before the number is added in the yvm case	
 singlefile=out_file_name; //this is for simulators which need in every run the genotyp file 
@@ -239,3 +248,5 @@ singlefile=out_file_name; //this is for simulators which need in every run the g
   if (regionMinCorrelation == 0.0)
     regionMinCorrelation = 0.01;
 }
+
+auto_ptr<Parameter> parameter;

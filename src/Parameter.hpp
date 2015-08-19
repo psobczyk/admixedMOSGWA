@@ -19,6 +19,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 #include "parser/ConfigParser.hpp"
 
@@ -82,6 +83,11 @@ public:
 	std::string out_file_name;
         std::string singlefile;
 
+	// Logging:
+
+	/** severity threshold for logging */
+	int log_level;
+
 	/** true = no output on screen */
 	bool silent;
 
@@ -130,8 +136,8 @@ public:
 	int ms_forward_step_max;
 	bool ms_FastMultipleForwardStep;
 	
-        int     PValueBorder;
-	int     reset;
+	size_t PValueBorder;
+	size_t reset;
 	int	jump_back;
 	int saveguardsteps;
 //++++++++++++
@@ -163,7 +169,9 @@ public:
   double correlationThreshold;
   int correlationRange;
   std::string causalModelFilename; // a file name where a causal model is written. Only in case of simulations
-  double regionMinCorrelation;  
+	double regionMinCorrelation;
+	int outNo;
+	std::string modelsFilename;
 
 // TEST 
 	int  replications; 
@@ -175,7 +183,7 @@ public:
 	void setParameters ( const int argn, const char* argv[] );
 };
 
-/** A globally shared parameter object */
-extern Parameter parameter;
+/** To be initialised to point to a globally shared parameter object */
+extern std::auto_ptr<Parameter> parameter;
 
 #endif
