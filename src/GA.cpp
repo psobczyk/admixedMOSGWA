@@ -7,8 +7,10 @@
 #include <list>
 #include <cassert>
 #include "GA.hpp"  
+#include "logging/Logger.hpp"  
+#include "Parameter.hpp"  
 
-const bool printInfo = false;
+using namespace logging;
 
 const int minModelSize = 3;            // minimal model size for initial population
 
@@ -231,7 +233,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   p_100K = false;
   isCluster = false;
   ofstream file;  
-  file.open((parameter.out_file_name + "_Report.txt").c_str(), ios::trunc);
+  file.open( ( parameter->out_file_name + "_Report.txt" ).c_str(), ios::trunc );
   file.close();
 
   assert(modelsNo > 0);
@@ -258,7 +260,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   m0.computeRegression();
   data.setLL0M( m0.getMJC() );
   
-  if (printInfo) printLOG("Initial population start");
+	logger->debug( "Initial population start" );
   
   /*
   int myTab[] = {242029, 302459};
@@ -275,26 +277,35 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
     SNP_Names_Id.insert( pair<string, snp_index_t>(data.getSNP( i ).getSnpId(), i) );
   }
 
-  string clusterFile_POWER( (parameter.in_files_plink + ".clu").c_str() );
+  string clusterFile_POWER( ( parameter->in_files_plink + ".clu" ).c_str() );
   readClusterLabel(mapSNPid_label, clusterFile_POWER, SNP_Names_Id, &mapLabel_PmiY);
   //stronglyCorrelatedSnpsCluster();
 //  exit(0);
-  if ((unsigned int) (parameter.ms_MaximalSNPsMultiForwardStep) > data.getIdvNo()/4)
-    parameter.ms_MaximalSNPsMultiForwardStep = data.getIdvNo()/4;
-  cout << "maxInitModelSize: " << parameter.ms_MaximalSNPsMultiForwardStep << ", individuals: " << data.getIdvNo() << endl;
+	if ( (unsigned int) (parameter->ms_MaximalSNPsMultiForwardStep) > data.getIdvNo()/4 ) {
+		parameter->ms_MaximalSNPsMultiForwardStep = data.getIdvNo()/4;
+	}
+	logger->debug(
+		"maxInitModelSize: %u, individuals: %u",
+		parameter->ms_MaximalSNPsMultiForwardStep,
+		data.getIdvNo()
+	);
   
-  poolFilePart.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
-  if (parameter.silent == false)
-  {
-    try
-    {
-      if (parameter.silent == false)
-        poolFilePart.open( ( parameter.out_file_name + "_" + int2str(parameter.in_values_int) + "_pool_part.txt" ).c_str(),  fstream::out );
-    }
-    catch (...)
-    {
-      cerr << "Can't open file: " << (parameter.out_file_name + "_" + int2str(parameter.in_values_int) + "_pool_part.txt").c_str() << endl;
-      exit(-1);
+	poolFilePart.exceptions( ofstream::eofbit | ofstream::failbit | ofstream::badbit );	// checks if poolfile can be written
+	if ( !parameter->silent ) {
+		try {
+			poolFilePart.open(
+				( parameter->out_file_name + "_" + int2str( parameter->in_values_int ) + "_pool_part.txt" ).c_str(),
+				fstream::out
+			);
+		} catch ( ofstream::failure e ) {
+			logger->error(
+				"Can't open file %s_%d_pool_part.txt: %s",
+				parameter->out_file_name.c_str(),
+				parameter->in_values_int,
+				e.what()
+			);
+			// TODO<BB>: avoid exit in library code
+			exit(-1);
     }
   }
   
@@ -417,19 +428,6 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
 */
   
   
-/*  
-//  data.writeBEDfile( 0, 0 );
-//  data.writeBEDfilePlink();
-  cout << "printSNPs ();: " << endl;
-  data.printSNPs ();
-  cout << " void printGenoData () const;" << endl;
-  ofstream genoFile((parameter.out_file_name + "_geno.txt").c_str());
-  data.printGenoDataAG (genoFile);
-  genoFile.close();
-  cout << "OK" << endl;
-  exit(0);
-*/  
-  
   vector<snp_index_t> v;
   m0.computeMSC();
   RSSo = m0.getMJC();
@@ -438,8 +436,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   v = m0.getModelSnps();
   PoolItem p(v, m0.getMSC(), h2_M, pSize + 1, 'I');
   pool.insert(p);
-  if (pSize < pool.size()  && parameter.silent == false)
-  {
+  if ( pSize < pool.size() && !parameter->silent ) {
     poolFilePart << p << "\n";
   }
   
@@ -467,7 +464,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
   
   vector<snp_index_t>::iterator it;
   vector<snp_index_t> snps;
-  cout << "parameter.maximalModelSize: " << parameter.maximalModelSize << endl;
+  logger->debug( "parameter->maximalModelSize: %u", parameter->maximalModelSize );
 //  {char c; cout << "Pres a key.."; cin >> c;}
   stringstream ss;
   // the first model is created by stepwise method
@@ -494,8 +491,8 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
 //      cout << "Stepwise setLLOM: " << models[0]->getMJC() << endl;;
       data.selectModel(
         models[0],
-        parameter.PValueBorder,                         // PValueBorder=350;
-        parameter.maximalModelSize,                     // maximalModelSize
+	parameter->PValueBorder,
+	parameter->maximalModelSize,
         Parameter::selectionCriterium_mBIC_firstRound   // uses different expected_causal_SNPs
       );
       data.selectModel(
@@ -503,7 +500,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
         5000,
 //        350,
 //        parameter.PValueBorder, 
-        parameter.maximalModelSize, 
+	parameter->maximalModelSize, 
         Parameter::selectionCriterium_mBIC2
       ); 
 //      cout << "First model (Stepwise): " << *models[0] << endl;
@@ -619,9 +616,9 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
     ss << endl << (i + 1) << "). " << p;
     cout << i << "] " << *models[i] << "\tsize: " << models[i]->getModelSize() << endl;
   }
-  printLOG("GENETICS ALGORITHM - INITIAL POPULATION:");
-  printLOG(ss.str());
-  if (printInfo) printLOG("Initial population END");
+  logger->info( "GENETICS ALGORITHM - INITIAL POPULATION:" );
+  logger->info( "%s", ss.str().c_str() );
+  logger->debug( "Initial population END" );
   cout << endl;
 }
 
@@ -637,8 +634,7 @@ void GA::toPool(const Model *model, char c)
   unsigned int pSize = pool.size(); 
   PoolItem p(v, model->getMSC(), h2_M, pSize + 1, c);
   pool.insert(p);
-  if (pSize < pool.size()  && parameter.silent == false)
-  {
+  if ( pSize < pool.size() && !parameter->silent ) {
     poolFilePart << p << "\n";
   }
 }
@@ -945,20 +941,21 @@ void GA::run()
   vector<snp_index_t> v;
   double best, adv, worst;
   statistics(best, adv, worst);
-  stringstream ssBegin;
-  cout << endl;
-  ssBegin << "Initial population, the worst: " << worst << ", adv: " << adv << ", the best: " << best << endl;
-  printLOG(ssBegin.str());
+  logger->info(
+	"Initial population, the worst: %f, adv: %f, the best: %f",
+	worst,
+	adv,
+	best
+  );
   p_30K = true;
   p_100K = true;
 
 
   while (GAcount < maxNoProgressIter)
   {
-    if (parameter.silent == false)
-    {
+    if ( !parameter->silent ) {
       cout << "\riter count = " << setw(5) << iterCount 
-           << ", GA count = " << setw(4) << GAcount << ", -> " << setw(5) << GAcount * 100.0 / parameter.maxNoProgressIter << "%... done            ";
+           << ", GA count = " << setw(4) << GAcount << ", -> " << setw(5) << GAcount * 100.0 / parameter->maxNoProgressIter << "%... done            ";
       cout.flush();     
     }
     
@@ -1014,18 +1011,18 @@ void GA::run()
 */        
         
         
-        if (parameter.silent == false)
+        if ( !parameter->silent )
           cout << endl << "We have got a better model " << endl;
         delete models[theWorst];
         models[theWorst] = childModel;
         childModel = 0;      
-        if (parameter.silent == false)
+        if ( !parameter->silent )
         {
           stringstream ss;
           ss << endl << "iter count: " << iterCount << ":" << endl;
           for (unsigned int m = 0; m < modelsNo; ++m)
             ss << m << ") " << *models[m] << endl;
-          printLOG(ss.str());
+		logger->info( "%s", ss.str().c_str() );
         }  
         if (rankB < B)
           GAcount = 0;
@@ -1050,29 +1047,31 @@ void GA::run()
       double best, adv, worst;
       statistics(best, adv, worst);
       stringstream ss;
-      if (parameter.silent == false)
+      if ( !parameter->silent )
         cout << endl;
       else
       {
-        cout << timeStemple() << progressBar(GAcount, parameter.maxNoProgressIter, 30) << "iterations: " << setw(5) << iterCount << ", the worst: " << setprecision(10) 
+        cout << timeStemple() << progressBar(GAcount, parameter->maxNoProgressIter, 30) << "iterations: " << setw(5) << iterCount << ", the worst: " << setprecision(10) 
              << worst << ", ave: " << adv << ", the best: " << best << ", poolSize: " << setw(6) << pool.size() << endl;
         for (unsigned int m = 0; m < modelsNo; ++m)
            cout << m << ") " << *models[m] << endl;
              
       }       
-      ss << progressBar(GAcount, parameter.maxNoProgressIter, 30) << " iteration: " << setw(5) << iterCount << ", the worst: " << setprecision(10) 
+      ss << progressBar(GAcount, parameter->maxNoProgressIter, 30) << " iteration: " << setw(5) << iterCount << ", the worst: " << setprecision(10) 
          << worst << ", ave: " << adv << ", the best: " << best << ", poolSize: " << setw(6) << pool.size();// << endl;
-      printLOG(ss.str());
+		logger->info( "%s", ss.str().c_str() );
     }
   }
   statistics(best, adv, worst);
-  stringstream ss;
-  if (parameter.silent == false)
-    cout << endl;
-  ss << "At the end of GA, after " << iterCount << " generations, " << "the worst: " << worst << ", adv: " << adv << ", the best: " << best;// << endl;
-  cout << endl << "At the end of GA, after " << iterCount << " generations, " << "the worst: " << worst << ", adv: " << adv << ", the best: " << best << endl;
-  printLOG(ss.str());
-  if (parameter.silent == false)
+  if ( !parameter->silent )
+	logger->info(
+		"At the end of GA, after %u generations, the worst: %f, adv: %f, the best: %f",
+		iterCount,
+		worst,
+		adv,
+		best
+	);
+  if ( !parameter->silent )
      poolFilePart << "END" << endl;
   
   stringstream ssFinal;
@@ -1086,10 +1085,8 @@ void GA::run()
       models[i]->computeMSC();
     ssFinal << endl << (i + 1) << "] " << *models[i] << "\tsize: " << models[i]->getModelSize();
   }
-  printLOG("GENETICS ALGORITHM - FINAL POPULATION:");
-  printLOG(ssFinal.str());
-
-  
+  logger->info( "GENETICS ALGORITHM - FINAL POPULATION:" );
+  logger->info( "%s", ssFinal.str().c_str() );
 }
 
 /**
@@ -1135,7 +1132,7 @@ GA::~GA()
      delete realModel;
      realModel = 0;
    }
-   if (parameter.silent == false)
+   if ( !parameter->silent )
      poolFilePart.close();
 }
 
@@ -1298,7 +1295,10 @@ void GA::writePoolToFile(stringstream &ssTime, string postfix) const
   poolFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
   try
   {
-    poolFile.open( ( parameter.out_file_name + "_pool" + postfix + /*+ int2str(parameter.in_values_int)*/ + ".txt" ).c_str(),  fstream::out | fstream::trunc );
+	poolFile.open(
+		( parameter->out_file_name + "_pool" + postfix + /*+ int2str(parameter.in_values_int)*/ + ".txt" ).c_str(),
+		fstream::out | fstream::trunc
+	);
     poolFile << ssTime.str() << endl;
 //    cout << "Pool file postfix: " << postfix << endl;
     for (poolIt = pool.begin(); poolIt != pool.end(); poolIt++, ++i)
@@ -1310,20 +1310,20 @@ void GA::writePoolToFile(stringstream &ssTime, string postfix) const
     poolFile.flush();
     poolFile << "END\t" << endl
        << "poolSize\t" << pool.size()  << endl
-       << "modelsNo\t" << parameter.modelsNo << endl
-       << "maxNoProgressIter\t" << parameter.maxNoProgressIter << endl
-       << "pCross\t" << parameter.pCross << endl
-       << "pMutation\t " << parameter.pMutation << endl
-       << "tournamentSize\t" << parameter.tournamentSize << endl
-       << "correlationThreshold\t" << parameter.correlationThreshold << endl
-       << "correlationRange\t" << parameter.correlationRange << endl
-       << "regionMinCorrelation_ =" <<  parameter.regionMinCorrelation << endl
-       << "causalModelFilename\t" << parameter.causalModelFilename << endl
-       << "B\t" << parameter.B << endl << endl
-       << "plink_files\t" << parameter.in_files_plink << endl
-       << "use_extra_yvalues\t" << parameter.y_value_extra_file << endl  // use_extra_yvalues", y_value_extra_file
-       << "trait_index\t" << parameter.in_values_int << endl                  // trait_index", in_values_int
-       << "multi_forward_step_max\t" << parameter.ms_MaximalSNPsMultiForwardStep << endl;
+       << "modelsNo\t" << parameter->modelsNo << endl
+       << "maxNoProgressIter\t" << parameter->maxNoProgressIter << endl
+       << "pCross\t" << parameter->pCross << endl
+       << "pMutation\t " << parameter->pMutation << endl
+       << "tournamentSize\t" << parameter->tournamentSize << endl
+       << "correlationThreshold\t" << parameter->correlationThreshold << endl
+       << "correlationRange\t" << parameter->correlationRange << endl
+       << "regionMinCorrelation_ =" <<  parameter->regionMinCorrelation << endl
+       << "causalModelFilename\t" << parameter->causalModelFilename << endl
+       << "B\t" << parameter->B << endl << endl
+       << "plink_files\t" << parameter->in_files_plink << endl
+       << "use_extra_yvalues\t" << parameter->y_value_extra_file << endl  // use_extra_yvalues", y_value_extra_file
+       << "trait_index\t" << parameter->in_values_int << endl                  // trait_index", in_values_int
+       << "multi_forward_step_max\t" << parameter->ms_MaximalSNPsMultiForwardStep << endl;
        
       
        
@@ -1539,10 +1539,10 @@ void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, in
   set<snp_index_t> trueSNPsBest;                    // the set of only true positive snps - for the best model in the pool
   Model modelRegion(data);                          // model for a region strategy
   set<TRegionSet_info> setNewRegion;
-  if (parameter.causalModelFilename.length() > 0 && isCluster)   // The simulation. We have the causalModel
+  if ( 0 < parameter->causalModelFilename.length() && isCluster )	// The simulation. We have the causalModel
   {
     vector<snp_index_t> realSNPs;                   // snps from the casual model
-    modelReader(parameter.causalModelFilename, realSNPs);
+    modelReader( parameter->causalModelFilename, realSNPs );
     
     Model *mx = new Model(data);
     if (realSNPs.size() > 0)
@@ -1725,7 +1725,7 @@ void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, in
   ssModels << "posterioriModel " << *mx << endl;
   if (isCluster == true)
     saveRecognizedSNPinfo(vPosterior, "posterioriModel", Pmi_Y);
-  if (parameter.silent == false)
+  if ( !parameter->silent )
     cout << "posterioriMode: " << *mx << endl;    
   delete mx;  
   mx = 0;
@@ -1994,7 +1994,7 @@ void GA::calculatePOWER_FDR_clustGA_2ndArticle(set<snp_index_t> &mySnps, vector<
  * -------------------------------------------------------------------------
  */
 void GA::selectModel ( Model& model ) {
-  printLOG( "GA: Model Selection started: " );
+	logger->info( "GA: Model Selection started:" );
   if (model.computeRegression())
     model.computeMSC();
   else
@@ -2309,10 +2309,10 @@ void GA::piMassExtract(const string &fileName, string &outFileName)
   modelsFile << piMassModel << endl;
   
   Model *mx = 0;
-  if (parameter.causalModelFilename.length() > 0)
+  if ( 0 < parameter->causalModelFilename.length() )
   {
     vector<snp_index_t> realSNPs;             // snps from real model
-    modelReader(parameter.causalModelFilename, realSNPs);  
+    modelReader( parameter->causalModelFilename, realSNPs );  
     
     long double POWER, FDR;
     unsigned int FDcount;
@@ -2575,7 +2575,10 @@ void GA::calculateClusterPosterior(vector<snp_index_t> &clusterSNP, vector<long 
     }
   }
   ofstream outFile;
-  outFile.open((parameter.out_file_name + "_cluster_" + int2str(parameter.in_values_int) + ".txt").c_str(), ios::app);   
+	outFile.open(
+		( parameter->out_file_name + "_cluster_" + int2str( parameter->in_values_int ) + ".txt" ).c_str(),
+		ios::app
+	);   
   outFile << "snp_id\t org. poster\t new poster.\tcorrelated with\tid";
   for (int i = 0; i < N; ++i)
   {
@@ -2608,7 +2611,10 @@ void GA::calculateClusterPosterior(vector<snp_index_t> &clusterSNP, vector<long 
   }  
 //  cout << endl << endl;
   outFile.close();
-  outFile.open((parameter.out_file_name + "_cluster_msc_" + int2str(parameter.in_values_int) + ".txt").c_str(), ios::app);   
+	outFile.open(
+		( parameter->out_file_name + "_cluster_msc_" + int2str( parameter->in_values_int ) + ".txt" ).c_str(),
+		ios::app
+	);   
   vector<snp_index_t> snps;
   Model *mx = new Model(data);
   for (unsigned int i = 0; i < originalSNPposterior.size(); ++i)
@@ -2704,7 +2710,10 @@ void GA::checkCorrelation(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNP
   double absCorr;
   int counter = 0;
   ofstream outFile;  
-  outFile.open((parameter.out_file_name + "_All_correlation_" + int2str(parameter.in_values_int) + ".txt").c_str(), ios::app);
+	outFile.open(
+		( parameter->out_file_name + "_All_correlation_" + int2str( parameter->in_values_int) + ".txt" ).c_str(),
+		ios::app
+	);
   outFile << " \t";
   for (unsigned int i = 0; i < realSNPs.size(); ++i)
     outFile << realSNPs[i] << "\t";
@@ -2733,7 +2742,10 @@ void GA::checkCorrelation(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNP
   }
   outFile.close();
   //ofstream outFile;  
-  outFile.open((parameter.out_file_name + "_correlation_" + int2str(parameter.in_values_int) + ".txt").c_str(), ios::app);
+	outFile.open(
+		( parameter->out_file_name + "_correlation_" + int2str( parameter->in_values_int ) + ".txt" ).c_str(),
+		ios::app
+	);
   
   if (outFile.is_open() == true)
   {
@@ -2745,7 +2757,7 @@ void GA::checkCorrelation(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNP
     cerr << "Can not open the file: " << endl;
     exit(-1);
   }  
-  cout << "file: " << (parameter.out_file_name + "_correlation_" + int2str(parameter.in_values_int) + ".txt").c_str() << endl;
+  cout << "file: " << ( parameter->out_file_name + "_correlation_" + int2str( parameter->in_values_int ) + ".txt" ).c_str() << endl;
 }
 
 
@@ -2761,12 +2773,10 @@ void GA::setRecognisedSNPs()
   recognizedSNPs_clusterMax.clear();
   recognizedSNPs_clusterSum.clear();
 
-  if (parameter.causalModelFilename.length() > 0)
-  {
+  if ( 0 < parameter->causalModelFilename.length() ) {
     vector<snp_index_t> realSNPs;             // snps from real model
-    modelReader(parameter.causalModelFilename, realSNPs);   
-    for (unsigned int i = 0; i < realSNPs.size(); ++i)
-    {
+    modelReader( parameter->causalModelFilename, realSNPs );   
+    for ( size_t i = 0; i < realSNPs.size(); ++i ) {
       recognizedSNPs_Region.insert(pair<snp_index_t, int>(realSNPs[i], 0));
       recognizedSNPs_bestGA.insert(pair<snp_index_t, int>(realSNPs[i], 0));
       recognizedSNPs_mosgwa.insert(pair<snp_index_t, int>(realSNPs[i], 0));
@@ -2798,7 +2808,7 @@ void GA::makeClusers(vector<set<snp_index_t> > &tab)
 {
   //data.calculateIndividualTests();          // działamy tylko na snpach, których p-val < 0.1
   vector<snp_index_t> realSNPs;             // snps from the real model
-  modelReader(parameter.causalModelFilename, realSNPs);
+  modelReader( parameter->causalModelFilename, realSNPs );
   goodSNPs.reset();
   unsigned int n = 0;
   long double abscorr;
@@ -2859,9 +2869,12 @@ void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, ma
   stringstream ss;
   map<snp_index_t, long double> Pmi_Y;
   multimap<long double, snp_index_t> Pmi_Ysort;
-  aFile.open( (fileName + "/pref_#" + int2str(parameter.in_values_int) + ".mcmc.txt").c_str(), ios::in ); // pref_#1.mcmc.txt
+	aFile.open(
+		( fileName + "/pref_#" + int2str( parameter->in_values_int ) + ".mcmc.txt" ).c_str(),
+		ios::in
+	);
   aFile.clear();    
-  cout << "a file: " << (fileName + "/pref_#" + int2str(parameter.in_values_int) + ".mcmc.txt").c_str() << " is opened" << endl;
+  cout << "a file: " << ( fileName + "/pref_#" + int2str( parameter->in_values_int ) + ".mcmc.txt" ).c_str() << " is opened" << endl;
   getline(aFile, line);
   stringstream sInfo;
   while (!aFile.eof())
@@ -2908,10 +2921,9 @@ void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, ma
   powerFDR.posteriorBad = 0.0;
   powerFDR.posteriorBadCluster = 0.0;  
   
-  if (parameter.causalModelFilename.length() > 0)
-  {
+  if ( 0 < parameter->causalModelFilename.length() ) {
     vector<snp_index_t> realSNPs;             // snps from real model
-    modelReader(parameter.causalModelFilename, realSNPs);  
+    modelReader( parameter->causalModelFilename, realSNPs );  
     
     if (realSNPs.size() > 0 && isBad == true)
     {
@@ -3463,7 +3475,7 @@ void GA::calculatePOWER_FDR_clust_max(vector<snp_index_t> &causalSNPs, TPOWER_FD
   ofstream file;
   if (TEST) 
   {
-    file.open((parameter.out_file_name + "Label_PmiY.txt").c_str(), ios::trunc);
+    file.open( ( parameter->out_file_name + "Label_PmiY.txt" ).c_str(), ios::trunc );
     file << ssLabel_PmiY.str() << endl;
     file.close();
   }  
@@ -3487,7 +3499,7 @@ void GA::calculatePOWER_FDR_clust_max(vector<snp_index_t> &causalSNPs, TPOWER_FD
       }
       ssClusters << "}" << endl;
     }
-    file.open((parameter.out_file_name + "myClusters.txt").c_str(), ios::trunc);
+    file.open( ( parameter->out_file_name + "myClusters.txt" ).c_str(), ios::trunc );
     file << ssClusters.str() << endl;
     file.close();
   }
@@ -3592,7 +3604,7 @@ void GA::calculatePOWER_FDR_clust_max(vector<snp_index_t> &causalSNPs, TPOWER_FD
   
   if (TEST) 
   {
-    file.open((parameter.out_file_name + "_" + int2str(parameter.in_values_int) + "_power.txt").c_str(), ios::trunc);
+    file.open( ( parameter->out_file_name + "_" + int2str( parameter->in_values_int ) + "_power.txt" ).c_str(), ios::trunc );
     file << ssPower.str() << endl;
     file.close();
   }  
@@ -3653,7 +3665,7 @@ void GA::calculatePOWER_FDR_clust_sum(vector<snp_index_t> &causalSNPs, TPOWER_FD
   ofstream file;
   if (TEST) 
   {
-    file.open((parameter.out_file_name + "Label_PmiY.txt").c_str(), ios::trunc);
+    file.open( ( parameter->out_file_name + "Label_PmiY.txt" ).c_str(), ios::trunc );
     file << ssLabel_PmiY.str() << endl;
     file.close();
   }  
@@ -3677,7 +3689,7 @@ void GA::calculatePOWER_FDR_clust_sum(vector<snp_index_t> &causalSNPs, TPOWER_FD
       }
       ssClusters << "}" << endl;
     }
-    file.open((parameter.out_file_name + "myClusters.txt").c_str(), ios::trunc);
+    file.open( ( parameter->out_file_name + "myClusters.txt" ).c_str(), ios::trunc );
     file << ssClusters.str() << endl;
     file.close();
   }
@@ -3781,10 +3793,10 @@ void GA::calculatePOWER_FDR_clust_sum(vector<snp_index_t> &causalSNPs, TPOWER_FD
   ssPower << "TPcount: " << sumTP << endl;
   ssPower << "FDcount: " << powerFDR.FDcount << endl;
   
-  cout << "file_BEFORE: " << (parameter.out_file_name + "_" + int2str(parameter.in_values_int) + "_power.txt").c_str() << endl;
+  cout << "file_BEFORE: " << ( parameter->out_file_name + "_" + int2str(parameter->in_values_int) + "_power.txt" ).c_str() << endl;
   if (TEST) 
   {
-    file.open((parameter.out_file_name + "_" + int2str(parameter.in_values_int) + "_power.txt").c_str(), ios::trunc);
+    file.open( ( parameter->out_file_name + "_" + int2str( parameter->in_values_int ) + "_power.txt" ).c_str(), ios::trunc );
     file << ssPower.str() << endl;
     file.close();
   }  
@@ -3902,7 +3914,7 @@ void GA::calculate_clusters(map<snp_index_t, long double> &mapSNPid_Pmi_Y, vecto
   }
   if (TEST) 
   {
-    file.open((parameter.out_file_name +  "_Label_PmiY.txt").c_str(), ios::trunc);
+    file.open( ( parameter->out_file_name +  "_Label_PmiY.txt" ).c_str(), ios::trunc );
     file << ssLabel_PmiY.str() << endl;
     file.close();
   }  
@@ -3923,7 +3935,7 @@ void GA::calculate_clusters(map<snp_index_t, long double> &mapSNPid_Pmi_Y, vecto
       }
       ssClusters << "}" << endl;
     }
-    file.open((parameter.out_file_name + "_myClusters.txt").c_str(), ios::trunc);
+    file.open( ( parameter->out_file_name + "_myClusters.txt" ).c_str(), ios::trunc );
     file << ssClusters.str() << endl;
     file.close();
   }
@@ -4100,7 +4112,7 @@ void GA::readClusterLabel(map<snp_index_t, int>& mapSNPid_label, const string& f
   }
   else
   {
-    printLOG( "No clusters file" );
+	logger->info( "No clusters file" );
     return;
   }
   if (mapLabel_PmiY != 0)
@@ -4112,7 +4124,7 @@ void GA::readClusterLabel(map<snp_index_t, int>& mapSNPid_label, const string& f
     
   }
   ofstream errFile;
-  errFile.open((parameter.out_file_name +  fileName + "_missing.txt").c_str());
+  errFile.open( ( parameter->out_file_name +  fileName + "_missing.txt" ).c_str() );
   errFile << "bad names: " << badName << endl << "missing SNPs:\r\n " << ssError.str();
   errFile.close();
   isCluster = true;
@@ -4123,10 +4135,10 @@ void GA::readClusterLabel(map<snp_index_t, int>& mapSNPid_label, const string& f
  */
 void GA::initCausalPost( map<snp_index_t, int> &mapSNPCausal_ind )
 {
-  if (parameter.causalModelFilename.length() > 0)  // The simulation. We have the causalModel
+  if ( 0 < parameter->causalModelFilename.length() )	// The simulation. We have the causalModel
   {
     vector<snp_index_t> realSNPs;                // snps from the casual model
-    modelReader(parameter.causalModelFilename, realSNPs);
+    modelReader( parameter->causalModelFilename, realSNPs );
     if (realSNPs.size() > 0)
     {
       int i = 0;
@@ -4141,7 +4153,7 @@ void GA::initCausalPost( map<snp_index_t, int> &mapSNPCausal_ind )
   }
   else
   {
-    cerr << "initCausalPost(): no real model! causalModelFilename: " << parameter.causalModelFilename << endl;
+    cerr << "initCausalPost(): no real model! causalModelFilename: " << parameter->causalModelFilename << endl;
     //exit(-1);
   }
 }
@@ -4268,7 +4280,7 @@ void GA::saveLabelCount(const string &fileName)
   outFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
   try
   {
-    outFile.open((parameter.out_file_name + fileName).c_str(),  fstream::out | fstream::trunc );
+    outFile.open( ( parameter->out_file_name + fileName ).c_str(), fstream::out | fstream::trunc );
     outFile << ss.str() << endl;
     outFile.flush();
     outFile.close();
@@ -4287,7 +4299,7 @@ void GA::saveLabelCount(const string &fileName)
 void GA::setCausalCount(map<snp_index_t, int> &map_SNP2count)
 {
   vector<snp_index_t> causalSNPs;             // snps from the real model
-  modelReader(parameter.causalModelFilename, causalSNPs);  
+  modelReader( parameter->causalModelFilename, causalSNPs );  
   for (unsigned int i = 0; i < causalSNPs.size(); ++i)
   {
      map_SNP2count[ causalSNPs[i] ] = 0;    
@@ -4387,7 +4399,7 @@ void GA::stronglyCorrelatedSnpsCluster(const vector<snp_index_t> & tabSNPs, cons
   outFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
   try
   {
-    outFile.open((parameter.out_file_name + "_corrAG_Example.txt").c_str(),  fstream::out | fstream::trunc );
+    outFile.open( ( parameter->out_file_name + "_corrAG_Example.txt" ).c_str(), fstream::out | fstream::trunc );
     outFile << ssAll.str() << endl;
     outFile.flush();
     outFile.close();
@@ -4400,7 +4412,7 @@ void GA::stronglyCorrelatedSnpsCluster(const vector<snp_index_t> & tabSNPs, cons
   
   try
   {
-    outFile.open((parameter.out_file_name + "_cluAG_30.clu").c_str(),  fstream::out | fstream::trunc );
+    outFile.open( ( parameter->out_file_name + "_cluAG_30.clu" ).c_str(), fstream::out | fstream::trunc );
     outFile << ssClusters.str() << endl;
     outFile.flush();
     outFile.close();
@@ -4515,7 +4527,7 @@ void GA::saveRecognizedSNPinfo(const vector<snp_index_t> &v, const string &metho
     model.computeMSCfalseRegression();
   }  
   ofstream file;
-  file.open((parameter.out_file_name + "_Report.txt").c_str(), ios::app);
+  file.open( ( parameter->out_file_name + "_Report.txt" ).c_str(), ios::app );
   file << method_Name << endl << endl;
   file << ssInfo.str() 
        << model << endl;
@@ -4553,7 +4565,7 @@ void GA::writePoolofSize(bool &flag, int maxSize)
       ss << "GA time: " << (time_end > time_start? sec2time(time_end - time_start) : sec2time(24 * 3600 + time_end - time_start));  
       writePoolToFile(ss, "_100K");
       flag = false;
-      printLOG( ("100K" + ss.str() + "\n\r") );
+	logger->info( "100K %s", ss.str().c_str() );
     }
   }
 }
@@ -4582,7 +4594,7 @@ void GA::regionStrategy(const string method_Name, Model &model, multimap<long do
   vector<snp_index_t> v_all;
   set<snp_index_t>s;
   ofstream  outFile;
-  if (TEST) outFile.open((parameter.out_file_name + "_region_mapSNP2ind.txt").c_str(),  fstream::out | fstream::trunc );
+  if (TEST) outFile.open( ( parameter->out_file_name + "_region_mapSNP2ind.txt" ).c_str(), fstream::out | fstream::trunc );
   if (TEST) outFile << "aSNP" << "\t" << "mapSNP2ind" << "\t" << "mapSNPid_Pmi_Y" << endl;
   for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > th; ++itM)
   {
@@ -4608,7 +4620,7 @@ void GA::regionStrategy(const string method_Name, Model &model, multimap<long do
     outFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
     try
     {
-      outFile.open((parameter.out_file_name + "_regionStrategy.txt").c_str(),  fstream::out | fstream::trunc );
+      outFile.open( ( parameter->out_file_name + "_regionStrategy.txt" ).c_str(), fstream::out | fstream::trunc );
       
       for (i = 0; i < tabCorr.size(); ++i)
       {
@@ -4637,7 +4649,7 @@ void GA::regionStrategy(const string method_Name, Model &model, multimap<long do
       cerr << "Could not write a _regionStrategy file" <<endl;
       exit(-1);
     }
-    outFile.open((parameter.out_file_name + "_regionStrategy.txt").c_str(),  fstream::out | fstream::app );
+    outFile.open( ( parameter->out_file_name + "_regionStrategy.txt" ).c_str(), fstream::out | fstream::app );
     outFile << endl;
     outFile << "SNP_ind\tposter.\tposter(region)\tregion" << endl;
   }
@@ -4812,7 +4824,7 @@ void GA::regionStrategy(const string method_Name, Model &model, multimap<long do
   if (TEST) outFile << model << endl;
   if (TEST) outFile.close();
   ofstream file;
-  file.open((parameter.out_file_name + "_Report.txt").c_str(), ios::app);
+  file.open( ( parameter->out_file_name + "_Report.txt" ).c_str(), ios::app );
   file << method_Name << " (compact report)"<< endl << endl;
   file << ssInfo_Compact.str()
        << m << endl;
@@ -4924,7 +4936,7 @@ void GA::test_region()
   double absCorr;
 
   ofstream  outFile;
-  outFile.open((parameter.out_file_name + "_region_TEST_mapSNP2ind.txt").c_str(),  fstream::out | fstream::trunc );
+  outFile.open( ( parameter->out_file_name + "_region_TEST_mapSNP2ind.txt" ).c_str(), fstream::out | fstream::trunc );
   outFile << "mapSNP2ind" << "\t" << "aSNP" << endl;
   for (  unsigned int i = 0; i < SNPs.size(); ++i)
   {
@@ -4943,7 +4955,7 @@ void GA::test_region()
   outFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if poolfile can be written
   try
   {
-    outFile.open((parameter.out_file_name + "_regionStrategy_TEST.txt").c_str(),  fstream::out | fstream::trunc );
+    outFile.open( ( parameter->out_file_name + "_regionStrategy_TEST.txt" ).c_str(), fstream::out | fstream::trunc );
     
     for (unsigned i = 0; i < tabCorr.size(); ++i)
     {
@@ -4972,12 +4984,12 @@ void GA::test_region()
     cerr << "Could not write a _regionStrategy file" <<endl;
     exit(-1);
   }
-  outFile.open((parameter.out_file_name + "_regionStrategy_TEST.txt").c_str(),  fstream::out | fstream::app );
+  outFile.open( ( parameter->out_file_name + "_regionStrategy_TEST.txt" ).c_str(), fstream::out | fstream::app );
   outFile << endl;
   outFile << "SNP_ind\tposter.\tposter(region)\tregion" << endl;
   outFile.close();
   
-  outFile.open((parameter.out_file_name + "_correlation_TEST.txt").c_str(),  fstream::out | fstream::trunc );
+  outFile.open( ( parameter->out_file_name + "_correlation_TEST.txt" ).c_str(), fstream::out | fstream::trunc );
   outFile << "no\tSNP_Id\tSNP_ind \t SNP_ind\t correlation" << endl;
   for (  unsigned int i = 0; i < SNPs.size(); ++i)
   {
