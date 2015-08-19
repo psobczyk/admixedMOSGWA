@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2014, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Erich Dolejsi, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -18,6 +18,7 @@
 #include "Model.hpp"
 #include "GenotypeFreq.hpp"
 #include "PermSort.hpp"
+#include "logging/Logger.hpp"
 #include "io/PlinkInput.hpp"
 #include "io/Hdf5Input.hpp"
 #include <sstream>
@@ -30,6 +31,7 @@
 #include <hdf5.h>
 
 using namespace linalg;
+using namespace logging;
 using namespace io;
 
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -49,7 +51,7 @@ void MData::getCovariateColumn ( const size_t cov, Vector& vector ) const {
 }
 
 void MData::getY ( Vector& vector ) const {
-	input->retrievePhenotypeVector( parameter.in_values_int, vector );
+	input->retrievePhenotypeVector( parameter->in_values_int, vector );
 }
 
 void MData::setLL0M ( const double ll ) {
@@ -59,24 +61,24 @@ void MData::setLL0M ( const double ll ) {
 /** Default Constructor: reads the input-files, sets parameters, deallambda.hpps with missing phenotypes */
 MData::MData ( io::Input * const externalInput ) : input( externalInput ), allocateInput( NULL == externalInput ), covMat( 0, 0 ) {
 	if ( allocateInput ) {
-		if ( parameter.in_file_hdf5.empty() ) {
-			input = new PlinkInput( parameter.in_files_plink.c_str() );
-			if ( 0 == parameter.nSNPKriterium ) {
-				parameter.nSNPKriterium=getSnpNo();
+		if ( parameter->in_file_hdf5.empty() ) {
+			input = new PlinkInput( parameter->in_files_plink.c_str() );
+			if ( 0 == parameter->nSNPKriterium ) {
+				parameter->nSNPKriterium=getSnpNo();
 			}
 		} else {
-			input = new Hdf5Input( parameter.in_file_hdf5.c_str(), parameter.cov_extra_file );
+			input = new Hdf5Input( parameter->in_file_hdf5.c_str(), parameter->cov_extra_file );
 		}
 	}
-	inputCache.reset( new CachedInput( *input, parameter.cache_limit ) );
+	inputCache.reset( new CachedInput( *input, parameter->cache_limit ) );
 
 	const size_t
 		snps = input->countSnps(),
 		idvs = input->countIndividuals(),
 		covs = input->countCovariates();
 	        //ED setting default Value for nSNPKriterium when not set 
-	        if(0==parameter.nSNPKriterium)
-                  parameter.nSNPKriterium=snps;
+	        if(0==parameter->nSNPKriterium)
+                  parameter->nSNPKriterium=snps;
 	covMat.exactSize( idvs, covs );
 	singleMarkerTestResult.resize( snps, numeric_limits<double>::signaling_NaN() );
 	const std::string * covariates = input->getCovariates();
@@ -85,9 +87,9 @@ MData::MData ( io::Input * const externalInput ) : input( externalInput ), alloc
 		Vector covVec = covMat.columnVector( cov );
 		input->retrieveCovariateVector( cov, covVec );
 	}
-	Y_name_ = input->getTraits()[parameter.in_values_int];
+	Y_name_ = input->getTraits()[parameter->in_values_int];
 
-	checkYValues();
+	checkData();
 }
 
 MData::~MData () {
@@ -158,91 +160,32 @@ void MData::fillSnp_order_Vec ( const size_t snpNo, size_t* SNPList, double* Tes
 	snp_order_.fillVec( snpNo, SNPList, TestStat );
 }
 
-/** Check Y-Values and store them in a vector.
- MISSING: to check for missing values and remove then the individual, and the genotype-info */
-void MData::checkYValues()
-{
-	
-	int noOfRemovedIndividuals=0;
-	parameter.affection_status_phenotype = true;	// intitial setting, Y-values are tested if the are just (0,1) (or missing)
-	
-	caseNo_=0;
-	contNo_=0;
-	
+void MData::checkData () {
 	const size_t idvs = getIdvNo();
-	AutoVector yVec( idvs );
-	getY( yVec );
-	for ( size_t idv = 0; idv < getIdvNo(); ++idv ) {
-		const double indPheno = yVec.get( idv );
-		// do not consider individuals with missing phenotype
-		if ( indPheno == parameter.missing_phenotype_code ) {
-			printLOG( "Missing individuals' phenotype for individual \"" + getID( idv ) + " " + getFID( idv ) + "\"." );
-			exit(2);	
-		}
-		else // no missing phenotype, determine if phenotype is affection (case-control) or quantitative
-		{
-			if ( indPheno == parameter.case_value) // was set 1 check affection status
-			{
-				caseNo_++;
-			}
-			else if ( indPheno == parameter.control_value)  //was set 0
-			{
-				contNo_++;
-			}
-			else // some other number than 0/1 detected, phenotype must be qua
-			{ cerr<<"i="<<idv<<" indPheno="<<indPheno<<endl;
-				parameter.affection_status_phenotype = false;
-			}
-		}
+	parameter->affection_status_phenotype = true;	// intitial setting, Y-values are tested if the are just (0,1) (or missing)
 	
-	}
-	
-	vector<Individual*>::iterator it_ind;
-	// fill Y_vector_ with phenotype, test of cases 
-	
-	
-	if ( parameter.affection_status_phenotype ) {
-		if ( caseNo_ + contNo_ == getIdvNo() ) {
-			printLOG("Affection status phenotype detected: "+int2str(caseNo_)+" Cases, " + int2str(contNo_) + " Controls, " + int2str(noOfRemovedIndividuals) + " missing");
-		}
-		else
-		{
-			printLOG( "Error in affection status: " + int2str(caseNo_) + " Cases, " + int2str(contNo_) + " Controls, " + int2str( getIdvNo() ) + " Total");	
-			exit(7);
-		}	
-	}
-	else	
-	{
-		printLOG( "Quantitive phenotype detected: " + int2str( getIdvNo() ) +" Individuals, " +int2str(noOfRemovedIndividuals) +" Individuals with missing phenotype" );	
-	}	
-
-}
-
-
-/** TESTING */
-void MData::printIndividuals () {
-	const size_t idvs = getIdvNo();
-	const Individual * individuals = input->getIndividuals();
-	for (
-		int idv = 0;
-		idv < idvs;
-		++idv
-	) {
-		cout << individuals[idv] << endl;
-	}
-}
-
-void MData::printIndividuals ( ostream &s ) {
-	const size_t idvs = getIdvNo();
-	const Individual * individuals = input->getIndividuals();
 	AutoVector yVec( idvs );
 	getY( yVec );
 	for ( size_t idv = 0; idv < idvs; ++idv ) {
-		const Individual & individual = individuals[idv];
-		s
-			<< individual.getFamilyID() << " "
-			<< individual.getIndividualID() << " "
-			<< yVec.get( idv ) << endl;
+		const double indPheno = yVec.get( idv );
+		// do not consider individuals with missing phenotype
+		if ( indPheno == parameter->missing_phenotype_code ) {
+			logger->warning(
+				"missing individuals' phenotype for individual \"%s %s\"",
+				getID( idv ).c_str(),
+				getFID( idv ).c_str()
+			);
+		}
+		else // no missing phenotype, determine if phenotype is affection (case-control) or quantitative
+		{
+			if ( indPheno == parameter->case_value)	{	// was set 1 check affection status
+			} else if ( indPheno == parameter->control_value ) {	//was set 0
+			} else {	// some other number than 0/1 detected, phenotype must be qua
+				logger->error( "i=%u indPheno=%d", idv, indPheno );
+				parameter->affection_status_phenotype = false;
+			}
+		}
+	
 	}
 }
 
@@ -303,9 +246,8 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 	ofstream	SNPL;
 
 	SNPL.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if Logfile can be writt
-	try
-	{
-		SNPL.open( ( parameter.out_file_name + "_SNPList.txt" ).c_str(), fstream::out );
+	try {
+		SNPL.open( ( parameter->out_file_name + "_SNPList.txt" ).c_str(), fstream::out );
 		vector<string>::iterator it_SNPList;
 		
 		for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
@@ -369,12 +311,13 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 		SNPL << ")"<<endl;
 		
 		SNPL.close();
-		printLOG( "Written R-File \"" + parameter.out_file_name + "_SNPList.txt\"." );
+		logger->info(
+			"Written R-File \"%s_SNPList.txt\".",
+			parameter->out_file_name.c_str()
+		);
+	} catch ( ofstream::failure e ) {
+		logger->error( "Could not write R-File: %s", e.what() );
 	}
-	catch (ofstream::failure e)
-	{
-		cerr << "Could not write R-File" <<endl;
-	}	
 }
 
 /** printSelectedSNPsInMatlab create an *Octave.h5 file with the selected SNPs (as a vector of strings)  and their X and of course the phenotype Y
@@ -393,8 +336,17 @@ void MData::printSelectedSNPsInMatlab ( vector<string> SNPList , string extra) c
 		 double  Y[idvs];
 		 vector<string>::iterator it_SNPList;
 		 int i;
-printLOG( parameter.out_file_name + extra + "Octave.h5");
-file=H5Fcreate((parameter.out_file_name + extra + "Octave.h5").c_str(),H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT); //standart
+		logger->info(
+			"out_file=%s%sOctave.h5",
+			parameter->out_file_name.c_str(),
+			extra.c_str()
+		);
+		file = H5Fcreate(
+			( parameter->out_file_name + extra + "Octave.h5" ).c_str(),
+			H5F_ACC_TRUNC,
+			H5P_DEFAULT,
+			H5P_DEFAULT
+		);
 const char *S[SNPList.size()];
 	filetype = H5Tcopy (H5T_C_S1);
         status = H5Tset_size (filetype,H5T_VARIABLE);
@@ -456,7 +408,7 @@ status=H5Fclose(file);
 	SNPL.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit ); // checks if file can be written
 	try
 	{
-		SNPL.open( ( parameter.out_file_name + "_SNPList.m" ).c_str(),  fstream::out );
+		SNPL.open( ( parameter->out_file_name + "_SNPList.m" ).c_str(),  fstream::out );
 		vector<string>::iterator it_SNPList;
                   
 		SNPL << "SNPnames = { ";
@@ -510,12 +462,13 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 		}
 		SNPL << "]" << endl;
 		SNPL.close();
-		printLOG( "Written MATLAB-File \"" + parameter.out_file_name + "_SNPList.m \"" );
+		logger->info(
+			"Written MATLAB-File \"%sSNPList.m\"",
+			parameter->out_file_name.c_str()
+		);
+	} catch ( ofstream::failure e ) {
+		logger->error( "Could not write MATLAB-File: %s", e.what() );
 	}
-	catch (ofstream::failure e)
-	{
-		cerr << "Could not write MATLAB-File" <<endl;
-	}	
 }
 
 
@@ -600,24 +553,28 @@ double MData::computeCorrelation ( const size_t locus1, const size_t locus2 ) co
 
 void MData::calculateIndividualTests()
 {
+	const size_t snps = getSnpNo();
 	
-	printLOG("Start Individual Tests");
+	logger->info( "Start Individual Tests" );
 	
-	Model SingleSNP( *this );	// create Model with current MData
-	auto_ptr<size_t> snpArray( new size_t[ getSnpNo() ] );	// to store information for SortVec snp_order_
-	auto_ptr<double> TestStat( new double[ getSnpNo() ] ); // to store information for SortVec snp_order_
+	Model singleSNP( *this );	// create Model with current MData
+	auto_ptr<size_t> snpArray( new size_t[ snps ] );
+	auto_ptr<double> TestStat( new double[ snps ] );
 
-	// REMARK<BB>: does OMP duplicate SingleSNP in storage?
-	// Otherwise, calls to computeSingleRegressorTest will clash.
-	#pragma omp parallel for
-	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
-		// for sorting, store positon 
+	#pragma omp parallel for private(singleSNP)
+	for ( size_t snp = 0; snp < snps; ++snp ) {
+		if ( 0 == singleSNP.getModelSize() ) {
+			singleSNP.addSNPtoModel( snp );
+		} else {
+			singleSNP.replaceSNPinModel( snp, 0 );
+		}
+		// for sorting, store position
 		snpArray.get()[snp] = snp;
-		// compute p-value of single marker test, and store for sorting
-		TestStat.get()[snp] = SingleSNP.computeSingleRegressorTest( snp );
+		// compute p-value of single marker test and store for sorting
+		TestStat.get()[snp] = singleSNP.computeSingleRegressorTest();
 	}
 	omp_set_num_threads( 4 );
-	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
+	for ( size_t snp = 0; snp < snps; ++snp ) {
 		setSingleMarkerTestAt( snp, TestStat.get()[snp] );
 	}
 	
@@ -626,7 +583,7 @@ void MData::calculateIndividualTests()
 
 	// output the SNP order an the p-values in a file
 	ofstream IT;
-	IT.open( ( parameter.out_file_name + "_IT.txt" ).c_str(), ios::out );
+	IT.open( ( parameter->out_file_name + "_IT.txt" ).c_str(), ios::out );
 	
 	IT << "SNP_no. \t SNP_name \t Chr \t Pos \t p-value" << endl;
 	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
@@ -640,10 +597,13 @@ void MData::calculateIndividualTests()
 	}
 	
 	IT.close();
-	
-	printLOG( "Individual Tests finished, written to \"" + parameter.out_file_name + "_IT.txt\"" );
 
+	logger->info(
+		"Individual Tests finished, written to \"%s_IT.txt\"",
+		parameter->out_file_name.c_str()
+	);
 }
+
 /**calculate PValuePorder needs parameter.ms_MaximalPValueForwardStep but set in the conf-file
  *and of course the MData variable.
  determines the SNPs with p-Value < parameter.ms_MaximalPValueForwardStep
@@ -655,7 +615,7 @@ size_t MData::calculatePValueBorder () const {
 		PValueBorder = getSnpNo() - 1;
 		0 < PValueBorder
 		&&
-		snp_order_.getValue( PValueBorder ) > parameter.ms_MaximalPValueForwardStep;
+		snp_order_.getValue( PValueBorder ) > parameter->ms_MaximalPValueForwardStep;
 		--PValueBorder
 	);
 //checking this will bring something when PValueBorder will be very small
@@ -671,7 +631,7 @@ bool MData::selectModel (
 	int maxModel,
 	const int selectionCriterium
 ) {
-	printLOG("Model Selection started: ");
+	logger->info( "Model Selection started:" );
 	bool 	stop = false;
 //	int     removedSNP=-1;
 	int *startIndex; //start at the begin 
@@ -687,7 +647,7 @@ PValueBorder=min(getSnpNo()-1,PValueBorder);
 	Model model0( *this );
 	
 	model0.computeRegression();
-        model0.printYvec(true);
+	model0.printYvec();
 	setLL0M( model0.getMJC() );	// REMARK<BB>: functionality seems redundant with that in main.cpp
 	Model model1( *this ), model2( *this );
         //Mod
@@ -708,7 +668,7 @@ PValueBorder=min(getSnpNo()-1,PValueBorder);
 	currentModel->makeMultiForwardStep( PValueBorder, selectionCriterium, startIndex );
 	currentModel->computeRegression();
 
-	printLOG( "Start stepwise selection" );
+	logger->info( "Start stepwise selection" );
 double bestMSC= currentModel->getMSC();
 //currentModel->replaceModelSNPbyNearCorrelated(0);
 //exit(0);
@@ -718,16 +678,16 @@ double bestMSC= currentModel->getMSC();
 		improvement = currentModel->saveguardbackwardstep( *backwardModel, selectionCriterium );
          
 	 //ED break because of computational limitations
-	 if (currentModel->getModelSize()>min(parameter.maximalModelSize,maxModel))
-		 break;
+		if ( currentModel->getModelSize() > min( parameter->maximalModelSize, maxModel ) ) {
+			break;
+		}
         /* linear case normal forward step
          */
-          if (!parameter.affection_status_phenotype)//quantitative
+		if ( !parameter->affection_status_phenotype ) {		//quantitative
 			improvement = currentModel->makeForwardStepLinear( forwardModel, &bestMSC, PValueBorder, startIndex );
-          else if (parameter.affection_status_phenotype)/*PRÄSELECTION nur bis Revision 274*/
+		} else {	/*PRÄSELECTION nur bis Revision 274*/
 			improvement = currentModel->makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex, selectionCriterium );
-          else 
-		  cerr<<" not linear nor logistic, this should not happen"<<endl;
+		}
 		stop = currentModel->finalizeModelSelection(
 			*backwardModel,
 			improvement,
@@ -735,10 +695,12 @@ double bestMSC= currentModel->getMSC();
 			startIndex,
 			selectionCriterium
 		);
-}//while
-size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs case below.
-	if( parameter.affection_status_phenotype)
-      {if (350>getSnpNo()-1) reference=getSnpNo()-1;
+	}
+	size_t reference = 350;		// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs case below.
+	if ( parameter->affection_status_phenotype ) {
+		if ( 350 > getSnpNo() - 1 ) {
+			reference = getSnpNo() - 1;
+		}
 	    
 		while(
 			currentModel->selectModel(
@@ -753,7 +715,7 @@ size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs 
 		 //improvment=currentModel->replaceModelSNPbyNearFromCAT(*startIndex , PValueBorder, criterium);
 	         //if(improvment)	 currentModel->saveguardbackwardstep( *backwardModel,criterium);
 		}
-	} 
+	}
 		improvement = currentModel->replaceModelSNPbyNearFromCAT(
 			*startIndex , PValueBorder, selectionCriterium
 		);
@@ -765,18 +727,20 @@ size_t reference=350;	// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs 
 
 //currentModel->replaceModelSNPbyNearCorrelated(); bringt nichts
 //currentModel=backwardModel;
-currentModel->printStronglyCorrelatedSnps( parameter.correlation_threshold, int2str(parameter.in_values_int) + "the_result" );
-
+	currentModel->printStronglyCorrelatedSnps(
+		parameter->correlation_threshold,
+		int2str(parameter->in_values_int) + "the_result"
+	);
 	currentModel->printModel( "finalModel", selectionCriterium );
-
-return true ; 
+	return true ; 
 }
 
 ///////////////////////////////////////////////////7
 //selectModel ohne Argument
 bool MData::selectModel()
 {
-	printLOG("OLD Model Selection started: ");
+	logger->info( "OLD Model Selection started:" );
+
 	Model SelectedModel( *this ); 
 	Model Forward( *this );
 	Model Backward( *this );
@@ -787,7 +751,7 @@ bool MData::selectModel()
 	     startIndex=&dummy;
        // int PValueBorder =calculatePValueBorder();
 	//or take the setting from the conf file
-	size_t PValueBorder = parameter.PValueBorder;
+	size_t PValueBorder = parameter->PValueBorder;
 	size_t eins=1;
 	PValueBorder = max(min( getSnpNo()-1, PValueBorder ),eins);	// REMARK<BB>: how about 0 SNPs?
 //if(getSnpNo()-1>350)
@@ -797,7 +761,7 @@ bool MData::selectModel()
 	Model model0( *this );
 	
 	model0.computeRegression();
-        model0.printYvec(true);
+        model0.printYvec();
 	setLL0M( model0.getMJC() );
 	Model model1( *this ), model2( *this );
         //Mod
@@ -809,7 +773,7 @@ bool MData::selectModel()
 	currentModel->makeMultiForwardStep(PValueBorder,1,startIndex);
 	currentModel->computeRegression();
        // best=currentModel;
-	printLOG( "Start stepwise selection " );
+	logger->info( "Start stepwise selection:" );
         currentModel->computeMSC(0);
         //currentModel->printModel("check1");
 double bestMSC= currentModel->getMSC();
@@ -827,7 +791,7 @@ double bestMSC= currentModel->getMSC();
 	 currentModel=backwardModel; 
         /* linear case normal forward step
          */
-		if ( !parameter.affection_status_phenotype ) {
+		if ( !parameter->affection_status_phenotype ) {
 			improvement = currentModel->makeForwardStepLinear(
 				forwardModel,
 				&bestMSC,
@@ -843,88 +807,28 @@ double bestMSC= currentModel->getMSC();
 			PValueBorder,
 			startIndex
 		);
-	}//while
+	}
 	size_t reference = 350;	// REMARK<BB>: Where does 350 come from?
-	if( parameter.affection_status_phenotype)
-	{
+	if( parameter->affection_status_phenotype ) {
 		if ( 350 > getSnpNo()-1 ) reference=getSnpNo()-1;	// REMARK<BB>: Beware 0 SNPs case.
-	    
-	while(currentModel->getModelSize()&&currentModel->selectModel(*backwardModel,max(reference,PValueBorder)))
-		 //minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
-		{
-		improvement = currentModel->replaceModelSNPbyNearFromCAT( *startIndex , PValueBorder );
-		 currentModel->saveguardbackwardstep( *backwardModel);
+		while (
+			currentModel->getModelSize()
+			&&
+			currentModel->selectModel( *backwardModel, max( reference, PValueBorder ) )
+		) {
+			//minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
+			improvement = currentModel->replaceModelSNPbyNearFromCAT( *startIndex , PValueBorder );
+			currentModel->saveguardbackwardstep( *backwardModel);
 		}
-	} 
-
-currentModel->printStronglyCorrelatedSnps( parameter.correlation_threshold, int2str(parameter.in_values_int) + "the_result" );
-
-currentModel->printModel("finalModel");
-
-return true;
+	}
+	currentModel->printStronglyCorrelatedSnps(
+		parameter->correlation_threshold,
+		int2str(parameter->in_values_int) + "the_result"
+	);
+	currentModel->printModel("finalModel");
+	return true;
 }
 
-
-
-/** just for TESTING !memory leak! */
-void MData::readInSNPOrder ( const string& filename ) {
-
-	ifstream	ITF;
-	string 		helper;
-	int 		Pos,SNPChr,SNPPos;
-	string 		SNPId;
-	double 		pValue;
-	
-	int 		i=0;
-	auto_ptr<size_t> snpArray( new size_t[ getSnpNo() ] );
-	auto_ptr<double> testStat( new double[ getSnpNo() ] );
-	
-	vector <bool> CheckSNP ( getSnpNo(), false);
-	vector <bool>::iterator it_CheckSNP;
-	ITF.open((filename).c_str(), ios::in);	
-	if (ITF.is_open())
-	{
-		getline(ITF,helper ); //remove fist line
-		while(! ITF.eof())
-		{
-			ITF >> Pos;    // get information per line
-			ITF >> SNPId;
-			ITF >> SNPChr; // not needed
-			ITF >> SNPPos; // not needed
-			ITF >> pValue;	
-	
-			if ( getSNP(Pos).getSnpId() != SNPId ) // check if position match
-			{
-				printLOG("SNP Position of : \""+ filename +"\" and the Data do not match.");
-				exit(1);
-			}
-			else
-			{
-				setSingleMarkerTestAt( Pos, pValue );
-				CheckSNP.at(Pos)=true;
-				snpArray.get()[i]=Pos;
-				testStat.get()[i]=pValue;
-			}
-			i++;
-		}
-		
-		for (it_CheckSNP = CheckSNP.begin(); it_CheckSNP < CheckSNP.end(); it_CheckSNP++) // check if Single Marker Test for every SNP was in file
-		{
-			if ( !*it_CheckSNP  )
-			{
-					printLOG("Not all SNPs in file \""+ filename +"\".");
-					exit(2);	
-			}
-		}
-		// set the SNP order in Model (a bit redundant, since sortet)
-		snp_order_.fillVec( getSnpNo(), snpArray.get(), testStat.get() );
-	}
-	else
-	{
-		printLOG("Could-Not open file: \""+ filename +"\" as SNP-Orderfile.");
-		exit(3);
-	}
-}
 
 /** Artur new code:
    * @brief writes ordered snps to file. File name is set up in parameters class.
@@ -933,7 +837,7 @@ void MData::printSnpOrder()
 {
   // output the SNP order an the p-values in a file
   ofstream IT;
-  IT.open( ( parameter.out_file_name + "_IT.txt" ).c_str(), ios::out );
+	IT.open( ( parameter->out_file_name + "_IT.txt" ).c_str(), ios::out );
   
   IT << "SNP_no. \t SNP_name \t Chr \t Pos \t p-value" << endl;
 	for ( size_t snp = 0; snp < getSnpNo(); ++snp ) {
@@ -946,5 +850,8 @@ void MData::printSnpOrder()
 			<< snp_order_.getValue( snp ) << endl;
 	}
   IT.close();
-  printLOG( "Individual Tests finished, written to \"" + parameter.out_file_name + "_IT.txt\"" );
+	logger->info(
+		"Individual Tests finished, written to \"%s_IT.txt\"",
+		parameter->out_file_name.c_str()
+	);
 }

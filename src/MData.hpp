@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Erich Dolejsi, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -23,7 +23,6 @@
 #include "Parameter.hpp"
 #include "Helpfull.hpp"
 #include "SortVec.hpp"
-#include "Log.hpp"
 #include "Individual.hpp"
 #include "SNP.hpp"
 #include "linalg/AutoVector.hpp"
@@ -78,8 +77,8 @@ class MData {
 	/** the log-likelihood of the zero-model (without any SNPs) */
 	double loglikelihood0Model_;
 
-	/** subroutine to check Y-values */
-	void checkYValues();
+	/** Check input data */
+	void checkData ();
 
 	/** Remove the given individual from the data. */
 	void removeIndividual ( const size_t idv );
@@ -160,14 +159,6 @@ public:
 
 //+++++++++++++
 
-
-	/** file-input
-		TESTING // uses an file of ordered SNPs form a previous
-		calculated MData::calculateIndividualTests() e.g. "*outname*_IT.txt"
-		to skip calcualtion of single marker tests.
-		WARNING: just for speed up testing, causes memory leaks */
-	void readInSNPOrder(const string& filename);
-
 	// general methods
 	/** Computes the correlation between two SNPs (loci) */
 	double computeCorrelation ( const size_t locus1, const size_t locus2 ) const;
@@ -200,7 +191,7 @@ public:
 	bool selectModel (
 		Model * inputModel,
 		size_t PValueBorder,
-		int maxModel = parameter.maximalModelSize,
+		int maxModel = parameter->maximalModelSize,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 	//+++++++++++++
@@ -208,14 +199,6 @@ public:
 	/** TESTING // screen-output of the informations stored for the SNPs */
 	void printSNPs ();
 
-	/** TESTING // screen-output of the informations stored for the individuals */
-	void printIndividuals ();
-	void printIndividuals ( std::ostream &s );
-	/** TESTING // screen-output of genotyp matrix */
-	void printGenoData () const;
-	void printGenoData ( std::ostream& hyper, const vector<bool>& sel, const bool caco ) const;
-	/** print GenoData in an ostream */
-	void printGenoData ( std::ostream& hyper ) const;
 	/** a special version for Artur */
 	/** TESTING // given a list of SNP-Names, the Genotype of the SNP
 	 is extracted, the SNPs, Covariables, Intercept are written to
