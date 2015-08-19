@@ -29,20 +29,19 @@ GenotypeFreq::GenotypeFreq( const MData & mData, const int snp ) {
 	s1_=0;
 	s2_=0;
 
-	const size_t
-		idvs = mData.getIdvNo(),
-		r_ = mData.getCaseNo(),		//warning when 0!!
-		s_ = mData.getContNo();		//warning when 0!!
+	n_ = mData.getIdvNo(),
+	r_ = mData.getCaseNo(),		//warning when 0!!
+	s_ = mData.getContNo();		//warning when 0!!
         if(0==r_){ cerr<<"Warning CaseNo()==0\n";exit (1);}
         if(0==s_){ cerr<<"Warning ContNo()==0\n"; exit(1);}
 	// every individual is checked whether it is case or control, and the genotype is counted
 	AutoVector
-		genotypes( idvs ),
-		phenotypes( idvs );
+		genotypes( n_ ),
+		phenotypes( n_ );
 	mData.getXcolumn( snp, genotypes );
 	mData.getY( phenotypes );
-	for ( int idv = 0; idv < n_; ++idv ) {
-		if ( parameter.case_value == phenotypes.get( idv ) ) {	// case_value should be 1 normally
+	for ( size_t idv = 0; idv < n_; ++idv ) {
+		if ( parameter->case_value == phenotypes.get( idv ) ) {	// case_value should be 1 normally
 			switch( static_cast<int>( genotypes.get( idv ) ) ) {
 				case -1: ++r0_; break;
 				case 0: ++r1_; break;
@@ -134,7 +133,7 @@ double GenotypeFreq::calculateCATT () const {
 	double theta[3];
 
 	// TODO<BB>: Why are all x[0] == 0? Efficiency!
-	switch( parameter.genetic_model ) {	// 1 = Recessive, 2 = Additive, 3 = Dominant
+	switch( parameter->genetic_model ) {	// 1 = Recessive, 2 = Additive, 3 = Dominant
 		case 1: // 1 means Recessive
 			x[0] = 0.0; x[1] = 0.0; x[2] = 1.0;
 			break;
