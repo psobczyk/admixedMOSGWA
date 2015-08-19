@@ -84,6 +84,7 @@ namespace logging {
 		* Rather use code like
 		* <code>logger.log( Logger::INFO, "%s", variablemessage )</code>
 		* for the purpose of logging potentially untrusted strings.
+		* TODO<BB>: replace printf style by two stream references (to a dead-end for level<threshold)
 		*/
 		virtual void log ( const Severity level, const char * const format, va_list arguments );
 

@@ -14,6 +14,7 @@
  ********************************************************************************/
 
 #include "Logger.hpp"
+#include "StreamLogger.hpp"
 #include "../Exception.hpp"	// MAX_MSG_SIZE
 #include <cstdio>
 #include <ctime>
@@ -108,5 +109,7 @@ namespace logging {
 	}
 
 	Logger::~Logger () {}
+
+	auto_ptr<Logger> logger( new StreamLogger() );
 
 }
