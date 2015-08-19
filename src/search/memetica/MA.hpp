@@ -13,8 +13,8 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#ifndef GA_HPP
-#define GA_HPP
+#ifndef SEARCH_MEMETICA_MA_HPP
+#define SEARCH_MEMETICA_MA_HPP
 
 #include <iostream>
 #include <vector>
@@ -31,7 +31,7 @@
 
 ostream &operator<< ( std::ostream &out, std::vector<snp_index_t> &v );
 
-namespace genetica {
+namespace memetica {
 
 struct TSNP_Info 
 {
@@ -124,8 +124,7 @@ public:
 };
 
 
-class GA //: public search::Search 
-{
+class MA {
 private:
   std::map<int, int> cs;
   const double correlationTh;
@@ -161,7 +160,7 @@ private:
   double pMutation;
 
   /** The tournament size */
-  unsigned int tournamentSize;
+  size_t tournamentSize;
 
   /** The correlation threshold - it's used in recombination and local improvement function */
   double correlationThreshold;
@@ -178,10 +177,10 @@ private:
   Model* recombination ( const Model & s1, const Model & s2 );
 
   /** Finds and returns index to the worst model in the population */
-  unsigned int findTheWorst () const;
+  size_t findTheWorst () const;
 
   /** The tournament selection */
-  Model* tournamentSelection ( unsigned int tournamentSize ) const;
+  Model* tournamentSelection ( size_t tournamentSize ) const;
 
   /** The stop criterion.*/
   int B;
@@ -232,7 +231,7 @@ private:
   std::vector<int> clusterLabel;                 // clusterLabel[i] is a label of i-th cluster
                                             // clusterLabel[i] - the label of i-th cluster, vectClust[i] - the set of snp of the i-th cluster
                                             
-  static std::map<int, int> mapLabel_count;      // It is needed to count the labels of clusters for many runs of GA.
+  static std::map<int, int> mapLabel_count;	// It is needed to count the labels of clusters for many runs of MA.
                                             
   
   /** Returns number of models which have got better msc value than the parameter mscVal */
@@ -257,12 +256,12 @@ private:
   
 public:
 
-  GA (
-    unsigned int modelsNo_,
-    unsigned int maxNoProgressIter_,
+  MA (
+    size_t modelsNo_,
+    size_t maxNoProgressIter_,
     double pCross_,
     double pMutation_,
-    unsigned int tournamentSize_,
+    size_t tournamentSize_,
     int B_,
     std::string fileName,
     double correlationThreshold_,
@@ -280,7 +279,7 @@ public:
   /** runs genethic algorithm */
   void run ();
 
-  ~GA ();
+  ~MA ();
 
   void selectModel ( Model& selectedModel );
   

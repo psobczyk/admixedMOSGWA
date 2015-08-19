@@ -18,7 +18,7 @@
 #include "Exception.hpp"
 #include "logging/FileLogger.hpp"
 #include "search/egreedy/ElaboratedGreedy.hpp"
-#include "search/genetica/GeneticAlgorithm.hpp"
+#include "search/memetica/MemeticAlgorithm.hpp"
 #include <string>
 
 using namespace std;
@@ -56,8 +56,8 @@ int main ( const int argc, const char *argv[] ) {
 	}
 
 	try {
-		if ( Parameter::searchStrategy_genetic_algorithm == parameter->searchStrategy ) {
-			genetica::GeneticAlgorithm artur;
+		if ( Parameter::searchStrategy_memetic_algorithm == parameter->searchStrategy ) {
+			memetica::MemeticAlgorithm artur;
 			artur.run();
 		} else {
 			egreedy::ElaboratedGreedy erich;

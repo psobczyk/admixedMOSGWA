@@ -13,8 +13,8 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#include "GeneticAlgorithm.hpp"
-#include "GA.hpp"
+#include "MemeticAlgorithm.hpp"
+#include "MA.hpp"
 #include <sstream>
 #include <fstream>
 #include <string>
@@ -23,11 +23,11 @@
 using namespace std;
 using namespace logging;
 
-namespace genetica {
+namespace memetica {
 
-	GeneticAlgorithm::GeneticAlgorithm () {}
+	MemeticAlgorithm::MemeticAlgorithm () {}
 
-	void GeneticAlgorithm::run () {
+	void MemeticAlgorithm::run () {
 		logger->info( "Start genetic algorithm search" );
 
 		const unsigned int modelsNo_ = parameter->modelsNo;
@@ -67,7 +67,7 @@ namespace genetica {
 		vector< multiset<long double> > tabCausalPost;
 		vector< multiset<long double> > tabCausalPost_b;
 
-		GA ga(
+		MA ma(
 			modelsNo_,
 			maxNoProgressIter_,
 			pCross_,
@@ -79,18 +79,18 @@ namespace genetica {
 			correlationRange_,
 			regionMinCorrelation_
 		);
-		ga.run();
+		ma.run();
 
 		stringstream ss( "GA time: " );
-		ga.writePoolToFile(ss);
+		ma.writePoolToFile(ss);
 
-		ga.initCausalPost( mapSNPCausal_ind );
+		ma.initCausalPost( mapSNPCausal_ind );
 		tabCausalPost.resize( mapSNPCausal_ind.size() );
 		tabCausalPost_b.resize( mapSNPCausal_ind.size() );
 
 		stringstream ssModels;
 		ssModels << "";
-		ga.computePosteriorProbability(
+		ma.computePosteriorProbability(
 			ssModels,
 			mapSNPCausal_ind,
 			tabCausalPost,
@@ -110,7 +110,7 @@ namespace genetica {
 				: sec2time( 24 * 3600 + time_end - time_start )
 			);
 		logger->info( "%s", ss.str().c_str() );
-		ga.writePoolToFile(ss);
+		ma.writePoolToFile(ss);
 
 		ofstream Pmi_YsortFile;
 		Pmi_YsortFile.exceptions ( ofstream::eofbit | ofstream::failbit | ofstream::badbit );

@@ -114,7 +114,7 @@ public:
 	/** Constants to interpret {@link #searchStrategy}. */
 	static const int
 		searchStrategy_greedy = 0,
-		searchStrategy_genetic_algorithm = 1;
+		searchStrategy_memetic_algorithm = 1;
 
 	/** Which search strategy to use. */
 	int searchStrategy;

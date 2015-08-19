@@ -110,7 +110,7 @@ Parameter::Parameter () {
 	{
 		map< const string, int > choice;
 		choice[ "greedy" ] = searchStrategy_greedy;
-		choice[ "genetic_algorithm" ] = searchStrategy_genetic_algorithm;
+		choice[ "memetic_algorithm" ] = searchStrategy_memetic_algorithm;
 		declare(
 			"model_selection",
 			"search_strategy",
@@ -127,19 +127,19 @@ Parameter::Parameter () {
 	declare( "log_regression", "g_conv", logrC_gconv );
 	declare( "log_regression", "x_conv", logrC_xconv );
 
-// genetics algorithm settings
-  declare( "genetic_algorithm", "modelsNo", modelsNo);
-  declare( "genetic_algorithm", "maxNoProgressIter", maxNoProgressIter);
-  declare( "genetic_algorithm", "B", B );
-  declare( "genetic_algorithm", "pCross", pCross);
-  declare( "genetic_algorithm", "pMutation", pMutation);
-  declare( "genetic_algorithm", "tournamentSize", tournamentSize);
-  declare( "genetic_algorithm", "correlationThreshold", correlationThreshold);
-  declare( "genetic_algorithm", "correlationRange", correlationRange);
-  declare( "genetic_algorithm", "causalModelFilename", causalModelFilename);
-	declare( "genetic_algorithm", "regionMinCorrelation", regionMinCorrelation );
-	declare( "genetic_algorithm", "modelsFilename", modelsFilename );
-	declare( "genetic_algorithm", "outNo", outNo );
+// memetics algorithm settings
+	declare( "memetic_algorithm", "modelsNo", modelsNo);
+	declare( "memetic_algorithm", "maxNoProgressIter", maxNoProgressIter);
+	declare( "memetic_algorithm", "B", B );
+	declare( "memetic_algorithm", "pCross", pCross);
+	declare( "memetic_algorithm", "pMutation", pMutation);
+	declare( "memetic_algorithm", "tournamentSize", tournamentSize);
+	declare( "memetic_algorithm", "correlationThreshold", correlationThreshold);
+	declare( "memetic_algorithm", "correlationRange", correlationRange);
+	declare( "memetic_algorithm", "causalModelFilename", causalModelFilename);
+	declare( "memetic_algorithm", "regionMinCorrelation", regionMinCorrelation );
+	declare( "memetic_algorithm", "modelsFilename", modelsFilename );
+	declare( "memetic_algorithm", "outNo", outNo );
   
 //Erichs testcase gearatator  
 declare( "TESTING", "replications", replications ); //how many Y vectors should be produced  

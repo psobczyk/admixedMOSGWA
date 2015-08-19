@@ -13,31 +13,31 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#ifndef SEARCH_GENETICA_PACKAGE_HPP
-#define SEARCH_GENETICA_PACKAGE_HPP
+#ifndef SEARCH_MEMETICA_PACKAGE_HPP
+#define SEARCH_MEMETICA_PACKAGE_HPP
 
 #include "../Search.hpp"
 
-/** Genetic algorithm linear model search.
+/** Memetic algorithm linear model search.
 * @author Artur Gola, Bernhard Bodenstorfer
 */
-namespace genetica {
+namespace memetica {
 
-	/** Implements a linear model search genetic algorithm.
+	/** Implements a linear model search memetic algorithm.
 	* Parameters used from <code>parameter</code>:
 	* @param outNo - it is number of output.
 	* It is used to run GA in a loop and save all the results in the different files.
 	* @param modelsFileName - it is the file name which contains information about an initial population.
 	* If a modelsFileName is empty, GA creates a new initial population
 	*/
-	class GeneticAlgorithm : public search::Search {
+	class MemeticAlgorithm : public search::Search {
 
 		public:
 
 		/** Set up the search environment. */
-		GeneticAlgorithm ();
+		MemeticAlgorithm ();
 
-		/** @brief Runs genetic algorithm as a model selection method. */
+		/** @brief Runs memetic algorithm as a model selection method. */
 		virtual void run ();
 
 	};

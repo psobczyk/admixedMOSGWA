@@ -5,31 +5,31 @@
 #include <set>
 #include <list>
 #include <cassert>
-#include "GA.hpp"  
+#include "MA.hpp"  
 #include "../../SNP.hpp"
 #include "../../logging/Logger.hpp"  
 #include "../../Parameter.hpp"  
 
 using namespace logging;
 
-namespace genetica {
+namespace memetica {
 
 const int minModelSize = 3;            // minimal model size for initial population
 
-vector<vector<snp_index_t> > GA::correlations; // correlations vector
+vector<vector<snp_index_t> > MA::correlations;	// correlations vector
 
 
-map<snp_index_t, int> GA::recognizedSNPs_Region;
-map<snp_index_t, int> GA::recognizedSNPs_bestGA;
-map<snp_index_t, int> GA::recognizedSNPs_mosgwa;
-map<snp_index_t, int> GA::recognizedSNPs_posterioriModel;
-map<snp_index_t, int> GA::recognizedSNPs_clusterMax;  
-map<snp_index_t, int> GA::recognizedSNPs_clusterSum;  
-map<snp_index_t, int> GA::recognizedSNPs_piMass;  
+map<snp_index_t, int> MA::recognizedSNPs_Region;
+map<snp_index_t, int> MA::recognizedSNPs_bestGA;
+map<snp_index_t, int> MA::recognizedSNPs_mosgwa;
+map<snp_index_t, int> MA::recognizedSNPs_posterioriModel;
+map<snp_index_t, int> MA::recognizedSNPs_clusterMax;
+map<snp_index_t, int> MA::recognizedSNPs_clusterSum;
+map<snp_index_t, int> MA::recognizedSNPs_piMass;
 
 
 
-map<int, int> GA::mapLabel_count;
+map<int, int> MA::mapLabel_count;
 
 
 bool TRegionSet_info::operator < (const TRegionSet_info &t) const
@@ -224,8 +224,8 @@ ostream &operator<< (ostream &out, vector<snp_index_t> &v)
  * @param correlationRange - snps for correlation are from range [snp - correlationRange, snp + correlationRange]
  * @param correlationThreshold - correlation threshold which is used in local improvement and mutation function
 */
-GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, double pMutation_, unsigned int tournamentSize_, 
-       int B_, string fileName, double correlationThreshold_, int correlationRange_, double regionMinCorrelation, bool statisticsOnly)
+MA::MA ( size_t modelsNo_, size_t maxNoProgressIter_, double pCross_, double pMutation_, size_t tournamentSize_,
+       int B_, string fileName, double correlationThreshold_, int correlationRange_, double regionMinCorrelation, bool statisticsOnly )
 :correlationTh(0.5), models(0), modelsNo(modelsNo_), maxNoProgressIter(maxNoProgressIter_), pCross(pCross_), pMutation(pMutation_), 
  tournamentSize(tournamentSize_), correlationThreshold(correlationThreshold_), correlationRange(correlationRange_), regionMinCorrelation(regionMinCorrelation), B(B_), realModel(0)
 {
@@ -629,7 +629,7 @@ GA::GA(unsigned int modelsNo_, unsigned int maxNoProgressIter_, double pCross_, 
  * @param model - a model to write
  * @param c - an information where the model was created: I - initial population, R - recombination, L - local improvement, A - add-mutation etc.
  */
-void GA::toPool(const Model *model, char c)
+void MA::toPool ( const Model *model, char c )
 {
   vector<snp_index_t> v = model->getModelSnps();
   double h2_M = (RSSo - model->getMJC()) / RSSo;
@@ -647,7 +647,7 @@ void GA::toPool(const Model *model, char c)
  * @param pMutation a probability of mutation
  * @param threshold - a threshold for the correlated snps. If the threshold is less or equal 0 this method does not take into account correlated snps
  */
-void GA::mutation(Model *model, double pMutation, double threshold)
+void MA::mutation ( Model *model, double pMutation, double threshold )
 {
   int snpsNo = data.getSnpNo();
   vector<snp_index_t> snpsVector = model->getModelSnps();
@@ -726,7 +726,7 @@ void GA::mutation(Model *model, double pMutation, double threshold)
  * @returns pointer to a child model
  * WARNING Allocates memory for new Model. 
  */                                                               
-Model* GA::recombination(const Model & s1, const Model & s2) 
+Model* MA::recombination ( const Model & s1, const Model & s2 )
 {
   vector<snp_index_t> v1 = s1.getModelSnps();       // get vector of snp's
   vector<snp_index_t> v2 = s2.getModelSnps();
@@ -859,7 +859,7 @@ Model* GA::recombination(const Model & s1, const Model & s2)
  * @brief Finds an index to the worst model in the population
  * @returns an index to the worst model in the population
  */
-unsigned int GA::findTheWorst() const
+size_t MA::findTheWorst () const
 {
   unsigned int theWorst = 0;
   for (unsigned int i = 1; i < modelsNo; i++)
@@ -873,7 +873,7 @@ unsigned int GA::findTheWorst() const
  * @param tournamentSize - size of tournament
  * @returns pointer to a winner model.
  */ 
-Model* GA::tournamentSelection(unsigned int tournamentSize) const
+Model* MA::tournamentSelection ( size_t tournamentSize ) const
 {
    if (tournamentSize <= 0)
    {
@@ -919,7 +919,7 @@ bool sort_string(string a, string b)
 /**
  * @brief Writes pool on the screen
  */
-void GA::writePool() const
+void MA::writePool () const
 {
   cout << "Pool:" << endl;;
   set<PoolItem>::iterator poolIt;
@@ -933,7 +933,7 @@ void GA::writePool() const
 /**
  * @brief Runs the genetics algoritm
  */
-void GA::run()
+void MA::run ()
 {
   unsigned int GAcount = 0;
   unsigned int iterCount = 0;
@@ -991,7 +991,7 @@ void GA::run()
     //localImprovement(*childModel, correlationThreshold, correlationRange);
     old_localImprovement(childModel, correlationThreshold, correlationRange);
     //old_localImprovement(childModel, 0.3, correlationRange);
-    unsigned int theWorst = findTheWorst();
+    size_t theWorst = findTheWorst();
     int rankB = isInNBestModels(childModel->getMSC());
     if (childModel->getMSC() < models[theWorst]->getMSC())
     { // we have a better model than the worst model in the population
@@ -1097,7 +1097,7 @@ void GA::run()
  * @param average reference to variable of the average msc
  * @param theWorst reference to variable of the worst msc
  */
-void GA::statistics(double &theBest, double &average, double &theWorst) 
+void MA::statistics ( double &theBest, double &average, double &theWorst )
 {
   double sum = 0.0;
   theBest = theWorst = sum = models[0]->getMSC();
@@ -1118,7 +1118,7 @@ void GA::statistics(double &theBest, double &average, double &theWorst)
 /**
  * @brief Destructor
  */
-GA::~GA()
+MA::~MA ()
 {
    if (models != 0)
    {
@@ -1145,7 +1145,7 @@ GA::~GA()
  * @param threshold - threshold value of correlation. 
  * @return vector of SNPs with a correlation above threshold
  */
-vector<snp_index_t> GA::stronglyCorrelatedSnps(Model *model, const int& snp, const double& threshold, int correlationRange )
+vector<snp_index_t> MA::stronglyCorrelatedSnps ( Model *model, const int& snp, const double& threshold, int correlationRange )
 {
   vector<snp_index_t> snps = model->getModelSnps();
   vector<snp_index_t>::iterator it;
@@ -1166,7 +1166,7 @@ vector<snp_index_t> GA::stronglyCorrelatedSnps(Model *model, const int& snp, con
  * @param threshold - threshold value of correlation. 
  * @return vector of snps with a correlation above threshold
  */
-vector<snp_index_t> GA::stronglyCorrelatedSnpsAt(Model *model, const int& snpPosition, const double& threshold, int correlationRange )
+vector<snp_index_t> MA::stronglyCorrelatedSnpsAt ( Model *model, const int& snpPosition, const double& threshold, int correlationRange )
 {
   if (snpPosition < 0 || snpPosition >= model->getModelSize())
   {
@@ -1214,7 +1214,7 @@ vector<snp_index_t> GA::stronglyCorrelatedSnpsAt(Model *model, const int& snpPos
  * @param threshold - minimal correlation value
  * @param correlationRange - a correlation range. For a given SNP, corelations are computed in range [SNP - correlationRange, SNP + correlationRange]
  */
-void GA::old_localImprovement(Model *model, double threshold, int correlationRange) 
+void MA::old_localImprovement ( Model *model, double threshold, int correlationRange )
 {
   vector <snp_index_t> snps = model->getModelSnps();
   vector <snp_index_t>::iterator it;                        // snp to improvement
@@ -1287,7 +1287,7 @@ void GA::old_localImprovement(Model *model, double threshold, int correlationRan
  * @brief Writes the pool of models to a file
  * @param ssTime - the runtime of GA
  */
-void GA::writePoolToFile(stringstream &ssTime, string postfix) const
+void MA::writePoolToFile ( stringstream &ssTime, string postfix ) const
 {
   
   
@@ -1363,7 +1363,7 @@ void GA::writePoolToFile(stringstream &ssTime, string postfix) const
  * @param diff - a vector of diff values of each model in the pool
  * @param tab - a vector of heritability and P(Mi/Y) of each model in the pool 
  */
-void GA::coumputeHeritability(stringstream &sp_sort, const vector<long double> &diff, vector<THeri_PMiY> &tab)
+void MA::coumputeHeritability ( stringstream &sp_sort, const vector<long double> &diff, vector<THeri_PMiY> &tab )
 {
   long double h2M_advL = 0.0L, 
               h2M_advH = 0.0L;  
@@ -1434,8 +1434,8 @@ void GA::coumputeHeritability(stringstream &sp_sort, const vector<long double> &
 /**
  * @brief Computes and writes to file (*_pProb.txt) posterior probalibities of models
  */
-void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost,
-                                    vector< multiset<long double> > &tabCausalPost_b)//, long double minPosterior)
+void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost,
+                                    vector< multiset<long double> > &tabCausalPost_b )//, long double minPosterior)
 {
   if (isCluster == true)
     makeVectCluster(mapSNPid_label);
@@ -1790,7 +1790,7 @@ void GA::computePosteriorProbability(stringstream &ssModels, map<snp_index_t, in
  * @param trueSNPs    - returnes the set of true discovery SNPs
  **/
 
-void GA::calculatePOWER_FDR(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, unsigned int & FDcount, set<snp_index_t> &trueSNPs)
+void MA::calculatePOWER_FDR ( set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, unsigned int & FDcount, set<snp_index_t> &trueSNPs )
 {
   int sumTP = 0;
   int sumFP = 0;
@@ -1859,7 +1859,7 @@ void GA::calculatePOWER_FDR(set<snp_index_t> &mySnps, vector<snp_index_t> &realS
  *  Jeżeli dwa lub więcej SNPów należy do tego samego klastra, który nie jest przyczynowy, to mamy 
  *  jeden False Positive.
  */
-void GA::calculatePOWER_FDR_clustGA(set<snp_index_t> &mySnps, vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, set<snp_index_t> &TP_SNPs, map<snp_index_t, int> &recognizedSNPs)
+void MA::calculatePOWER_FDR_clustGA ( set<snp_index_t> &mySnps, vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, set<snp_index_t> &TP_SNPs, map<snp_index_t, int> &recognizedSNPs )
 {
   const bool TEST = false;
   TP_SNPs.clear();
@@ -1936,8 +1936,8 @@ void GA::calculatePOWER_FDR_clustGA(set<snp_index_t> &mySnps, vector<snp_index_t
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Na potrzeby 2-go artykułu
-void GA::calculatePOWER_FDR_clustGA_2ndArticle(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, 
-                                    unsigned int & FDcount, set<snp_index_t> &trueSNPs)
+void MA::calculatePOWER_FDR_clustGA_2ndArticle ( set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR,
+                                    unsigned int & FDcount, set<snp_index_t> &trueSNPs )
 {
   assert(realSNPs.size() > 0);
   assert(mySnps.size() > 0);
@@ -1995,7 +1995,7 @@ void GA::calculatePOWER_FDR_clustGA_2ndArticle(set<snp_index_t> &mySnps, vector<
  * @param model a model of selection
  * -------------------------------------------------------------------------
  */
-void GA::selectModel ( Model& model ) {
+void MA::selectModel ( Model& model ) {
 	logger->info( "GA: Model Selection started:" );
   if (model.computeRegression())
     model.computeMSC();
@@ -2008,7 +2008,7 @@ void GA::selectModel ( Model& model ) {
  * @brief Reads the pool of models from a given file 
  * @param fileName the name of the data file
  */
-void GA::poolReader(string fileName, stringstream& sGATime, int real_modelsNo)
+void MA::poolReader ( string fileName, stringstream& sGATime, int real_modelsNo )
 {
   pool.clear();
   vector<snp_index_t> vBest;   // to remember the best model in the pool
@@ -2182,7 +2182,7 @@ void GA::poolReader(string fileName, stringstream& sGATime, int real_modelsNo)
  * @brief Reads the causal model from a file (the file name is in *.conf)
  * @param fileName - the file name where the model data is stored
  */
-void GA::modelReader(string fileName, vector<snp_index_t> &v)
+void MA::modelReader ( string fileName, vector<snp_index_t> &v )
 {
   int snp;
   int modelSize;
@@ -2250,7 +2250,7 @@ void GA::modelReader(string fileName, vector<snp_index_t> &v)
  * @brief Extracts some information from piMass files
  * @note not used for the model selection
  */
-void GA::piMassExtract(const string &fileName, string &outFileName)
+void MA::piMassExtract ( const string &fileName, string &outFileName )
 {
   int intVal;
   double dVal;
@@ -2375,7 +2375,7 @@ void GA::piMassExtract(const string &fileName, string &outFileName)
  * @brief Reads the initial population of GA form a fila
  * <TODO check the input data format>
  */
-int GA::readInitialPop(string fileName, set<PoolItem> &population, int popSize)
+int MA::readInitialPop ( string fileName, set<PoolItem> &population, int popSize )
 {
   population.clear();
   vector<snp_index_t> v;
@@ -2465,7 +2465,7 @@ int GA::readInitialPop(string fileName, set<PoolItem> &population, int popSize)
  * @brief Returns number of models which have got better msc value than the mscVal parameter
  * @param mscValue - msc value of the checked model 
  */
-int GA::isInNBestModels(double mscValue)
+int MA::isInNBestModels ( double mscValue )
 {
   int n = 0;
   for (unsigned int i = 0; i < modelsNo; i++)
@@ -2482,7 +2482,7 @@ int GA::isInNBestModels(double mscValue)
  * @param minPosterior - the minimal posterior value, default 0.01
  * @note not used for model selection
  */
-void GA::calculateClusterPosterior(string fileName, long double minPosterior)
+void MA::calculateClusterPosterior ( string fileName, long double minPosterior )
 {
   vector<snp_index_t> clusterSNP; // wynikowy model posteriori zbudowany na postawie klastrów
   vector<long double> clusterSNPposterior; // prawd. posteriori dla wynikowego modelu posteriori zbudowanego na postawie klastrów
@@ -2545,7 +2545,7 @@ void GA::calculateClusterPosterior(string fileName, long double minPosterior)
  * @brief Calculates the cluster model
  * There is the cluster model in the clusterSNP - get back
  */
-void GA::calculateClusterPosterior(vector<snp_index_t> &clusterSNP, vector<long double> &clusterSNPposterior)
+void MA::calculateClusterPosterior ( vector<snp_index_t> &clusterSNP, vector<long double> &clusterSNPposterior )
 {
   vector<long double> originalSNPposterior;
   originalSNPposterior = clusterSNPposterior;
@@ -2699,7 +2699,7 @@ void GA::calculateClusterPosterior(vector<snp_index_t> &clusterSNP, vector<long 
  * Oblicza korelacje i zapisuje wyniki w tabeli:
  * snp  casualSNP  maxCorr
  */
-void GA::checkCorrelation(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs)
+void MA::checkCorrelation ( set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs )
 {
   int size = mySnps.size();
   double *snp = new double[size];
@@ -2765,7 +2765,7 @@ void GA::checkCorrelation(set<snp_index_t> &mySnps, vector<snp_index_t> &realSNP
 
 
 
-void GA::setRecognisedSNPs()
+void MA::setRecognisedSNPs ()
 {
 
   recognizedSNPs_Region.clear();
@@ -2806,7 +2806,7 @@ double GA::theBestCorrelatedSNP(snp_index_t aSNP, set<snp_index_t> & snps, snp_i
 }
 */
 
-void GA::makeClusers(vector<set<snp_index_t> > &tab)
+void MA::makeClusers ( vector<set<snp_index_t> > &tab )
 {
   //data.calculateIndividualTests();          // działamy tylko na snpach, których p-val < 0.1
   vector<snp_index_t> realSNPs;             // snps from the real model
@@ -2852,7 +2852,7 @@ void GA::makeClusers(vector<set<snp_index_t> > &tab)
 }
 
 
-void GA::piMassCluserPOWER(const string &fileName, const string &outFileName, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost)
+void MA::piMassCluserPOWER ( const string &fileName, const string &outFileName, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost )
 {
   makeVectCluster(mapSNPid_label);
   int intVal;
@@ -3432,8 +3432,8 @@ void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> 
  * @param powerFDR    - returns the POWER, FDR and FD count (struct)
  * @param Pmi_Y       - the map of Pmi_Y value of the snps
  **/
-void GA::calculatePOWER_FDR_clust_max(vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y, 
-                                map<snp_index_t, int> &recognizedSNPs, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost)
+void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y,
+                                map<snp_index_t, int> &recognizedSNPs, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost )
 {
 //  cout << "POWER, FDR - cluster MAX" << endl;
   bool TEST = false;//true;
@@ -3623,8 +3623,8 @@ void GA::calculatePOWER_FDR_clust_max(vector<snp_index_t> &causalSNPs, TPOWER_FD
  * @param powerFDR    - returns the POWER, FDR and FD count (struct)
  * @param Pmi_Y       - the map of Pmi_Y value of the snps
  **/
-void GA::calculatePOWER_FDR_clust_sum(vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y, 
-                                map<snp_index_t, int> &recognizedSNPs, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost)
+void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y,
+                                map<snp_index_t, int> &recognizedSNPs, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost )
 {
   cout << "POWER, FDR - cluster SUM" << endl;
   bool TEST = false;
@@ -3818,7 +3818,7 @@ void GA::calculatePOWER_FDR_clust_sum(vector<snp_index_t> &causalSNPs, TPOWER_FD
  * @param Pmi_Y       - the map of Pmi_Y value of the snps
  * UWAGA clusterSum == otwiera plik *_recognized w trybie append
  **/
-void GA::calculate_clusters(map<snp_index_t, long double> &mapSNPid_Pmi_Y, vector<snp_index_t> &modelSNPs, bool clusterSum, string method_Name)
+void MA::calculate_clusters ( map<snp_index_t, long double> &mapSNPid_Pmi_Y, vector<snp_index_t> &modelSNPs, bool clusterSum, string method_Name )
 {
   set<int>clusterSet;
   modelSNPs.clear();
@@ -3950,7 +3950,7 @@ void GA::calculate_clusters(map<snp_index_t, long double> &mapSNPid_Pmi_Y, vecto
  * @param threshold - minimal correlation value
  * @param correlationRange - correlation for snp is compute for snps from range [snp - correlationRange, snp + correlationRange]
  */
-void GA::localImprovement(Model &model, double threshold, int correlationRange) 
+void MA::localImprovement ( Model &model, double threshold, int correlationRange )
 {
   const bool TEST = false;
   
@@ -4016,7 +4016,7 @@ void GA::localImprovement(Model &model, double threshold, int correlationRange)
   if (TEST) cout << "A model to return " << model << endl;
 }
 
-void GA::makeVectCluster(map<snp_index_t, int>& mSNPid_label)
+void MA::makeVectCluster ( map<snp_index_t, int>& mSNPid_label )
 {
   clusterLabel.clear();
   mapLabel_ind.clear();
@@ -4076,7 +4076,7 @@ void GA::makeVectCluster(map<snp_index_t, int>& mSNPid_label)
  * 
  * readClusterLabel(mapSNPid_label, clusterFile_POWER, SNP_Names_Id, &mapLabel_PmiY);
  */ 
-void GA::readClusterLabel(map<snp_index_t, int>& mapSNPid_label, const string& fileName, map<string, int>& SNP_Names_Id, map<int, long double>* mapLabel_PmiY)
+void MA::readClusterLabel ( map<snp_index_t, int>& mapSNPid_label, const string& fileName, map<string, int>& SNP_Names_Id, map<int, long double>* mapLabel_PmiY )
 {
   stringstream ssError;
   ifstream aFile;
@@ -4135,7 +4135,7 @@ void GA::readClusterLabel(map<snp_index_t, int>& mapSNPid_label, const string& f
 /** @brief creates map snp_i -> index
  * 
  */
-void GA::initCausalPost( map<snp_index_t, int> &mapSNPCausal_ind )
+void MA::initCausalPost ( map<snp_index_t, int> &mapSNPCausal_ind )
 {
   if ( 0 < parameter->causalModelFilename.length() )	// The simulation. We have the causalModel
   {
@@ -4192,7 +4192,7 @@ void writePosterior(string fileName, map<snp_index_t, int> &mapSNPCausal_ind, ve
 /**
  * 
  */
-void GA::makeCausalClasters(string fileName, vector<snp_index_t> causalSNPs)
+void MA::makeCausalClasters ( string fileName, vector<snp_index_t> causalSNPs )
 {
   long double abscor;
   map<snp_index_t, int> mapSNPid_ind;
@@ -4256,7 +4256,7 @@ void GA::makeCausalClasters(string fileName, vector<snp_index_t> causalSNPs)
 /**
  * 
  */
-void GA::saveLabelCount(const string &fileName)
+void MA::saveLabelCount ( const string &fileName )
 {
 
   stringstream ss;
@@ -4298,7 +4298,7 @@ void GA::saveLabelCount(const string &fileName)
  * @brief Initilizes the map (SNPs -> count) with 0
  * @param map_SNP2count - the map to initialize
  */
-void GA::setCausalCount(map<snp_index_t, int> &map_SNP2count)
+void MA::setCausalCount ( map<snp_index_t, int> &map_SNP2count )
 {
   vector<snp_index_t> causalSNPs;             // snps from the real model
   modelReader( parameter->causalModelFilename, causalSNPs );  
@@ -4314,7 +4314,7 @@ void GA::setCausalCount(map<snp_index_t, int> &map_SNP2count)
  * @param threshold - threshold value of correlation. 
  * @return vector of snps with a correlation above threshold
  */
-void GA::stronglyCorrelatedSnpsCluster(const vector<snp_index_t> & tabSNPs, const double& threshold)
+void MA::stronglyCorrelatedSnpsCluster ( const vector<snp_index_t> & tabSNPs, const double& threshold )
 {
   stringstream ss;
   
@@ -4429,7 +4429,7 @@ void GA::stronglyCorrelatedSnpsCluster(const vector<snp_index_t> & tabSNPs, cons
 //SNP_A-1828353 SNP_A-2157434 SNP_A-1794641 SNP_A-1815281 SNP_A-2202441 SNP_A-2309459 SNP_A-2160092 SNP_A-1850477 SNP_A-2289125 SNP_A-1829559 SNP_A-2208065 SNP_A-1786242
 
 
-void GA::saveRecognizedSNPinfo(const vector<snp_index_t> &v, const string &method_Name, map<snp_index_t, long double> &mapSNPid_Pmi_Y)
+void MA::saveRecognizedSNPinfo ( const vector<snp_index_t> &v, const string &method_Name, map<snp_index_t, long double> &mapSNPid_Pmi_Y )
 {
   stringstream ssClusters;  
   stringstream ssSNPs_ID;  
@@ -4544,7 +4544,7 @@ void GA::saveRecognizedSNPinfo(const vector<snp_index_t> &v, const string &metho
  * @brief writes pool of size 30K or 100K to the file
  * 
  */
-void GA::writePoolofSize(bool &flag, int maxSize)
+void MA::writePoolofSize ( bool &flag, int maxSize )
 { 
   if (maxSize == 30000)
   {
@@ -4576,7 +4576,7 @@ void GA::writePoolofSize(bool &flag, int maxSize)
  * @brieb wyznacza SNPy, 
  * @param th - próg
 */
-void GA::regionStrategy(const string method_Name, Model &model, multimap<long double, snp_index_t>& Pmi_Ysort, map<snp_index_t, long double> &mapSNPid_Pmi_Y, double th, set<TRegionSet_info> &setNewRegion)
+void MA::regionStrategy ( const string method_Name, Model &model, multimap<long double, snp_index_t>& Pmi_Ysort, map<snp_index_t, long double> &mapSNPid_Pmi_Y, double th, set<TRegionSet_info> &setNewRegion )
 {
 //  cout << "th: " << th << endl;
 //  cout << "Pmi_Ysort.size(): " << Pmi_Ysort.size() << endl;
@@ -4843,7 +4843,7 @@ void GA::regionStrategy(const string method_Name, Model &model, multimap<long do
 }
 
 
-void GA::calculatePOWER_FDR_clustRegion(vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, set<TRegionSet_info> &setNewRegion, map<snp_index_t, int>& recognizedSNPs)
+void MA::calculatePOWER_FDR_clustRegion ( vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, set<TRegionSet_info> &setNewRegion, map<snp_index_t, int>& recognizedSNPs )
 {
   assert(causalSNPs.size() > 0);
   bool isTP;
@@ -4884,7 +4884,7 @@ void GA::calculatePOWER_FDR_clustRegion(vector<snp_index_t> &causalSNPs, TPOWER_
 }
 
 
-void GA::test_region()
+void MA::test_region ()
 {
 /* 
   157462       rs7666489    4      4497328  1.53703e-07     0.835508

@@ -102,7 +102,7 @@ mBIC_expected_causal_SNPs	integer		parameter for first round of model search (wi
 selection_criterium	choice		mBIC or mBIC2 (default): criterium to use in second round of model selection
 mBIC_expected_causal_SNPs	integer		parameter for second round of model search, when mBIC is chosen, irrelevant for mBIC2
 EBIC_gamma		double		parameter in the EBIC criterium, defaults to 1 - log( #individuals ) / ( 2 * log( #SNPs ) )
-search_strategy		choice		greedy (default), genetic_algorithm
+search_strategy		choice		greedy (default), memetic_algorithm
 maximalModelSize	integer		limits the search to models of size up to the given; saves time
 PValueBorder		size_type	only so many SNPs are considered in multi-forward steps, ranked by p-value
 forward_step_max	integer		bounds the numer of SNPs in the forward step from the empty model
