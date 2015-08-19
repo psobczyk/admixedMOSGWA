@@ -61,7 +61,7 @@ namespace test {
 	} * modelIndexTest = new ModelIndexTest();	// automatically freed by unit++
 
 	void ModelIndexTest::testEmpty () {
-		set<snp_index_t> s;
+		set<size_t> s;
 		const ModelIndex mi0, mi1( s );
 		assert_eq( "empty equal each other", mi1, mi0 );
 		assert_eq( "empty 0 size", 0, mi0.size() );
@@ -75,9 +75,9 @@ namespace test {
 	}
 
 	void ModelIndexTest::testConstruct () {
-		set<snp_index_t> s;
-		snp_index_t positions[] = { 2, 7, 9, 12, 3, 5, 9, 14 };
-		for ( unsigned int i = 0; i < sizeof( positions ) / sizeof( snp_index_t ); ++i ) {
+		set<size_t> s;
+		size_t positions[] = { 2, 7, 9, 12, 3, 5, 9, 14 };
+		for ( unsigned int i = 0; i < sizeof( positions ) / sizeof( size_t ); ++i ) {
 			s.insert( positions[i] );
 		}
 
@@ -126,7 +126,7 @@ namespace test {
 		}
 		assert_eq( "Copy iterator at end", mi1copy.end(), iterator1copy );
 
-		for ( snp_index_t i = 0; i < 17; ++i ) {
+		for ( size_t i = 0; i < 17; ++i ) {
 			char buf[256];
 			sprintf( buf, "Containment equality original and copy at %d", i );
 			assert_eq( buf, mi1.contains( i ), mi1copy.contains( i ) );
@@ -144,10 +144,10 @@ namespace test {
 
 	void ModelIndexTest::testConvenienceConstruct () {
 		// Data with a few duplicates
-		snp_index_t positions[] = { 0, 18, 19, 24, 24, 23, 6, 23, 18 };
-		vector<snp_index_t> v;
-		set<snp_index_t> s;
-		for ( unsigned int i = 0; i < sizeof( positions ) / sizeof( snp_index_t ); ++i ) {
+		size_t positions[] = { 0, 18, 19, 24, 24, 23, 6, 23, 18 };
+		vector<size_t> v;
+		set<size_t> s;
+		for ( unsigned int i = 0; i < sizeof( positions ) / sizeof( size_t ); ++i ) {
 			s.insert( positions[i] );
 			v.push_back( positions[i] );
 		}
@@ -158,7 +158,7 @@ namespace test {
 	}
 
 	void ModelIndexTest::testRelations () {
-		set<snp_index_t> s;
+		set<size_t> s;
 
 		const ModelIndex mi0( s );
 		assert_true( "0 == 0", mi0 == mi0 );
@@ -234,7 +234,7 @@ namespace test {
 	}
 
 	void ModelIndexTest::testSetRelations () {
-		set<snp_index_t> s;
+		set<size_t> s;
 
 		const ModelIndex mi0( s );
 		assert_true( "0 subset 0", mi0.isSubsetOf( mi0 ) );
@@ -268,9 +268,9 @@ namespace test {
 	}
 
 	void ModelIndexTest::testComplicated () {
-		set<snp_index_t> s;
-		snp_index_t positions[] = { 0, 4, 7, 8, 20, 21 };
-		for ( unsigned int i = 0; i < sizeof( positions ) / sizeof( snp_index_t ); ++i ) {
+		set<size_t> s;
+		size_t positions[] = { 0, 4, 7, 8, 20, 21 };
+		for ( unsigned int i = 0; i < sizeof( positions ) / sizeof( size_t ); ++i ) {
 			s.insert( positions[i] );
 		}
 
@@ -291,7 +291,7 @@ namespace test {
 				), 19
 			), 30
 		);
-		for ( snp_index_t i = 0; i < 50; ++i ) {
+		for ( size_t i = 0; i < 50; ++i ) {
 			char buf[256];
 			sprintf( buf, "Containment equality 2 and 2' at %d", i );
 			assert_eq( buf, mi2.contains( i ), mi2prime.contains( i ) );
@@ -305,7 +305,7 @@ namespace test {
 				mi2, 8
 			), 7
 		);
-		for ( snp_index_t i = 0; i < 50; ++i ) {
+		for ( size_t i = 0; i < 50; ++i ) {
 			char buf[256];
 			sprintf( buf, "Containment equality 3 and 3' at %d", i );
 			assert_eq( buf, mi3.contains( i ), mi3prime.contains( i ) );

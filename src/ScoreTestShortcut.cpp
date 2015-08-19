@@ -57,7 +57,7 @@ void ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec ) {
 		iterator < index.end();
 		++iterator
 	) {
-		const snp_index_t i = *iterator;
+		const size_t i = *iterator;
 		// insertion at the end is fastest
 		mData.getXcolumn( i, vec );
 		insertColumn( currentCols++, vec );
@@ -123,7 +123,7 @@ size_t ScoreTestShortcut::scoreTests ( const Model& model, SortVec& sortVec, siz
 		iterator < index.end();
 		++iterator
 	) {
-		const snp_index_t i = *iterator;
+		const size_t i = *iterator;
 		// insertion at the end is fastest
 		mData.getXcolumn( i, vec );
 		insertColumn( currentCols++, vec );

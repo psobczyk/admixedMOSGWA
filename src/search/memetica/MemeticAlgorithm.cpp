@@ -63,7 +63,7 @@ namespace memetica {
 		time(&now);
 		srand(now);
 
-		map<snp_index_t, int> mapSNPCausal_ind;
+		map<size_t, int> mapSNPCausal_ind;
 		vector< multiset<long double> > tabCausalPost;
 		vector< multiset<long double> > tabCausalPost_b;
 

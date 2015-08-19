@@ -22,7 +22,7 @@ using namespace std;
 
 ostream& operator << ( ostream &out, const PoolItem &p )
 {
-  vector <snp_index_t>::const_iterator it = p.snps.begin();
+  vector <size_t>::const_iterator it = p.snps.begin();
   out << p.char_id << "\t" << p.id << "\t";
   out << "msc:\t" << setprecision(12) << p.msc << "\tsize\t" << p.getModelSize() << "\th2_M\t" << setprecision(12) << p.heriatability;
   out << "\t[";
@@ -37,7 +37,7 @@ ostream& operator << ( ostream &out, const PoolItem &p )
 }
 
 //-----------------------------------------------------------------------------------------------
-PoolItem::PoolItem(vector <snp_index_t> &snp_, long double msc, long double h, unsigned int id, char char_id)
+PoolItem::PoolItem ( vector <size_t> &snp_, long double msc, long double h, unsigned int id, char char_id )
 :msc(msc), heriatability(h), id(id), char_id(char_id)
 {
    snps.insert(snps.begin(), snp_.begin(), snp_.end());
@@ -83,9 +83,9 @@ bool PoolItem::operator < (const PoolItem &p) const
   
 }
 //-----------------------------------------------------------------------------------------------
-bool PoolItem::findSns(snp_index_t snp)
+bool PoolItem::findSns ( size_t snp )
 {
-  std::vector<snp_index_t>::iterator it;
+  std::vector<size_t>::iterator it;
   it = std::find(snps.begin(), snps.end(), snp);
   return (it != snps.end());
 }

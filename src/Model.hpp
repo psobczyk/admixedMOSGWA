@@ -18,7 +18,6 @@
 
 #include <string>
 #include <iostream>
-#include "types.hpp"
 #include "Parameter.hpp"
 #include "Helpfull.hpp"
 #include "MData.hpp"
@@ -52,7 +51,7 @@ private:
 	const MData* data_;
 
 	/** the position-no of the SNPs in the Model (for faster access), size is modelSize_ */
-	vector<snp_index_t> modelSnps_;
+	vector<size_t> modelSnps_;
 
 	/** the design matrix X for the model (data.getIdvNo() rows, noOfVariables columns) */
 	linalg::AutoMatrix xMat;
@@ -87,7 +86,7 @@ public:
 	* @param snp points to a variable to store the selected SNP index.
 	* @returns the residual sum of squares for the best of the considered models.
 	*/
-	double oraculateOptimalLinearForwardStep( snp_index_t *snp, size_t bound ) const;
+	double oraculateOptimalLinearForwardStep( size_t *snp, size_t bound ) const;
 
 
 	/** Suggest an optimal SNP to be removed from the model.
@@ -95,7 +94,7 @@ public:
 	* @param snp points to a variable to store the selected SNP index.
 	* @returns the residual sum of squares for the best of the considered models.
 	*/
-	double oraculateOptimalLinearBackwardStep( snp_index_t *snp ) const;
+	double oraculateOptimalLinearBackwardStep( size_t *snp ) const;
 
 	// regression for model depending on the type
 	bool computeLinRegression ();
@@ -142,7 +141,7 @@ public:
 	double getBeta ( const int i ) const;
 
 	/** get the name of a SNP by its relativ position in Model */
-	std::string getSNPId ( const snp_index_t i ) const;
+	std::string getSNPId ( const size_t i ) const;
 
         // Setters
         
@@ -177,9 +176,9 @@ public:
 	void sortSNPsAccordingBetas();
 	// change model Size
 	/** add SNP to Model, snp is absolute postion in MData::snps_ */
-	void addSNPtoModel ( const snp_index_t snp);
-      bool replaceSNPinModel ( const snp_index_t snp,  const snp_index_t  position );
-		void addManySNP ( std::vector<snp_index_t> selected );
+	void addSNPtoModel ( const size_t snp );
+      bool replaceSNPinModel ( const size_t snp,  const size_t position );
+		void addManySNP ( std::vector<size_t> selected );
   
 	/** Continous Y
 	* @deprecated test data generation will be removed from class Model
@@ -188,7 +187,7 @@ public:
   
 	/** remove SNP from Model, snp is relativ position at vector modelSnps_
 	* @returns true if SNP removed, and false if an error occors */
-	bool removeSNPfromModel ( const snp_index_t snp );
+	bool removeSNPfromModel ( const size_t snp );
 
 	/** adds the SNPs minimzing the MSC.
 	* Model &biggerModel is the new model, boundSNP is a border on the SNPs to add
@@ -320,13 +319,13 @@ public:
 	/** @brief Gets the snp at a given position (for GA)
       @param pos - snp position
   */
-	snp_index_t getSNPat( const snp_index_t pos ) const;
+	size_t getSNPat( const size_t pos ) const;
 
 	/** @brief Returns snps vector of the model (for GA). */
-	std::vector<snp_index_t> getModelSnps() const;
+	std::vector<size_t> getModelSnps() const;
 
 	/** @brief Creates new model from given snps, snps are absolut postion in MData::snps_ (for GA) */
-	void createFromSNPs ( const std::set<snp_index_t>& snps );
+	void createFromSNPs ( const std::set<size_t>& snps );
 
 	/** @brief Dealocates memory and makes the object ready to create new model (for GA)*/
 	void clearModel();
@@ -334,7 +333,7 @@ public:
 	/** @brief Removes oneSNP form Model, oneSNP is SNP value (for GA)
   * @returns value = true if SNP removed, and false if an error occors 
   */
-	bool removeSNPValFromModel( const snp_index_t oneSNP );
+	bool removeSNPValFromModel( const size_t oneSNP );
   
   
   /** @brief Computes MSC for model with correlated snps. Use if computeRegression() returns false
@@ -342,7 +341,7 @@ public:
    */
 	double computeMSCfalseRegression ( const int selectionCriterium = Parameter::selectionCriterium_mBIC2 );
   
-	double computeMSCfalseRegression ( const int selectionCriterium, std::vector<snp_index_t> &removedSnps );
+	double computeMSCfalseRegression ( const int selectionCriterium, std::vector<size_t> &removedSnps );
 
 	bool operator == ( const Model &m ) const;
 

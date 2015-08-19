@@ -18,7 +18,6 @@
 
 #include <vector>
 #include <iostream>
-#include "types.hpp"
 #include <string>
 
 class PoolItem
@@ -26,7 +25,7 @@ class PoolItem
   friend std::ostream& operator << ( std::ostream& out, const PoolItem& p );
 
   /** the postition - no of the SNPs in the Model */
-  std::vector<snp_index_t> snps;
+  std::vector<size_t> snps;
 
   /** model selection criterion of this model */
   long double msc;     // model seection criterion
@@ -36,7 +35,7 @@ class PoolItem
 
 public: 
 
-  PoolItem( std::vector<snp_index_t> &snp, long double msc, long double h, unsigned int id, char char_id );
+  PoolItem( std::vector<size_t> &snp, long double msc, long double h, unsigned int id, char char_id );
 
   PoolItem( const PoolItem &p );
 
@@ -48,12 +47,12 @@ public:
 
   unsigned int getModelSize () const { return snps.size(); }
 
-  std::vector<snp_index_t> getPoolItem () const { return snps; }
+  std::vector<size_t> getPoolItem () const { return snps; }
   
   long double getMsc() const {return msc;}
   long double getHeritability() const {return heriatability;}
   
-  bool findSns(snp_index_t s);
+  bool findSns( size_t s );
   unsigned int getID() const {return id;}
 };
 

@@ -16,16 +16,16 @@ namespace memetica {
 
 const int minModelSize = 3;            // minimal model size for initial population
 
-vector<vector<snp_index_t> > MA::correlations;	// correlations vector
+vector<vector<size_t> > MA::correlations;	// correlations vector
 
 
-map<snp_index_t, int> MA::recognizedSNPs_Region;
-map<snp_index_t, int> MA::recognizedSNPs_bestGA;
-map<snp_index_t, int> MA::recognizedSNPs_mosgwa;
-map<snp_index_t, int> MA::recognizedSNPs_posterioriModel;
-map<snp_index_t, int> MA::recognizedSNPs_clusterMax;
-map<snp_index_t, int> MA::recognizedSNPs_clusterSum;
-map<snp_index_t, int> MA::recognizedSNPs_piMass;
+map<size_t, int> MA::recognizedSNPs_Region;
+map<size_t, int> MA::recognizedSNPs_bestGA;
+map<size_t, int> MA::recognizedSNPs_mosgwa;
+map<size_t, int> MA::recognizedSNPs_posterioriModel;
+map<size_t, int> MA::recognizedSNPs_clusterMax;
+map<size_t, int> MA::recognizedSNPs_clusterSum;
+map<size_t, int> MA::recognizedSNPs_piMass;
 
 
 
@@ -199,10 +199,10 @@ void time_diff(int &hour, int & min, int &sec, int &nano, timespec &ts, timespec
  * @returns reference to ostream object
  */ 
 
-ostream &operator<< (ostream &out, vector<snp_index_t> &v)
+ostream &operator<< ( ostream &out, vector<size_t> &v )
 {
   out << "[";
-  vector<snp_index_t>::iterator it = v.begin();
+  vector<size_t>::iterator it = v.begin();
   if (v.size() > 0)
   {
     out << *it;
@@ -276,7 +276,7 @@ MA::MA ( size_t modelsNo_, size_t maxNoProgressIter_, double pCross_, double pMu
   map<string, int> SNP_Names_Id;
   for (unsigned int i = 0; i < data.getSnpNo(); ++i ) 
   {
-    SNP_Names_Id.insert( pair<string, snp_index_t>(data.getSNP( i ).getSnpId(), i) );
+    SNP_Names_Id.insert( pair<string, size_t>(data.getSNP( i ).getSnpId(), i) );
   }
 
   string clusterFile_POWER( ( parameter->in_files_plink + ".clu" ).c_str() );
@@ -430,7 +430,7 @@ MA::MA ( size_t modelsNo_, size_t maxNoProgressIter_, double pCross_, double pMu
 */
   
   
-  vector<snp_index_t> v;
+  vector<size_t> v;
   m0.computeMSC();
   RSSo = m0.getMJC();
   double h2_M = (RSSo - m0.getMJC()) / RSSo;
@@ -464,8 +464,8 @@ MA::MA ( size_t modelsNo_, size_t maxNoProgressIter_, double pCross_, double pMu
     readInitialPop(fileName, population, modelsNo);
   set<PoolItem> ::iterator itPop = population.begin();
   
-  vector<snp_index_t>::iterator it;
-  vector<snp_index_t> snps;
+  vector<size_t>::iterator it;
+  vector<size_t> snps;
   logger->debug( "parameter->maximalModelSize: %u", parameter->maximalModelSize );
 //  {char c; cout << "Pres a key.."; cin >> c;}
   stringstream ss;
@@ -507,7 +507,7 @@ MA::MA ( size_t modelsNo_, size_t maxNoProgressIter_, double pCross_, double pMu
       ); 
 //      cout << "First model (Stepwise): " << *models[0] << endl;
 //      char chr; cout << "Press a key..."; cin >> chr;
-      vector<snp_index_t> v = models[0]->getModelSnps();
+      vector<size_t> v = models[0]->getModelSnps();
       v_mosgwa = v;
       cout << "MOSGWA: " << v << endl;
       for (unsigned int i = 0; i < v.size(); ++i)
@@ -578,7 +578,7 @@ MA::MA ( size_t modelsNo_, size_t maxNoProgressIter_, double pCross_, double pMu
     }
     else                 // creates a random model
     {
-      set<snp_index_t> initSNP;
+      set<size_t> initSNP;
       int randSNP;
       unsigned int randSNPno = 5; //models[0]->getModelSize();
 /*      if (randSNPno > 2)
@@ -631,7 +631,7 @@ MA::MA ( size_t modelsNo_, size_t maxNoProgressIter_, double pCross_, double pMu
  */
 void MA::toPool ( const Model *model, char c )
 {
-  vector<snp_index_t> v = model->getModelSnps();
+  vector<size_t> v = model->getModelSnps();
   double h2_M = (RSSo - model->getMJC()) / RSSo;
   unsigned int pSize = pool.size(); 
   PoolItem p(v, model->getMSC(), h2_M, pSize + 1, c);
@@ -650,11 +650,11 @@ void MA::toPool ( const Model *model, char c )
 void MA::mutation ( Model *model, double pMutation, double threshold )
 {
   int snpsNo = data.getSnpNo();
-  vector<snp_index_t> snpsVector = model->getModelSnps();
-  vector<snp_index_t>::iterator it;
-  set<snp_index_t> snpsSet(snpsVector.begin(), snpsVector.end());
-  set<snp_index_t>::iterator itSet;
-  vector<snp_index_t> v;
+  vector<size_t> snpsVector = model->getModelSnps();
+  vector<size_t>::iterator it;
+  set<size_t> snpsSet(snpsVector.begin(), snpsVector.end());
+  set<size_t>::iterator itSet;
+  vector<size_t> v;
   int oneSnp;
   int maxTrial = 1000;
   if (random() % 2)
@@ -728,23 +728,23 @@ void MA::mutation ( Model *model, double pMutation, double threshold )
  */                                                               
 Model* MA::recombination ( const Model & s1, const Model & s2 )
 {
-  vector<snp_index_t> v1 = s1.getModelSnps();       // get vector of snp's
-  vector<snp_index_t> v2 = s2.getModelSnps();
+  vector<size_t> v1 = s1.getModelSnps();       // get vector of snp's
+  vector<size_t> v2 = s2.getModelSnps();
     
-  set<snp_index_t> s_1(v1.begin(), v1.end());       // set of snp's
-  set<snp_index_t> s_2(v2.begin(), v2.end());
+  set<size_t> s_1(v1.begin(), v1.end());       // set of snp's
+  set<size_t> s_2(v2.begin(), v2.end());
   
-  set<snp_index_t> SI;                              // intersection of s1 and s2
-  set_intersection(s_1.begin(), s_1.end(), s_2.begin(), s_2.end(), insert_iterator<set<snp_index_t> >(SI, SI.begin()));
-  set<snp_index_t> SU;                              // union of s1 and s2
-  set_union(s_1.begin(), s_1.end(), s_2.begin(), s_2.end(), insert_iterator<set<snp_index_t> >(SU, SU.begin()));
-  set<snp_index_t> SD;//                            // symmetric difference of s1 and s2
-  set_difference(SU.begin(), SU.end(), SI.begin(), SI.end(), insert_iterator<set<snp_index_t> >(SD, SD.begin()));
+  set<size_t> SI;                              // intersection of s1 and s2
+  set_intersection(s_1.begin(), s_1.end(), s_2.begin(), s_2.end(), insert_iterator<set<size_t> >(SI, SI.begin()));
+  set<size_t> SU;                              // union of s1 and s2
+  set_union(s_1.begin(), s_1.end(), s_2.begin(), s_2.end(), insert_iterator<set<size_t> >(SU, SU.begin()));
+  set<size_t> SD;//                            // symmetric difference of s1 and s2
+  set_difference(SU.begin(), SU.end(), SI.begin(), SI.end(), insert_iterator<set<size_t> >(SD, SD.begin()));
 
-  set<snp_index_t>::iterator it;
+  set<size_t>::iterator it;
   int addedSNP;
-  set<snp_index_t> tempSD = SD;
-  vector<snp_index_t> v;
+  set<size_t> tempSD = SD;
+  vector<size_t> v;
 
   // intersection and forward selection with symmeric difference
   Model* modelForward = new Model(data);
@@ -801,8 +801,8 @@ Model* MA::recombination ( const Model & s1, const Model & s2 )
     modelBackward->computeMSC();
   else
     modelBackward->computeMSCfalseRegression();
-  set<snp_index_t> bestBackward = SU;
-  set<snp_index_t> currentSNPs = SU;
+  set<size_t> bestBackward = SU;
+  set<size_t> currentSNPs = SU;
   bestMSC = modelBackward->getMSC();
   int erasedSNP;
   tempSD = SD;
@@ -940,7 +940,7 @@ void MA::run ()
   Model *firstParent = 0,                  // parents for recombination 
         *secondParent = 0;
   Model *childModel = 0;
-  vector<snp_index_t> v;
+  vector<size_t> v;
   double best, adv, worst;
   statistics(best, adv, worst);
   logger->info(
@@ -1145,10 +1145,10 @@ MA::~MA ()
  * @param threshold - threshold value of correlation. 
  * @return vector of SNPs with a correlation above threshold
  */
-vector<snp_index_t> MA::stronglyCorrelatedSnps ( Model *model, const int& snp, const double& threshold, int correlationRange )
+vector<size_t> MA::stronglyCorrelatedSnps ( Model *model, const int& snp, const double& threshold, int correlationRange )
 {
-  vector<snp_index_t> snps = model->getModelSnps();
-  vector<snp_index_t>::iterator it;
+  vector<size_t> snps = model->getModelSnps();
+  vector<size_t>::iterator it;
   it = find(snps.begin(), snps.end(), snp);
   if ((unsigned int) (it - snps.begin()) < snps.size())  // snp belongs to the model - computes correlation
     return stronglyCorrelatedSnpsAt(model, it - snps.begin(), threshold, correlationRange);
@@ -1166,7 +1166,7 @@ vector<snp_index_t> MA::stronglyCorrelatedSnps ( Model *model, const int& snp, c
  * @param threshold - threshold value of correlation. 
  * @return vector of snps with a correlation above threshold
  */
-vector<snp_index_t> MA::stronglyCorrelatedSnpsAt ( Model *model, const int& snpPosition, const double& threshold, int correlationRange )
+vector<size_t> MA::stronglyCorrelatedSnpsAt ( Model *model, const int& snpPosition, const double& threshold, int correlationRange )
 {
   if (snpPosition < 0 || snpPosition >= model->getModelSize())
   {
@@ -1199,7 +1199,7 @@ vector<snp_index_t> MA::stronglyCorrelatedSnpsAt ( Model *model, const int& snpP
       StrongCor.insert(pair<double, int>(abscor, j));
     }
   }
-  vector<snp_index_t> correratedSnps(StrongCor.size());
+  vector<size_t> correratedSnps(StrongCor.size());
   int i = 0;
   for (multimap<double, int>::reverse_iterator it = StrongCor.rbegin(); it != StrongCor.rend(); it++, ++i)
   {
@@ -1216,18 +1216,18 @@ vector<snp_index_t> MA::stronglyCorrelatedSnpsAt ( Model *model, const int& snpP
  */
 void MA::old_localImprovement ( Model *model, double threshold, int correlationRange )
 {
-  vector <snp_index_t> snps = model->getModelSnps();
-  vector <snp_index_t>::iterator it;                        // snp to improvement
-  vector<snp_index_t> v;
+  vector<size_t> snps = model->getModelSnps();
+  vector<size_t>::iterator it;                        // snp to improvement
+  vector<size_t> v;
   v = model->getModelSnps();
-  vector<snp_index_t> v_pool;
+  vector<size_t> v_pool;
   if (model->computeRegression())
     model->computeMSC();
   else
     model->computeMSCfalseRegression();
   double bestMSC = model->getMSC();
   int changedSnp;     
-  vector<snp_index_t>::iterator itCorrelation;
+  vector<size_t>::iterator itCorrelation;
   for (it = snps.begin(); it != snps.end(); ++it)  // for every snp in the model
   {                                                // tests snp in it
     if (correlations[*it].size() == 0)
@@ -1434,7 +1434,7 @@ void MA::coumputeHeritability ( stringstream &sp_sort, const vector<long double>
 /**
  * @brief Computes and writes to file (*_pProb.txt) posterior probalibities of models
  */
-void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost,
+void MA::computePosteriorProbability ( stringstream &ssModels, map<size_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost,
                                     vector< multiset<long double> > &tabCausalPost_b )//, long double minPosterior)
 {
   if (isCluster == true)
@@ -1442,7 +1442,7 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
   long double minMsc, msc;//, maxMsc; 
   vector<long double> sortPool(pool.size());
   int nPool = 0;
-  vector<snp_index_t> snps;
+  vector<size_t> snps;
   for (set<PoolItem>::iterator it = pool.begin(); it != pool.end(); ++it, ++nPool)
   {   
     snps = it->getPoolItem();                                  // takes snps from a model
@@ -1485,10 +1485,10 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
   coumputeHeritability(sp_sort, diff, tab); 
   sort(tab.begin(), tab.end());
   // calculates $ P(m_i | Y) $
-  set<snp_index_t> calculated_j;         // set of calculated snps - to don't calcuate it again
-  map<snp_index_t, long double> Pmi_Y;
-  multimap<long double, snp_index_t> Pmi_Ysort;
-  snp_index_t aSNP;
+  set<size_t> calculated_j;         // set of calculated snps - to don't calcuate it again
+  map<size_t, long double> Pmi_Y;
+  multimap<long double, size_t> Pmi_Ysort;
+  size_t aSNP;
   i = 0;
   for (set<PoolItem>::iterator it = pool.begin(); it != pool.end(); ++it, ++i)                // for every model in the pool
   {
@@ -1499,23 +1499,26 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
       aSNP = snps[j];
       if (Pmi_Y.find(aSNP) == Pmi_Y.end())
       {  
-        Pmi_Y.insert(pair<snp_index_t, long double>(aSNP, 0.0L)); 
+        Pmi_Y.insert(pair<size_t, long double>(aSNP, 0.0L)); 
       }  
       Pmi_Y[aSNP] = Pmi_Y[aSNP] + exp((minMsc - msc)/2.0L);
     }  
   }
   
-  for (map<snp_index_t, long double>::iterator itMap = Pmi_Y.begin(); itMap != Pmi_Y.end(); ++itMap)
-  {
+	for (
+		map<size_t, long double>::iterator itMap = Pmi_Y.begin();
+		itMap != Pmi_Y.end();
+		++itMap
+	) {
     (*itMap).second /= sum;
-    Pmi_Ysort.insert(pair<long double, snp_index_t>( (*itMap).second, (*itMap).first));
+    Pmi_Ysort.insert(pair<long double, size_t>( (*itMap).second, (*itMap).first) );
   }  
 
   // Power, FDR, Clusters, etc
-  set<snp_index_t> mySnps;    
+  set<size_t> mySnps;    
   vector<long double> clusterSNPposterior; // prawd. posteriori dla wynikowego modelu posteriori zbudowanego na postawie klastrów
                                            //
-  multimap<long double, snp_index_t>::reverse_iterator itM;
+  multimap<long double, size_t>::reverse_iterator itM;
   for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++)
   {
     mySnps.insert((*itM).second);
@@ -1529,21 +1532,22 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
     powerFDR.badSNP = 0;       // the best SNP of posteriori <= 0.5
     powerFDR.posteriorBad = 0.0;
     powerFDR.posteriorBadCluster = 0.0;  
-  set<snp_index_t> sPosterior;
-  for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++)
-    sPosterior.insert((*itM).second);
-  vector<snp_index_t>  vPosterior(sPosterior.begin(), sPosterior.end());  
+  set<size_t> sPosterior;
+  for ( multimap<long double, size_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && 0.5 < (*itM).first; itM++ ) {
+		sPosterior.insert((*itM).second);
+  }
+  vector<size_t>  vPosterior(sPosterior.begin(), sPosterior.end());  
   int bestGA = 0;
   for (unsigned int i = 1; i < modelsNo; ++i)
     if (models[i]->getMSC() < models[bestGA]->getMSC())
       bestGA = i;
-  set<snp_index_t> trueSNPs;                        // the set of only true positive snps
-  set<snp_index_t> trueSNPsBest;                    // the set of only true positive snps - for the best model in the pool
+  set<size_t> trueSNPs;		// the set of only true positive snps
+  set<size_t> trueSNPsBest;	// the set of only true positive snps - for the best model in the pool
   Model modelRegion(data);                          // model for a region strategy
   set<TRegionSet_info> setNewRegion;
   if ( 0 < parameter->causalModelFilename.length() && isCluster )	// The simulation. We have the causalModel
   {
-    vector<snp_index_t> realSNPs;                   // snps from the casual model
+    vector<size_t> realSNPs;	// snps from the casual model
     modelReader( parameter->causalModelFilename, realSNPs );
     
     Model *mx = new Model(data);
@@ -1575,17 +1579,17 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
     sp_sort << "\tposteriori_bedSNP_sum: " << powerFDR.posteriorBad;
     sp_sort << "\tposteriori_cluster_bedSNP_sum: " << powerFDR.posteriorBadCluster << endl;
     
-    vector<snp_index_t> v_GA = models[bestGA]->getModelSnps();  // for the best model of the pool
-    set<snp_index_t> GA_snps(v_GA.begin(), v_GA.end());         // set of snp's
+    vector<size_t> v_GA = models[bestGA]->getModelSnps();	// for the best model of the pool
+    set<size_t> GA_snps(v_GA.begin(), v_GA.end());		// set of snp's
     //      calculatePOWER_FDR_clustGA(GA_snps, realSNPs, powerFDR, Pmi_Y, mapSNPCausal_ind, tabCausalPost_b);
     //      calculatePOWER_FDR_clustGA(GA_snps, , set<snp_index_t> &TP_S NPs)
-    set<snp_index_t> TP_SNPs;
+    set<size_t> TP_SNPs;
     calculatePOWER_FDR_clustGA(GA_snps, realSNPs, powerFDR, TP_SNPs, recognizedSNPs_bestGA);
     sp_sort << "POWER_bestGA: " << powerFDR.POWER;
     sp_sort << "\tFDR_bestGA: " << powerFDR.FDR;
     sp_sort << "\tFDcount_bestGA: " << powerFDR.FDcount << endl;
     
-    set<snp_index_t> mosgwa_snps(v_mosgwa.begin(), v_mosgwa.end());         // set of snp's
+    set<size_t> mosgwa_snps(v_mosgwa.begin(), v_mosgwa.end());	// set of snp's
     //      calculatePOWER_FDR_clust(mosgwa_snps, realSNPs, powerFDR, Pmi_Y, mapSNPCausal_ind, tabCausalPost_b);
     calculatePOWER_FDR_clustGA(mosgwa_snps, realSNPs, powerFDR, TP_SNPs, recognizedSNPs_mosgwa);
     sp_sort << "POWER_MOSGWA: " << powerFDR.POWER;
@@ -1687,7 +1691,7 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
   
   ssModels << "bestGA: " << *models[bestGA] << endl;
 
-  vector<snp_index_t> vI = models[bestGA]->getModelSnps();
+  vector<size_t> vI = models[bestGA]->getModelSnps();
   if (isCluster == true)
     saveRecognizedSNPinfo(vI, "bestGA", Pmi_Y);
 //  models[bestGA]->printModelInMatlab ("#bestGA#");
@@ -1711,7 +1715,7 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
   
 //  set<snp_index_t> sPosterior;
   sp_sort << "---------------------------------------" << endl;
-  for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++)
+  for ( multimap<long double, size_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && 0.5 < (*itM).first; itM++ )
   {
     sp_sort << setw(20) << setprecision(16) << (*itM).first << " " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
 //    sPosterior.insert((*itM).second);
@@ -1733,8 +1737,8 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
   mx = 0;
   if (isCluster == true)   
   {
-    vector<snp_index_t> modelSNPs_max;
-    vector<snp_index_t> modelSNPs_sum;
+    vector<size_t> modelSNPs_max;
+    vector<size_t> modelSNPs_sum;
     bool clusterSum = true;
     calculate_clusters(Pmi_Y, modelSNPs_max, !clusterSum, "cluster_MAX");
     calculate_clusters(Pmi_Y, modelSNPs_sum, clusterSum, "cluster_SUM");
@@ -1773,7 +1777,7 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
     powerFDR.posteriorBadCluster = 0.0;    
 */  
   sp_sort << "---------------------------------------" << endl;
-  for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend(); itM++)
+  for ( multimap<long double, size_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend(); itM++ )
   {
     sp_sort << setw(20) << setprecision(16) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
   }
@@ -1790,16 +1794,16 @@ void MA::computePosteriorProbability ( stringstream &ssModels, map<snp_index_t, 
  * @param trueSNPs    - returnes the set of true discovery SNPs
  **/
 
-void MA::calculatePOWER_FDR ( set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR, unsigned int & FDcount, set<snp_index_t> &trueSNPs )
+void MA::calculatePOWER_FDR ( set<size_t> &mySnps, vector<size_t> &realSNPs, long double &POWER, long double &FDR, unsigned int & FDcount, set<size_t> &trueSNPs )
 {
   int sumTP = 0;
   int sumFP = 0;
   double abscor;
-  map<snp_index_t, int> snpTP;
-  set<snp_index_t> causualSNP(realSNPs.begin(), realSNPs.end());
-  set<snp_index_t> snp2check = mySnps;
-  snp_index_t aSNP;
-  for (vector<snp_index_t>::iterator itS = realSNPs.begin(); itS != realSNPs.end(); ++itS)
+  map<size_t, int> snpTP;
+  set<size_t> causualSNP(realSNPs.begin(), realSNPs.end());
+  set<size_t> snp2check = mySnps;
+  size_t aSNP;
+  for ( vector<size_t>::iterator itS = realSNPs.begin(); itS != realSNPs.end(); ++itS )
   {
     aSNP = *itS;
     if ( snp2check.find(aSNP) != snp2check.end() )
@@ -1813,11 +1817,11 @@ void MA::calculatePOWER_FDR ( set<snp_index_t> &mySnps, vector<snp_index_t> &rea
     }
   }
   bool TP;
-  for (set<snp_index_t>::iterator it = snp2check.begin(); it != snp2check.end(); ++it)
+  for ( set<size_t>::iterator it = snp2check.begin(); it != snp2check.end(); ++it )
   { // for each snp 
     aSNP = *it;   
     TP = false;
-    for (set<snp_index_t>::iterator itC = causualSNP.begin(); itC != causualSNP.end(); ++itC)
+    for ( set<size_t>::iterator itC = causualSNP.begin(); itC != causualSNP.end(); ++itC )
     {
       abscor = fabs( data.computeCorrelation( *itC, aSNP) ); // computes the correlation between the two snps
       if (abscor > correlationThreshold)
@@ -1859,7 +1863,7 @@ void MA::calculatePOWER_FDR ( set<snp_index_t> &mySnps, vector<snp_index_t> &rea
  *  Jeżeli dwa lub więcej SNPów należy do tego samego klastra, który nie jest przyczynowy, to mamy 
  *  jeden False Positive.
  */
-void MA::calculatePOWER_FDR_clustGA ( set<snp_index_t> &mySnps, vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, set<snp_index_t> &TP_SNPs, map<snp_index_t, int> &recognizedSNPs )
+void MA::calculatePOWER_FDR_clustGA ( set<size_t> &mySnps, vector<size_t> &causalSNPs, TPOWER_FDR &powerFDR, set<size_t> &TP_SNPs, map<size_t, int> &recognizedSNPs )
 {
   const bool TEST = false;
   TP_SNPs.clear();
@@ -1877,17 +1881,17 @@ void MA::calculatePOWER_FDR_clustGA ( set<snp_index_t> &mySnps, vector<snp_index
   set<int> causalLabels;          // etykiety SNPów przyczynowych
   set<int> FP_LabelSet;          // etykiety klastrów zaklasyfikowanych jako False Positive
   
-  map<int, snp_index_t> mapCausalLabel2SNP;
-  for (vector<snp_index_t>::iterator it = causalSNPs.begin(); it != causalSNPs.end(); ++it)
+  map<int, size_t> mapCausalLabel2SNP;
+  for ( vector<size_t>::iterator it = causalSNPs.begin(); it != causalSNPs.end(); ++it )
   {
     causalLabels.insert(mapSNPid_label[*it]);
-    mapCausalLabel2SNP.insert(pair<int, snp_index_t> (mapSNPid_label[*it], *it));
+    mapCausalLabel2SNP.insert(pair<int, size_t> (mapSNPid_label[*it], *it));
   }
   if (TEST) cout << "causal labels: " << causalLabels << endl;
   if (TEST) cout << "GA labesl    : ";
   
-  snp_index_t aSNP_Label;
-  for (set<snp_index_t>::iterator it = mySnps.begin(); it != mySnps.end(); ++it)
+  size_t aSNP_Label;
+  for ( set<size_t>::iterator it = mySnps.begin(); it != mySnps.end(); ++it )
   {
     aSNP_Label = mapSNPid_label[*it];
     if (causalLabels.find(aSNP_Label) != causalLabels.end())
@@ -1901,7 +1905,7 @@ void MA::calculatePOWER_FDR_clustGA ( set<snp_index_t> &mySnps, vector<snp_index
       if (TEST) cout << "-" << aSNP_Label << ", ";
     }
   }
-  for (set<snp_index_t>::iterator it = TP_SNPs.begin(); it != TP_SNPs.end(); ++it)
+  for ( set<size_t>::iterator it = TP_SNPs.begin(); it != TP_SNPs.end(); ++it )
     ++recognizedSNPs[*it];
   int sumTP = TP_SNPs.size();
   int sumFP = FP_LabelSet.size();
@@ -1936,8 +1940,8 @@ void MA::calculatePOWER_FDR_clustGA ( set<snp_index_t> &mySnps, vector<snp_index
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Na potrzeby 2-go artykułu
-void MA::calculatePOWER_FDR_clustGA_2ndArticle ( set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs, long double &POWER, long double &FDR,
-                                    unsigned int & FDcount, set<snp_index_t> &trueSNPs )
+void MA::calculatePOWER_FDR_clustGA_2ndArticle ( set<size_t> &mySnps, vector<size_t> &realSNPs, long double &POWER, long double &FDR,
+                                    unsigned int & FDcount, set<size_t> &trueSNPs )
 {
   assert(realSNPs.size() > 0);
   assert(mySnps.size() > 0);
@@ -1946,10 +1950,10 @@ void MA::calculatePOWER_FDR_clustGA_2ndArticle ( set<snp_index_t> &mySnps, vecto
   set<int> trueLabels;    // etykiety SNPów zaklasyfikowanych jako True Positive
   set<int> mySNPsLabels;  // etykiety SNPów wskazanych przez GA
   
-  for (set<snp_index_t>::iterator it = mySnps.begin(); it != mySnps.end(); ++it)
+  for ( set<size_t>::iterator it = mySnps.begin(); it != mySnps.end(); ++it )
     mySNPsLabels.insert(mapSNPid_label[*it]);
   
-  for (vector<snp_index_t>::iterator it = realSNPs.begin(); it != realSNPs.end(); ++it)
+  for ( vector<size_t>::iterator it = realSNPs.begin(); it != realSNPs.end(); ++it )
     causalLabels.insert(mapSNPid_label[*it]);
   
   int sumTP = 0;
@@ -2011,10 +2015,10 @@ void MA::selectModel ( Model& model ) {
 void MA::poolReader ( string fileName, stringstream& sGATime, int real_modelsNo )
 {
   pool.clear();
-  vector<snp_index_t> vBest;   // to remember the best model in the pool
+  vector<size_t> vBest;   // to remember the best model in the pool
   long double bestMSC = -1.0;
   pool.clear();
-  vector<snp_index_t> v;
+  vector<size_t> v;
   int snp;
   string s;
   long double h2;
@@ -2031,7 +2035,7 @@ void MA::poolReader ( string fileName, stringstream& sGATime, int real_modelsNo 
   bool isTime = true;
   int initial_population_Count = 0;
   bool isStepwise = false;
-  vector <snp_index_t> temp_mosgwa;
+  vector <size_t> temp_mosgwa;
   if ( poolFile.is_open() )
   {
     cout << "pool file is opened" << endl;
@@ -2182,7 +2186,7 @@ void MA::poolReader ( string fileName, stringstream& sGATime, int real_modelsNo 
  * @brief Reads the causal model from a file (the file name is in *.conf)
  * @param fileName - the file name where the model data is stored
  */
-void MA::modelReader ( string fileName, vector<snp_index_t> &v )
+void MA::modelReader ( string fileName, vector<size_t> &v )
 {
   int snp;
   int modelSize;
@@ -2264,8 +2268,8 @@ void MA::piMassExtract ( const string &fileName, string &outFileName )
   map<int, unsigned int> snp;  // liczebność poszczególnych snp'ów
   ifstream  aFile;
   stringstream ss;
-  map<snp_index_t, long double> Pmi_Y;
-  multimap<long double, snp_index_t> Pmi_Ysort;
+  map<size_t, long double> Pmi_Y;
+  multimap<long double, size_t> Pmi_Ysort;
   aFile.open( (fileName + "/pref.mcmc.txt").c_str(), ios::in ); 
   aFile.clear();    
   cout << "a file: " << (fileName + "/pref.mcmc.txt").c_str() << " is opened" << endl;
@@ -2278,26 +2282,26 @@ void MA::piMassExtract ( const string &fileName, string &outFileName )
     aFile >> intVal;                // position
     aFile >> dVal;                  // postc
     --intVal;
-    Pmi_Y.insert(pair<snp_index_t, long double> (intVal, dVal));
+    Pmi_Y.insert(pair<size_t, long double> (intVal, dVal));
     aFile >> dVal;                  // postb
     aFile >> dVal;                  // beta
     aFile >> dVal;                  // betarb
   }  // reads id and posterior. (odczyt id i poster z jednego pliku)
   aFile.close();
   cout << "Pmi_Y.size = " << Pmi_Y.size() << endl;
-  for (map<snp_index_t, long double>::iterator itMap = Pmi_Y.begin(); itMap != Pmi_Y.end(); ++itMap)
+  for ( map<size_t, long double>::iterator itMap = Pmi_Y.begin(); itMap != Pmi_Y.end(); ++itMap )
   {
-    Pmi_Ysort.insert(pair<long double, snp_index_t>( (*itMap).second, (*itMap).first));
+    Pmi_Ysort.insert(pair<long double, size_t>( (*itMap).second, (*itMap).first));
   }
-  set<snp_index_t> mySnps;    
-  for (multimap<long double, snp_index_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++)
+  set<size_t> mySnps;    
+  for ( multimap<long double, size_t>::reverse_iterator itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > 0.5; itM++ )
   {
     cout << setw(15) << setprecision(11) << (*itM).first << ": " << setw(7) << (*itM).second << " " << setw(10) << data.getSNP( (*itM).second ).getSnpId() << endl;
     mySnps.insert((*itM).second);
   }
   
   Model piMassModel(data);
-  vector<snp_index_t> v_piMass(mySnps.begin(), mySnps.end());
+  vector<size_t> v_piMass(mySnps.begin(), mySnps.end());
   if (v_piMass.size() > 0)
     piMassModel.addManySNP(v_piMass);
   if (piMassModel.computeRegression())
@@ -2313,7 +2317,7 @@ void MA::piMassExtract ( const string &fileName, string &outFileName )
   Model *mx = 0;
   if ( 0 < parameter->causalModelFilename.length() )
   {
-    vector<snp_index_t> realSNPs;             // snps from real model
+    vector<size_t> realSNPs;             // snps from real model
     modelReader( parameter->causalModelFilename, realSNPs );  
     
     long double POWER, FDR;
@@ -2330,7 +2334,7 @@ void MA::piMassExtract ( const string &fileName, string &outFileName )
       cout << "causalModel: " << *mx << endl;    
       delete mx;  
       mx = 0;
-      set<snp_index_t> trueSNPs;
+      set<size_t> trueSNPs;
       calculatePOWER_FDR(mySnps, realSNPs, POWER, FDR, FDcount, trueSNPs);//, Pmi_Y, tab_Prob);
       cout << "POWER: " <<  POWER <<  ", FDR: " << FDR << ", FDcount: " << FDcount << endl;
       sp_sort << POWER << "\t" << FDR << "\t" << FDcount << endl;
@@ -2349,7 +2353,7 @@ void MA::piMassExtract ( const string &fileName, string &outFileName )
     sp_sort << "\tFPD: " << "NA" << endl;    
   }
   // number of SNPs (liczebność snpów)
-  for (set<snp_index_t>::iterator it = mySnps.begin(); it != mySnps.end(); it++)
+  for ( set<size_t>::iterator it = mySnps.begin(); it != mySnps.end(); it++ )
   {
     if (snp.find(*it) != snp.end())
     {
@@ -2378,7 +2382,7 @@ void MA::piMassExtract ( const string &fileName, string &outFileName )
 int MA::readInitialPop ( string fileName, set<PoolItem> &population, int popSize )
 {
   population.clear();
-  vector<snp_index_t> v;
+  vector<size_t> v;
   int snp;
   string s;
   int id;
@@ -2484,7 +2488,7 @@ int MA::isInNBestModels ( double mscValue )
  */
 void MA::calculateClusterPosterior ( string fileName, long double minPosterior )
 {
-  vector<snp_index_t> clusterSNP; // wynikowy model posteriori zbudowany na postawie klastrów
+  vector<size_t> clusterSNP; // wynikowy model posteriori zbudowany na postawie klastrów
   vector<long double> clusterSNPposterior; // prawd. posteriori dla wynikowego modelu posteriori zbudowanego na postawie klastrów
   ifstream file;
   file.open( fileName.c_str(), ios::in );
@@ -2545,7 +2549,7 @@ void MA::calculateClusterPosterior ( string fileName, long double minPosterior )
  * @brief Calculates the cluster model
  * There is the cluster model in the clusterSNP - get back
  */
-void MA::calculateClusterPosterior ( vector<snp_index_t> &clusterSNP, vector<long double> &clusterSNPposterior )
+void MA::calculateClusterPosterior ( vector<size_t> &clusterSNP, vector<long double> &clusterSNPposterior )
 {
   vector<long double> originalSNPposterior;
   originalSNPposterior = clusterSNPposterior;
@@ -2617,7 +2621,7 @@ void MA::calculateClusterPosterior ( vector<snp_index_t> &clusterSNP, vector<lon
 		( parameter->out_file_name + "_cluster_msc_" + int2str( parameter->in_values_int ) + ".txt" ).c_str(),
 		ios::app
 	);   
-  vector<snp_index_t> snps;
+  vector<size_t> snps;
   Model *mx = new Model(data);
   for (unsigned int i = 0; i < originalSNPposterior.size(); ++i)
     if (originalSNPposterior[i] > 0.5)
@@ -2635,7 +2639,7 @@ void MA::calculateClusterPosterior ( vector<snp_index_t> &clusterSNP, vector<lon
     exit(-1);
   }
   
-  vector<snp_index_t> v = mx->getModelSnps();
+  vector<size_t> v = mx->getModelSnps();
   outFile << v << "\t" << mx->getMSC() << "\t";
   delete mx; 
   snps.clear();
@@ -2699,7 +2703,7 @@ void MA::calculateClusterPosterior ( vector<snp_index_t> &clusterSNP, vector<lon
  * Oblicza korelacje i zapisuje wyniki w tabeli:
  * snp  casualSNP  maxCorr
  */
-void MA::checkCorrelation ( set<snp_index_t> &mySnps, vector<snp_index_t> &realSNPs )
+void MA::checkCorrelation ( set<size_t> &mySnps, vector<size_t> &realSNPs )
 {
   int size = mySnps.size();
   double *snp = new double[size];
@@ -2708,7 +2712,7 @@ void MA::checkCorrelation ( set<snp_index_t> &mySnps, vector<snp_index_t> &realS
   sort(realSNPs.begin(), realSNPs.end());
   int aSNP;
   double maxCorrelation;
-  snp_index_t causalSNPmax = 0;
+  size_t causalSNPmax = 0;
   double absCorr;
   int counter = 0;
   ofstream outFile;  
@@ -2720,7 +2724,7 @@ void MA::checkCorrelation ( set<snp_index_t> &mySnps, vector<snp_index_t> &realS
   for (unsigned int i = 0; i < realSNPs.size(); ++i)
     outFile << realSNPs[i] << "\t";
   outFile << endl;
-  for (set<snp_index_t>::iterator it = mySnps.begin(); it != mySnps.end(); ++it)
+  for ( set<size_t>::iterator it = mySnps.begin(); it != mySnps.end(); ++it )
   {
     aSNP = *it; 
     maxCorrelation = -1.0;
@@ -2776,15 +2780,15 @@ void MA::setRecognisedSNPs ()
   recognizedSNPs_clusterSum.clear();
 
   if ( 0 < parameter->causalModelFilename.length() ) {
-    vector<snp_index_t> realSNPs;             // snps from real model
+    vector<size_t> realSNPs;             // snps from real model
     modelReader( parameter->causalModelFilename, realSNPs );   
     for ( size_t i = 0; i < realSNPs.size(); ++i ) {
-      recognizedSNPs_Region.insert(pair<snp_index_t, int>(realSNPs[i], 0));
-      recognizedSNPs_bestGA.insert(pair<snp_index_t, int>(realSNPs[i], 0));
-      recognizedSNPs_mosgwa.insert(pair<snp_index_t, int>(realSNPs[i], 0));
-      recognizedSNPs_posterioriModel.insert(pair<snp_index_t, int>(realSNPs[i], 0));
-      recognizedSNPs_clusterMax.insert(pair<snp_index_t, int>(realSNPs[i], 0));
-      recognizedSNPs_clusterSum.insert(pair<snp_index_t, int>(realSNPs[i], 0));
+      recognizedSNPs_Region.insert(pair<size_t, int>(realSNPs[i], 0));
+      recognizedSNPs_bestGA.insert(pair<size_t, int>(realSNPs[i], 0));
+      recognizedSNPs_mosgwa.insert(pair<size_t, int>(realSNPs[i], 0));
+      recognizedSNPs_posterioriModel.insert(pair<size_t, int>(realSNPs[i], 0));
+      recognizedSNPs_clusterMax.insert(pair<size_t, int>(realSNPs[i], 0));
+      recognizedSNPs_clusterSum.insert(pair<size_t, int>(realSNPs[i], 0));
     } 
   }
 }
@@ -2806,24 +2810,27 @@ double GA::theBestCorrelatedSNP(snp_index_t aSNP, set<snp_index_t> & snps, snp_i
 }
 */
 
-void MA::makeClusers ( vector<set<snp_index_t> > &tab )
+void MA::makeClusers ( vector<set<size_t> > &tab )
 {
   //data.calculateIndividualTests();          // działamy tylko na snpach, których p-val < 0.1
-  vector<snp_index_t> realSNPs;             // snps from the real model
+  vector<size_t> realSNPs;             // snps from the real model
   modelReader( parameter->causalModelFilename, realSNPs );
   goodSNPs.reset();
   unsigned int n = 0;
   long double abscorr;
-  snp_index_t aSNP;
+  size_t aSNP;
   
   while ( n < data.getSnpNo())
   {
     aSNP = n;
     ++n;
     //cout << n;
-    for (vector<snp_index_t>::iterator it = realSNPs.begin(); it != realSNPs.end(); ++it) // casual SNPs
-    {
-      abscorr = fabs( data.computeCorrelation( *it, aSNP) ); // computes the correlation between the two snps   
+	for (
+		vector<size_t>::iterator it = realSNPs.begin();
+		it != realSNPs.end();
+		++it
+	) {	// casual SNPs
+		abscorr = fabs( data.computeCorrelation( *it, aSNP) ); // computes the correlation between the two snps   
       
       if (abscorr > 0.5)
       {
@@ -2837,10 +2844,10 @@ void MA::makeClusers ( vector<set<snp_index_t> > &tab )
                     12801, 13603, 14401, 15205, 16004, 16803, 17602, 18402, 19196, 20001, 20801, 21599, 22402, 23201};
   cout << tab.size() << endl;                    
 
- for (unsigned int i = 0; i < tab.size(); ++i)// vector<set<snp_index_t> >::iterator it = tab.begin(); it != tab.end(); ++it)
+ for ( size_t i = 0; i < tab.size(); ++i)	// vector<set<snp_index_t> >::iterator it = tab.begin(); it != tab.end(); ++it)
   {
     cout << realSNPs_id[i] << ">> {";
-    for (set<snp_index_t>::iterator it = tab[i].begin(); it != tab[i].end(); ++it)
+    for ( set<size_t>::iterator it = tab[i].begin(); it != tab[i].end(); ++it )
     {
       if (it == tab[i].begin())
         cout << *it;
@@ -2852,7 +2859,7 @@ void MA::makeClusers ( vector<set<snp_index_t> > &tab )
 }
 
 
-void MA::piMassCluserPOWER ( const string &fileName, const string &outFileName, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost )
+void MA::piMassCluserPOWER ( const string &fileName, const string &outFileName, map<size_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost )
 {
   makeVectCluster(mapSNPid_label);
   int intVal;
@@ -2869,8 +2876,8 @@ void MA::piMassCluserPOWER ( const string &fileName, const string &outFileName, 
   
   ifstream  aFile;
   stringstream ss;
-  map<snp_index_t, long double> Pmi_Y;
-  multimap<long double, snp_index_t> Pmi_Ysort;
+  map<size_t, long double> Pmi_Y;
+  multimap<long double, size_t> Pmi_Ysort;
 	aFile.open(
 		( fileName + "/pref_#" + int2str( parameter->in_values_int ) + ".mcmc.txt" ).c_str(),
 		ios::in
@@ -2886,7 +2893,7 @@ void MA::piMassCluserPOWER ( const string &fileName, const string &outFileName, 
     aFile >> intVal;                // position
     aFile >> dVal;                  // postc
     --intVal;
-    Pmi_Y.insert(pair<snp_index_t, long double> (intVal, dVal));
+    Pmi_Y.insert(pair<size_t, long double> (intVal, dVal));
     aFile >> dVal;                  // postb
     //Pmi_Y.insert(pair<snp_index_t, long double> (intVal, dVal));
     aFile >> dVal;                  // beta
@@ -2894,15 +2901,15 @@ void MA::piMassCluserPOWER ( const string &fileName, const string &outFileName, 
   }  // odczyt id i poster z jednego pliku
   aFile.close();
   cout << "Pmi_Y.size = " << Pmi_Y.size() << endl;
-  for (map<snp_index_t, long double>::iterator itMap = Pmi_Y.begin(); itMap != Pmi_Y.end(); ++itMap)
+  for ( map<size_t, long double>::iterator itMap = Pmi_Y.begin(); itMap != Pmi_Y.end(); ++itMap )
   {
-    Pmi_Ysort.insert(pair<long double, snp_index_t>( (*itMap).second, (*itMap).first));
+    Pmi_Ysort.insert(pair<long double, size_t>( (*itMap).second, (*itMap).first));
   }
   
-  set<snp_index_t> mySnps;    
+  set<size_t> mySnps;    
   bool isBad = false;
   //snp_index_t badSNP;  // najlepszy snp z posteriori <= 0.5
-  multimap<long double, snp_index_t>::reverse_iterator itM;
+  multimap<long double, size_t>::reverse_iterator itM;
   for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first >  0.5; itM++)
   {
     mySnps.insert((*itM).second);
@@ -2924,16 +2931,16 @@ void MA::piMassCluserPOWER ( const string &fileName, const string &outFileName, 
   powerFDR.posteriorBadCluster = 0.0;  
   
   if ( 0 < parameter->causalModelFilename.length() ) {
-    vector<snp_index_t> realSNPs;             // snps from real model
+    vector<size_t> realSNPs;	// snps from real model
     modelReader( parameter->causalModelFilename, realSNPs );  
     
     if (realSNPs.size() > 0 && isBad == true)
     {
-      set<snp_index_t> trueSNPs;
+      set<size_t> trueSNPs;
       //calculatePOWER_FDR_clust(mySnps, realSNPs, POWER, FDR, FDcount, trueSNPs, tabClust, Pmi_Y);
       cout << "causal model: OK" << endl; 
       Model m(data);
-      vector<snp_index_t> vM(mySnps.begin(), mySnps.end());
+      vector<size_t> vM(mySnps.begin(), mySnps.end());
       if (vM.size() > 0)
       {
         m.addManySNP(vM);
@@ -2986,7 +2993,7 @@ void MA::piMassCluserPOWER ( const string &fileName, const string &outFileName, 
     sp_sort << powerFDR.posteriorBad << "\t";
     sp_sort << powerFDR.posteriorBadCluster << "\t";
     
-    vector<snp_index_t> modelSNPs_max;
+    vector<size_t> modelSNPs_max;
     bool clusterSum = true;
     calculate_clusters(Pmi_Y, modelSNPs_max, !clusterSum, "piMass_cluster_Max");
     
@@ -3432,8 +3439,8 @@ void GA::calculatePOWER_FDR_clust(set<snp_index_t> &mySnps, vector<snp_index_t> 
  * @param powerFDR    - returns the POWER, FDR and FD count (struct)
  * @param Pmi_Y       - the map of Pmi_Y value of the snps
  **/
-void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y,
-                                map<snp_index_t, int> &recognizedSNPs, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost )
+void MA::calculatePOWER_FDR_clust_max ( vector<size_t> &causalSNPs, TPOWER_FDR &powerFDR, map<size_t, long double> &mapSNPid_Pmi_Y,
+                                map<size_t, int> &recognizedSNPs, map<size_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost )
 {
 //  cout << "POWER, FDR - cluster MAX" << endl;
   bool TEST = false;//true;
@@ -3442,9 +3449,9 @@ void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_
   int sumFP = 0;
   // calcuates mapSNPid_Pmi_Y for the clusters
   int label;
-  snp_index_t aSNP;
+  size_t aSNP;
   
-  for (map<snp_index_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it)
+  for ( map<size_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it )
   {
     aSNP = (*it).first;
     label = mapSNPid_label[ aSNP ];
@@ -3492,7 +3499,7 @@ void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_
     {
       ind = mapLabel_ind[ (*it).first ];
       ssClusters << "[" << (*it).first << "] (" << ind << ")=> {";
-      for (set<snp_index_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end(); ++itSet)
+      for ( set<size_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end(); ++itSet )
       {
         if (itSet == vectClust[ind].begin())
           ssClusters << *itSet;
@@ -3505,7 +3512,7 @@ void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_
     file << ssClusters.str() << endl;
     file.close();
   }
-  snp_index_t recognizedSNP;
+  size_t recognizedSNP;
   map<int, long double>::iterator itBad = mapLabel_PmiY.end();
   for (map<int, long double>::iterator it =  mapLabel_PmiY.begin(); it != mapLabel_PmiY.end(); ++it)
   { // for each cluster
@@ -3514,10 +3521,10 @@ void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_
     {
       ind = mapLabel_ind[ (*it).first ];
       if (TEST) ssPower << "label: " << (*it).first << ", ind: " << ind << ", Pmi_Y: " << (*it).second << endl;
-      for (set<snp_index_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end() && isInCausal == false; ++itSet)
+      for ( set<size_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end() && isInCausal == false; ++itSet )
       { // for each snp in the cluster
         if (TEST) ssPower << "snp: " << *itSet;  
-        vector<snp_index_t>::iterator itFind = find(causalSNPs.begin(), causalSNPs.end(), (*itSet));
+        vector<size_t>::iterator itFind = find(causalSNPs.begin(), causalSNPs.end(), (*itSet));
         if (itFind != causalSNPs.end())
         { 
           isInCausal = true;
@@ -3557,7 +3564,7 @@ void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_
   }
   if (TEST) ssPower << endl << "reset: " << endl;
   set<int> causalLabels;
-  for (vector<snp_index_t>::iterator it = causalSNPs.begin(); it != causalSNPs.end(); ++it)
+  for ( vector<size_t>::iterator it = causalSNPs.begin(); it != causalSNPs.end(); ++it )
   {
     causalLabels.insert( mapSNPid_label[*it] );  // calculates the number of cluster in the causal model
   }
@@ -3576,7 +3583,7 @@ void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_
   
   // looks for the best snp of the worst (posteriori)
   int indBad = mapLabel_ind[ (*itBad).first ];
-  snp_index_t badSNP;
+  size_t badSNP;
   if (TEST) ssPower << "label_Bad: " << (*itBad).first << ", ind: " << ind << endl;
   if (vectClust[indBad].size() > 0)
   {
@@ -3587,7 +3594,7 @@ void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_
     cerr << "vectClust[ind].size() is equal 0!" << endl;
     exit(-1);
   }
-  for (set<snp_index_t>::iterator it = vectClust[indBad].begin(); it != vectClust[indBad].end(); ++it)
+  for ( set<size_t>::iterator it = vectClust[indBad].begin(); it != vectClust[indBad].end(); ++it )
   {
     if (mapSNPid_Pmi_Y[badSNP] < mapSNPid_Pmi_Y[*it])
       badSNP = *it;
@@ -3623,8 +3630,8 @@ void MA::calculatePOWER_FDR_clust_max ( vector<snp_index_t> &causalSNPs, TPOWER_
  * @param powerFDR    - returns the POWER, FDR and FD count (struct)
  * @param Pmi_Y       - the map of Pmi_Y value of the snps
  **/
-void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, map<snp_index_t, long double> &mapSNPid_Pmi_Y,
-                                map<snp_index_t, int> &recognizedSNPs, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost )
+void MA::calculatePOWER_FDR_clust_sum ( vector<size_t> &causalSNPs, TPOWER_FDR &powerFDR, map<size_t, long double> &mapSNPid_Pmi_Y,
+                                map<size_t, int> &recognizedSNPs, map<size_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost )
 {
   cout << "POWER, FDR - cluster SUM" << endl;
   bool TEST = false;
@@ -3633,9 +3640,9 @@ void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_
   int sumFP = 0;
   // calcuates mapSNPid_Pmi_Y for the clusters
   int label;
-  snp_index_t aSNP;
+  size_t aSNP;
   
-  for (map<snp_index_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it)
+  for ( map<size_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it )
   {
     aSNP = (*it).first;
     label = mapSNPid_label[ aSNP ];
@@ -3682,7 +3689,7 @@ void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_
     {
       ind = mapLabel_ind[ (*it).first ];
       ssClusters << "[" << (*it).first << "] (" << ind << ")=> {";
-      for (set<snp_index_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end(); ++itSet)
+      for ( set<size_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end(); ++itSet )
       {
         if (itSet == vectClust[ind].begin())
           ssClusters << *itSet;
@@ -3695,7 +3702,7 @@ void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_
     file << ssClusters.str() << endl;
     file.close();
   }
-  snp_index_t recognizedSNP;
+  size_t recognizedSNP;
   map<int, long double>::iterator itBad = mapLabel_PmiY.end();
   for (map<int, long double>::iterator it =  mapLabel_PmiY.begin(); it != mapLabel_PmiY.end(); ++it)
   { // for each cluster
@@ -3704,10 +3711,10 @@ void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_
     {
       ind = mapLabel_ind[ (*it).first ];
       if (TEST) ssPower << "label: " << (*it).first << ", ind: " << ind << ", Pmi_Y: " << (*it).second << endl;
-      for (set<snp_index_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end() && isInCausal == false; ++itSet)
+      for ( set<size_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end() && isInCausal == false; ++itSet )
       { // for each snp in the cluster
         if (TEST) ssPower << "snp: " << *itSet;  
-        vector<snp_index_t>::iterator itFind = find(causalSNPs.begin(), causalSNPs.end(), (*itSet));
+        vector<size_t>::iterator itFind = find(causalSNPs.begin(), causalSNPs.end(), (*itSet));
         if (itFind != causalSNPs.end())
         { 
           isInCausal = true;
@@ -3748,7 +3755,7 @@ void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_
   
   if (TEST) ssPower << endl << "reset: " << endl;
   set<int> causalLabels;
-  for (vector<snp_index_t>::iterator it = causalSNPs.begin(); it != causalSNPs.end(); ++it)
+  for ( vector<size_t>::iterator it = causalSNPs.begin(); it != causalSNPs.end(); ++it )
   {
     causalLabels.insert( mapSNPid_label[*it] );  // calculates the number of cluster in the causal model
   }
@@ -3767,7 +3774,7 @@ void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_
   
   // looks for the best snp of the worst (posteriori)
   int indBad = mapLabel_ind[ (*itBad).first ];
-  snp_index_t badSNP;
+  size_t badSNP;
   if (TEST) ssPower << "label_Bad: " << (*itBad).first << ", ind: " << ind << endl;
   if (vectClust[indBad].size() > 0)
   {
@@ -3778,7 +3785,7 @@ void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_
     cerr << "vectClust[ind].size() is equal 0!" << endl;
     exit(-1);
   }
-  for (set<snp_index_t>::iterator it = vectClust[indBad].begin(); it != vectClust[indBad].end(); ++it)
+  for ( set<size_t>::iterator it = vectClust[indBad].begin(); it != vectClust[indBad].end(); ++it )
   {
     if (mapSNPid_Pmi_Y[badSNP] < mapSNPid_Pmi_Y[*it])
       badSNP = *it;
@@ -3818,15 +3825,15 @@ void MA::calculatePOWER_FDR_clust_sum ( vector<snp_index_t> &causalSNPs, TPOWER_
  * @param Pmi_Y       - the map of Pmi_Y value of the snps
  * UWAGA clusterSum == otwiera plik *_recognized w trybie append
  **/
-void MA::calculate_clusters ( map<snp_index_t, long double> &mapSNPid_Pmi_Y, vector<snp_index_t> &modelSNPs, bool clusterSum, string method_Name )
+void MA::calculate_clusters ( map<size_t, long double> &mapSNPid_Pmi_Y, vector<size_t> &modelSNPs, bool clusterSum, string method_Name )
 {
   set<int>clusterSet;
   modelSNPs.clear();
   bool TEST = false;
   int label;
-  snp_index_t aSNP;
+  size_t aSNP;
 
-  for (map<snp_index_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it)
+  for ( map<size_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it )
   {
     aSNP = (*it).first;
     label = mapSNPid_label[ aSNP ];
@@ -3835,7 +3842,7 @@ void MA::calculate_clusters ( map<snp_index_t, long double> &mapSNPid_Pmi_Y, vec
   // calcuates mapSNPid_Pmi_Y for the clusters    // Obliczamy prawd. a posteriori dla klastra metodą: SUM (suma prawd. a posteriori SNPów z tego klastra lub jako wartość MAX)
   if (clusterSum == true)
   {
-    for (map<snp_index_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it)
+    for ( map<size_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it )
     {
       aSNP = (*it).first;
       label = mapSNPid_label[ aSNP ];
@@ -3844,7 +3851,7 @@ void MA::calculate_clusters ( map<snp_index_t, long double> &mapSNPid_Pmi_Y, vec
   }
   else
   {
-    for (map<snp_index_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it)
+    for ( map<size_t, long double>::iterator it = mapSNPid_Pmi_Y.begin(); it != mapSNPid_Pmi_Y.end(); ++it )
     {
       aSNP = (*it).first;
       label = mapSNPid_label[ aSNP ];
@@ -3872,7 +3879,7 @@ void MA::calculate_clusters ( map<snp_index_t, long double> &mapSNPid_Pmi_Y, vec
       ssClusters << (*it).first << "\t>>\t";
       ssSNPs_ID << (*it).first << "\t>>\t";
 
-      for (set<snp_index_t>::iterator itS = vectClust[ind].begin(); itS != vectClust[ind].end(); ++itS)
+      for ( set<size_t>::iterator itS = vectClust[ind].begin(); itS != vectClust[ind].end(); ++itS )
       {
         if (itS == vectClust[ind].begin())
         {
@@ -3928,7 +3935,7 @@ void MA::calculate_clusters ( map<snp_index_t, long double> &mapSNPid_Pmi_Y, vec
     {
       ind = mapLabel_ind[ (*it).first ];
       ssClusters << ind << ")\t" <<  (*it).first << "\t => {";
-      for (set<snp_index_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end(); ++itSet)
+      for ( set<size_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end(); ++itSet )
       {
         if (itSet == vectClust[ind].begin())
           ssClusters << *itSet;
@@ -3959,15 +3966,15 @@ void MA::localImprovement ( Model &model, double threshold, int correlationRange
   else
     model.computeMSCfalseRegression();
   if (TEST) cout << "A model to improve: " << model << endl;
-  vector <snp_index_t> snps = model.getModelSnps();  // snps of the model
-  set<snp_index_t> newSnps;   // snps of a new model
+  vector <size_t> snps = model.getModelSnps();  // snps of the model
+  set<size_t> newSnps;   // snps of a new model
   
-  vector<snp_index_t> v; 
+  vector<size_t> v; 
   int label,
       ind,
       randVal;
-  snp_index_t aSNP;
-  set<snp_index_t>::iterator itSNP;            
+  size_t aSNP;
+  set<size_t>::iterator itSNP;            
   int newModelNo = 3 * snps.size();  // the number of the new models
   Model theBestModel(data);
   theBestModel = model;  // zamienić na vector i zmienną msc !!!!!!!!!!!!!!
@@ -4016,7 +4023,7 @@ void MA::localImprovement ( Model &model, double threshold, int correlationRange
   if (TEST) cout << "A model to return " << model << endl;
 }
 
-void MA::makeVectCluster ( map<snp_index_t, int>& mSNPid_label )
+void MA::makeVectCluster ( map<size_t, int>& mSNPid_label )
 {
   clusterLabel.clear();
   mapLabel_ind.clear();
@@ -4029,7 +4036,7 @@ void MA::makeVectCluster ( map<snp_index_t, int>& mSNPid_label )
     exit(-1);
   }
   set<int>labels;
-  for (map<snp_index_t, int>::iterator it =  mSNPid_label.begin(); it != mSNPid_label.end(); ++it)
+  for ( map<size_t, int>::iterator it =  mSNPid_label.begin(); it != mSNPid_label.end(); ++it )
   {
     labels.insert((*it).second);
   }
@@ -4042,7 +4049,7 @@ void MA::makeVectCluster ( map<snp_index_t, int>& mSNPid_label )
     clusterLabel[i] = *it;
   }
   vectClust.resize(labels.size()); 
-  for (map<snp_index_t, int>::iterator it =  mSNPid_label.begin(); it != mSNPid_label.end(); ++it)
+  for ( map<size_t, int>::iterator it =  mSNPid_label.begin(); it != mSNPid_label.end(); ++it )
   {
     vectClust[ mapLabel_ind[(*it).second] ].insert( (*it).first );
   }
@@ -4054,7 +4061,7 @@ void MA::makeVectCluster ( map<snp_index_t, int>& mSNPid_label )
     {
       ssClusters << "[" << clusterLabel[i] << "]-> {";
                  //<< vectClust[i] << endl;
-      for (set<snp_index_t>::iterator it = vectClust[i].begin(); it != vectClust[i].end(); ++it)
+      for ( set<size_t>::iterator it = vectClust[i].begin(); it != vectClust[i].end(); ++it )
       {
          if (it == vectClust[i].begin())
            ssClusters << data.getSNP( *it ).getSnpId();
@@ -4076,7 +4083,7 @@ void MA::makeVectCluster ( map<snp_index_t, int>& mSNPid_label )
  * 
  * readClusterLabel(mapSNPid_label, clusterFile_POWER, SNP_Names_Id, &mapLabel_PmiY);
  */ 
-void MA::readClusterLabel ( map<snp_index_t, int>& mapSNPid_label, const string& fileName, map<string, int>& SNP_Names_Id, map<int, long double>* mapLabel_PmiY )
+void MA::readClusterLabel ( map<size_t, int>& mapSNPid_label, const string& fileName, map<string, int>& SNP_Names_Id, map<int, long double>* mapLabel_PmiY )
 {
   stringstream ssError;
   ifstream aFile;
@@ -4107,7 +4114,7 @@ void MA::readClusterLabel ( map<snp_index_t, int>& mapSNPid_label, const string&
           labels.insert(label);
           mapLabel_PmiY->insert(pair<int, long double>(label, 0.0L));
         }
-        mapSNPid_label.insert(pair<snp_index_t, int>(SNP_Names_Id[SNPname], label));
+        mapSNPid_label.insert(pair<size_t, int>(SNP_Names_Id[SNPname], label));
       }
     }
     aFile.close();
@@ -4135,17 +4142,17 @@ void MA::readClusterLabel ( map<snp_index_t, int>& mapSNPid_label, const string&
 /** @brief creates map snp_i -> index
  * 
  */
-void MA::initCausalPost ( map<snp_index_t, int> &mapSNPCausal_ind )
+void MA::initCausalPost ( map<size_t, int> &mapSNPCausal_ind )
 {
   if ( 0 < parameter->causalModelFilename.length() )	// The simulation. We have the causalModel
   {
-    vector<snp_index_t> realSNPs;                // snps from the casual model
+    vector<size_t> realSNPs;                // snps from the casual model
     modelReader( parameter->causalModelFilename, realSNPs );
     if (realSNPs.size() > 0)
     {
       int i = 0;
-      for (vector<snp_index_t>::iterator it = realSNPs.begin(); it != realSNPs.end(); ++it, ++i)
-        mapSNPCausal_ind.insert( pair<snp_index_t, int>(*it, i) );
+      for ( vector<size_t>::iterator it = realSNPs.begin(); it != realSNPs.end(); ++it, ++i )
+        mapSNPCausal_ind.insert( pair<size_t, int>(*it, i) );
     }
     else
     {
@@ -4160,12 +4167,12 @@ void MA::initCausalPost ( map<snp_index_t, int> &mapSNPCausal_ind )
   }
 }
 
-void writePosterior(string fileName, map<snp_index_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost, int size)
+void writePosterior ( string fileName, map<size_t, int> &mapSNPCausal_ind, vector< multiset<long double> > &tabCausalPost, int size )
 {
   bool TEST = false;
   stringstream ssClusters;
   int id = 1;
-  for (map<snp_index_t, int>::iterator it = mapSNPCausal_ind.begin(); it != mapSNPCausal_ind.end(); ++it)
+  for ( map<size_t, int>::iterator it = mapSNPCausal_ind.begin(); it != mapSNPCausal_ind.end(); ++it )
   {
     if (TEST) cout << "%" << (*it).first << endl;
     ssClusters << "%" << (*it).first << endl;
@@ -4192,16 +4199,16 @@ void writePosterior(string fileName, map<snp_index_t, int> &mapSNPCausal_ind, ve
 /**
  * 
  */
-void MA::makeCausalClasters ( string fileName, vector<snp_index_t> causalSNPs )
+void MA::makeCausalClasters ( string fileName, vector<size_t> causalSNPs )
 {
   long double abscor;
-  map<snp_index_t, int> mapSNPid_ind;
-  vector< set<snp_index_t> > tab_Corr;
+  map<size_t, int> mapSNPid_ind;
+  vector< set<size_t> > tab_Corr;
   assert(causalSNPs.size() > 0);
   tab_Corr.resize(causalSNPs.size());
   for (unsigned int i = 0; i < causalSNPs.size(); ++i)  // makes a map SNP_id -> index
   {
-    mapSNPid_ind.insert(pair<snp_index_t, int> (causalSNPs[i], i));
+    mapSNPid_ind.insert( pair<size_t, int> (causalSNPs[i], i) );
   }
   int ind;
   bool isCorrelated;
@@ -4234,7 +4241,7 @@ void MA::makeCausalClasters ( string fileName, vector<snp_index_t> causalSNPs )
   {
      ssClusters << "[" << causalSNPs[i] << "] -> {";
      ind = mapSNPid_ind[ causalSNPs[i] ];
-     for (set<snp_index_t>::iterator it = tab_Corr[ind].begin(); it != tab_Corr[ind].end(); ++it)
+     for ( set<size_t>::iterator it = tab_Corr[ind].begin(); it != tab_Corr[ind].end(); ++it )
      {
        if (it == tab_Corr[ind].begin())
          ssClusters << *it;
@@ -4268,7 +4275,7 @@ void MA::saveLabelCount ( const string &fileName )
       ss << (*it).first << "\t" << (*it).second << endl;
       int ind = mapLabel_ind[it->first];
       ss << clusterLabel[ind] << "\t{";
-      for (set<snp_index_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end(); ++itSet)
+      for ( set<size_t>::iterator itSet = vectClust[ind].begin(); itSet != vectClust[ind].end(); ++itSet )
       {
         if (itSet == vectClust[ind].begin())
           ss << *itSet;
@@ -4298,9 +4305,9 @@ void MA::saveLabelCount ( const string &fileName )
  * @brief Initilizes the map (SNPs -> count) with 0
  * @param map_SNP2count - the map to initialize
  */
-void MA::setCausalCount ( map<snp_index_t, int> &map_SNP2count )
+void MA::setCausalCount ( map<size_t, int> &map_SNP2count )
 {
-  vector<snp_index_t> causalSNPs;             // snps from the real model
+  vector<size_t> causalSNPs;             // snps from the real model
   modelReader( parameter->causalModelFilename, causalSNPs );  
   for (unsigned int i = 0; i < causalSNPs.size(); ++i)
   {
@@ -4314,7 +4321,7 @@ void MA::setCausalCount ( map<snp_index_t, int> &map_SNP2count )
  * @param threshold - threshold value of correlation. 
  * @return vector of snps with a correlation above threshold
  */
-void MA::stronglyCorrelatedSnpsCluster ( const vector<snp_index_t> & tabSNPs, const double& threshold )
+void MA::stronglyCorrelatedSnpsCluster ( const vector<size_t> & tabSNPs, const double& threshold )
 {
   stringstream ss;
   
@@ -4336,7 +4343,7 @@ void MA::stronglyCorrelatedSnpsCluster ( const vector<snp_index_t> & tabSNPs, co
   
   //  697067,  599750
   
-  vector<snp_index_t> tabSpr;
+  vector<size_t> tabSpr;
   tabSpr.push_back(130633);
   tabSpr.push_back(267614);
   tabSpr.push_back(267621);
@@ -4429,7 +4436,7 @@ void MA::stronglyCorrelatedSnpsCluster ( const vector<snp_index_t> & tabSNPs, co
 //SNP_A-1828353 SNP_A-2157434 SNP_A-1794641 SNP_A-1815281 SNP_A-2202441 SNP_A-2309459 SNP_A-2160092 SNP_A-1850477 SNP_A-2289125 SNP_A-1829559 SNP_A-2208065 SNP_A-1786242
 
 
-void MA::saveRecognizedSNPinfo ( const vector<snp_index_t> &v, const string &method_Name, map<snp_index_t, long double> &mapSNPid_Pmi_Y )
+void MA::saveRecognizedSNPinfo ( const vector<size_t> &v, const string &method_Name, map<size_t, long double> &mapSNPid_Pmi_Y )
 {
   stringstream ssClusters;  
   stringstream ssSNPs_ID;  
@@ -4478,7 +4485,7 @@ void MA::saveRecognizedSNPinfo ( const vector<snp_index_t> &v, const string &met
     int ind = mapLabel_ind[ cluster_label ];
     aRegion.clear();
     aRegionPtr = new set<TSNP_Info>;
-    for (set<snp_index_t>::iterator itS = vectClust[ind].begin(); itS != vectClust[ind].end(); ++itS)
+    for ( set<size_t>::iterator itS = vectClust[ind].begin(); itS != vectClust[ind].end(); ++itS )
     {
       aSNP_info.SNP = *itS;
       aSNP_info.Chr = (data.getSNP(*itS)).getChromosome();
@@ -4576,32 +4583,32 @@ void MA::writePoolofSize ( bool &flag, int maxSize )
  * @brieb wyznacza SNPy, 
  * @param th - próg
 */
-void MA::regionStrategy ( const string method_Name, Model &model, multimap<long double, snp_index_t>& Pmi_Ysort, map<snp_index_t, long double> &mapSNPid_Pmi_Y, double th, set<TRegionSet_info> &setNewRegion )
+void MA::regionStrategy ( const string method_Name, Model &model, multimap<long double, size_t>& Pmi_Ysort, map<size_t, long double> &mapSNPid_Pmi_Y, double th, set<TRegionSet_info> &setNewRegion )
 {
 //  cout << "th: " << th << endl;
 //  cout << "Pmi_Ysort.size(): " << Pmi_Ysort.size() << endl;
 //  cout << "mapSNPid_Pmi_Y.size(): " << mapSNPid_Pmi_Y.size() << endl;  
   
   const bool TEST = false;
-  map<snp_index_t, unsigned int> mapSNP2ind;   // odwzorowanie SNP -> indeks w tablicy tabCorr oraz tablicy tabCorr[]
+  map<size_t, unsigned int> mapSNP2ind;   // odwzorowanie SNP -> indeks w tablicy tabCorr oraz tablicy tabCorr[]
   vector<vector<double> > tabCorr;
-  vector<snp_index_t> SNPs;                    // SNPy, które biorą udział w operacji, odwzorowanie index tablicy -> SNP
-  vector< set<snp_index_t> > tabRegionSNPs;    // tablica zawierająca SNPy, które należą do rejonu
+  vector<size_t> SNPs;                    // SNPy, które biorą udział w operacji, odwzorowanie index tablicy -> SNP
+  vector< set<size_t> > tabRegionSNPs;    // tablica zawierająca SNPy, które należą do rejonu
   vector<double> SNPs_posteriori;              // posteriori rejonu
-  snp_index_t aSNP;
+  size_t aSNP;
   double absCorr;
   unsigned int i = 0;
-  multimap<long double, snp_index_t>::reverse_iterator itM;
+  multimap<long double, size_t>::reverse_iterator itM;
   vector<double> vv;
-  vector<snp_index_t> v_all;
-  set<snp_index_t>s;
+  vector<size_t> v_all;
+  set<size_t>s;
   ofstream  outFile;
   if (TEST) outFile.open( ( parameter->out_file_name + "_region_mapSNP2ind.txt" ).c_str(), fstream::out | fstream::trunc );
   if (TEST) outFile << "aSNP" << "\t" << "mapSNP2ind" << "\t" << "mapSNPid_Pmi_Y" << endl;
   for (itM = Pmi_Ysort.rbegin(); itM != Pmi_Ysort.rend() && (*itM).first > th; ++itM)
   {
     aSNP = itM->second;
-    mapSNP2ind.insert(pair<snp_index_t, unsigned int> (aSNP, i));
+    mapSNP2ind.insert( pair<size_t, unsigned int> (aSNP, i) );
     tabCorr.push_back(vv);
     SNPs.push_back(aSNP);
     SNPs_posteriori.push_back(mapSNPid_Pmi_Y[aSNP]);
@@ -4675,7 +4682,7 @@ void MA::regionStrategy ( const string method_Name, Model &model, multimap<long 
   }
   vector<double> SNPs_posteriori_orig = SNPs_posteriori;
   
-  vector<snp_index_t> v;
+  vector<size_t> v;
   v_all.clear();
   TSNP_Info aSNP_info;
   set<TSNP_Info> aRegion;
@@ -4692,7 +4699,7 @@ void MA::regionStrategy ( const string method_Name, Model &model, multimap<long 
       if (TEST) outFile << SNPs[i] << "\t" << mapSNPid_Pmi_Y[ SNPs[i] ] << "\t" << SNPs_posteriori[i] << "\t";
       if (TEST) outFile << SNPs[i];
       v.push_back(SNPs[i]);
-      for (set<snp_index_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it)
+      for ( set<size_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it )
       {
           if (TEST) outFile << " " << SNPs[*it];
           if ( mapSNPid_Pmi_Y[ SNPs[*it] ] > mapSNPid_Pmi_Y[ v[v.size() -1] ] )
@@ -4703,7 +4710,7 @@ void MA::regionStrategy ( const string method_Name, Model &model, multimap<long 
       {
         outFile << endl;  
         outFile << "\t" << data.getSNP( SNPs[i] ).getSnpId();
-        for (set<snp_index_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it)
+        for ( set<size_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it )
           outFile << " " << data.getSNP( SNPs[*it] ).getSnpId(); 
         outFile << endl;
       }
@@ -4714,7 +4721,7 @@ void MA::regionStrategy ( const string method_Name, Model &model, multimap<long 
       aSNP_info.pos = (data.getSNP(SNPs[i])).getBasePairPosition();
       aRegion.insert(aSNP_info);
       aRegionPtr->insert(aSNP_info);
-      for (set<snp_index_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it)
+      for ( set<size_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it )
       {
         aSNP_info.SNP = SNPs[*it];
         aSNP_info.Chr = (data.getSNP(SNPs[*it])).getChromosome();
@@ -4771,7 +4778,7 @@ void MA::regionStrategy ( const string method_Name, Model &model, multimap<long 
       aSNP_info.pos = (data.getSNP(SNPs[i])).getBasePairPosition();
       aRegion.insert(aSNP_info);
       aRegionPtr->insert(aSNP_info);
-      for (set<snp_index_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it)
+      for ( set<size_t>::iterator it = tabRegionSNPs[i].begin(); it != tabRegionSNPs[i].end(); ++it )
       {
         aSNP_info.SNP = SNPs[*it];
         aSNP_info.Chr = (data.getSNP(SNPs[*it])).getChromosome();
@@ -4843,7 +4850,7 @@ void MA::regionStrategy ( const string method_Name, Model &model, multimap<long 
 }
 
 
-void MA::calculatePOWER_FDR_clustRegion ( vector<snp_index_t> &causalSNPs, TPOWER_FDR &powerFDR, set<TRegionSet_info> &setNewRegion, map<snp_index_t, int>& recognizedSNPs )
+void MA::calculatePOWER_FDR_clustRegion ( vector<size_t> &causalSNPs, TPOWER_FDR &powerFDR, set<TRegionSet_info> &setNewRegion, map<size_t, int>& recognizedSNPs )
 {
   assert(causalSNPs.size() > 0);
   bool isTP;
@@ -4930,11 +4937,11 @@ void MA::test_region ()
                697079, 697080, 697082, 697083
               };
   const int tab_size = sizeof(tab)/sizeof(tab[0]);
-  vector<snp_index_t> SNPs(tab, tab + tab_size);                    // SNPy, które biorą udział w operacji, odwzorowanie index tablicy -> SNP
-  map<snp_index_t, unsigned int> mapSNP2ind;   // odwzorowanie SNP -> indeks w tablicy tabCorr oraz tablicy tabCorr[]
+  vector<size_t> SNPs(tab, tab + tab_size);                    // SNPy, które biorą udział w operacji, odwzorowanie index tablicy -> SNP
+  map<size_t, unsigned int> mapSNP2ind;   // odwzorowanie SNP -> indeks w tablicy tabCorr oraz tablicy tabCorr[]
   vector<vector<double> > tabCorr(SNPs.size());
-  vector< set<snp_index_t> > tabRegionSNPs;    // tablica zawierająca SNPy, które należą do rejonu
-  snp_index_t aSNP;
+  vector< set<size_t> > tabRegionSNPs;    // tablica zawierająca SNPy, które należą do rejonu
+  size_t aSNP;
   double absCorr;
 
   ofstream  outFile;
@@ -4943,7 +4950,7 @@ void MA::test_region ()
   for (  unsigned int i = 0; i < SNPs.size(); ++i)
   {
     aSNP = SNPs[i];
-    mapSNP2ind.insert(pair<snp_index_t, unsigned int> (aSNP, i));
+    mapSNP2ind.insert( pair<size_t, unsigned int> (aSNP, i) );
     outFile << mapSNP2ind[aSNP] << "\t" << aSNP << "\t" << endl;
     if (i != 0)
       tabCorr[i].resize(i);

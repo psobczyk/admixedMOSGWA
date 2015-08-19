@@ -132,7 +132,7 @@ double Model::getBeta ( const int i ) const {
 	}	
 }
 
-string 	Model::getSNPId ( const snp_index_t i ) const {
+string 	Model::getSNPId ( const size_t i ) const {
 		if ( 0 > i || getModelSize() <=i ) { cerr<<"The requested SNP of the model "<<i <<" is outside of [0, getModelSize()-1] Modelsize is actually "<<getModelSize()<<endl<<"you will see an SNP_false instead"<<endl;
 	//	throw; //simple but bad because this string is only for reporting!
 	return "ERROR SNP";
@@ -152,7 +152,7 @@ void Model::sortSNPsAccordingBetas () {
 sbetas.fillVec(getNoOfVariables(), &SNP[0],&betas[0],false);
 }
 
-void Model::addSNPtoModel ( const snp_index_t snp ) {
+void Model::addSNPtoModel ( const size_t snp ) {
 	const size_t
 		idvs = data_->getIdvNo(),
 		vars = getNoOfVariables();
@@ -176,7 +176,7 @@ void Model::addSNPtoModel ( const snp_index_t snp ) {
  *
  * */
 
-bool Model::replaceSNPinModel ( const snp_index_t snp, const snp_index_t  position ) {
+bool Model::replaceSNPinModel ( const size_t snp, const size_t position ) {
 if ( 0 == getModelSize())
 {       cerr<<"replacing SNPs is not implemented for empty Models"<<endl;
        	return false;
@@ -184,7 +184,7 @@ if ( 0 == getModelSize())
 if(0>position||getModelSize()<=position)
  {	cerr<< "replaceSNPinModel position is not in Model";
 	return false;}
-	const snp_index_t reset = 1 + data_->getCovNo() + position;		//position 0 is the first 
+	const size_t reset = 1 + data_->getCovNo() + position;		//position 0 is the first 
  //cout<<"reset="<<reset<<endl;
 	modelSnps_.at( position ) = snp;
 // cerr<<"reset="<<reset;
@@ -223,7 +223,7 @@ bool Model::removeSNPfromModel ( const size_t msnp ) {
 
 //**adds many SNP to the Model
 
-void Model::addManySNP ( vector<snp_index_t> selected ) {
+void Model::addManySNP ( vector<size_t> selected ) {
 	//tests
 	if (
 		0 == selected.size()
@@ -248,7 +248,7 @@ void Model::addManySNP ( vector<snp_index_t> selected ) {
 		// TODO<BB>: throw Exception
 		return;
 	}
-	vector<snp_index_t> finalselect;
+	vector<size_t> finalselect;
 	//reserve enough room for adding all elements of selected
 	finalselect.reserve( selected.size() );
 	finalselect.push_back( selected[0] );
@@ -672,8 +672,8 @@ bool Model::replaceModelSNPSCORE ( const int selectionCriterium ) {
  	for(int j=getModelSize()-1; j >=0; j--)
 	{//replace
 	int nscores=	scoreTestWithOneSNPless(j, score);
-		for(snp_index_t i=0;i<nscores;++i) 
-		{       model0=*this;
+		for ( size_t i = 0; i < nscores; ++i ) {
+			model0 = *this;
                         model0.replaceSNPinModel (score.getId(i) ,  j );
 
 	                double val=DBL_MAX;
@@ -713,7 +713,7 @@ return improve;
 */
 
 
-double Model::oraculateOptimalLinearForwardStep( snp_index_t *snp, size_t bound ) const {
+double Model::oraculateOptimalLinearForwardStep ( size_t *snp, size_t bound ) const {
 	AutoVector xVec( data_->getIdvNo() );
 
 	// Fast incremental linear regression calculator
@@ -730,9 +730,9 @@ double Model::oraculateOptimalLinearForwardStep( snp_index_t *snp, size_t bound 
 
 	// Search best to add
 	double bestRSS = DBL_MAX;
-	snp_index_t bestSNP;
-	for ( snp_index_t snpCol = 0; snpCol < bound; ++snpCol ) {
-		const snp_index_t orderedSnpIndex = data_->getOrderedSNP( snpCol );
+	size_t bestSNP;
+	for ( size_t snpCol = 0; snpCol < bound; ++snpCol ) {
+		const size_t orderedSnpIndex = data_->getOrderedSNP( snpCol );
 		if ( modelIndex.contains( orderedSnpIndex ) ) continue;
 
 		// Prepare new column
@@ -756,9 +756,9 @@ double Model::oraculateOptimalLinearForwardStep( snp_index_t *snp, size_t bound 
 /** The code here uses modern tools and points into the direction of future code-consolidation.
 * TODO<BB>: Store all calculated models' MSCs in a ResultStore.
 * Or (cheaper) at least tick those off which are suboptimal.
-* @see oraculateOptimalLinearForwardStep( size_t, snp_index_t* )
+* @see oraculateOptimalLinearForwardStep( size_t, size_t* )
 */
-double Model::oraculateOptimalLinearBackwardStep( snp_index_t *snp ) const {
+double Model::oraculateOptimalLinearBackwardStep( size_t *snp ) const {
 	// Fast linear regression calculator with Bernhard's backward shortcut algorithm
 	QRuncher qruncher( yVec );
 
@@ -1119,7 +1119,7 @@ int newSNP=0;
       NewModel = *this;
         // To quickly search whether SNP is already "in"
     const ModelIndex modelIndex( modelSnps_ ); 
-    const snp_index_t orderedSnpIndex = score[i]; //data_-> getOrderedSNP( i );
+    const size_t orderedSnpIndex = score[i]; //data_-> getOrderedSNP( i );
     if ( !modelIndex.contains( orderedSnpIndex ) )     {
 	 NewModel.addSNPtoModel( orderedSnpIndex ); // Add SNPs according to p-Value
       
@@ -1310,7 +1310,7 @@ int newSNP=0;
     oldBIC = computeMSC(selectionCriterium , qruncher.calculateRSS() );//hopefully 1 is also BiC here
 		logger->debug( "oldBIC=%f", oldBIC );
     for (
-      snp_index_t snpCol = *startIndex;
+	size_t snpCol = *startIndex;
       getModelSize() <=  startSize + /*parameter.ms_MaximalSNPsMultiForwardStep*/ newSNP && snpCol < snps;
       ++snpCol
     ) {
@@ -1405,7 +1405,7 @@ int Model::makeBackwardStep ( Model &smallerModel ) {
 	int 	removedSNP = -1;
 
 	const bool useOracle = !parameter->affection_status_phenotype;	// linear model
-	snp_index_t optimalSNP;
+	size_t optimalSNP;
 	if ( useOracle ) {
 		oraculateOptimalLinearBackwardStep( &optimalSNP );
 	}
@@ -1451,7 +1451,7 @@ int Model::makeForwardStep ( Model &biggerModel, const int boundSNP, const int s
 	// oracle bug
 		const bool useOracle=false;
 
-	snp_index_t optimalSNP;
+	size_t optimalSNP;
 	if ( useOracle ) {
 		oraculateOptimalLinearForwardStep( &optimalSNP, boundSNP );
 	}
@@ -1567,7 +1567,7 @@ int Model::makeBackwardStepED ( Model &smallerModel, const int selectionCriteriu
 	//double MSC;;
 	//const bool useOracle = !parameter.affection_status_phenotype;	// linear model
 	const bool useOracle = false; //for an error
-	 snp_index_t optimalSNP=2000000000UL;
+	size_t optimalSNP = 2000000000UL;
 	
 	if ( useOracle ) {
 		returnVal =oraculateOptimalLinearBackwardStep( &optimalSNP );
@@ -1991,7 +1991,7 @@ void Model::printModelNew() const {
  * @brief Print model information (snps and msc) on the screen. Just for testing GA
  */
 ostream &operator << ( ostream &out, const Model &m ) {
-  vector<snp_index_t> v = m.modelSnps_;
+  vector<size_t> v = m.modelSnps_;
   sort(v.begin(), v.end());
   out << "[";
   if (v.size() > 0)
@@ -2009,7 +2009,7 @@ ostream &operator << ( ostream &out, const Model &m ) {
  * @param pos relative position of snp at vector modelSnps_
  * @return snp
  */
-snp_index_t Model::getSNPat ( const snp_index_t pos ) const {
+size_t Model::getSNPat ( const size_t pos ) const {
   if (pos < modelSnps_.size())
     return modelSnps_[pos];
   else
@@ -2019,7 +2019,7 @@ snp_index_t Model::getSNPat ( const snp_index_t pos ) const {
   }
 }
 
-vector<snp_index_t> Model::getModelSnps() const {
+vector<size_t> Model::getModelSnps() const {
 	return modelSnps_;
 }
 
@@ -2028,10 +2028,10 @@ vector<snp_index_t> Model::getModelSnps() const {
  * @param snps - set of snps 
  * //WARNING I think there is faster way to create new model from given snps. I'm goint to do it. 
  */
-void Model::createFromSNPs( const set<snp_index_t>& snps ) { 
+void Model::createFromSNPs( const set<size_t>& snps ) { 
   clearModel();
   computeRegression();
-  for ( set<snp_index_t>::const_iterator it = snps.begin(); it != snps.end(); ++it ) {
+  for ( set<size_t>::const_iterator it = snps.begin(); it != snps.end(); ++it ) {
     addSNPtoModel( *it );
   }
 }
@@ -2042,8 +2042,8 @@ void Model::createFromSNPs( const set<snp_index_t>& snps ) {
  * @return true if SNP removed, and false if an error occors
  * ------------------------------------------------------------------------------
  */
-bool Model::removeSNPValFromModel( const snp_index_t oneSNP ) {
-  vector<snp_index_t>::iterator it = find(modelSnps_.begin(), modelSnps_.end(), oneSNP);
+bool Model::removeSNPValFromModel( const size_t oneSNP ) {
+  vector<size_t>::iterator it = find(modelSnps_.begin(), modelSnps_.end(), oneSNP);
   return removeSNPfromModel(it - modelSnps_.begin());
 }
 
@@ -2053,14 +2053,14 @@ void Model::clearModel () {
 }
 
 double Model::computeMSCfalseRegression ( const int selectionCriterium ) {
-	vector<snp_index_t> removedSnps;
+	vector<size_t> removedSnps;
 	msc = computeMSCfalseRegression( selectionCriterium, removedSnps );
 	return msc;
 }
   
 double Model::computeMSCfalseRegression (
 	const int selectionCriterium,
-	vector<snp_index_t> &removedSnps
+	vector<size_t> &removedSnps
 ) {
   if (computeRegression() == false)
   {
@@ -2071,7 +2071,7 @@ double Model::computeMSCfalseRegression (
     //char cc; cout << "Press a key... "; cin >> cc;
 		msc = computeMSCfalseRegression( selectionCriterium, removedSnps );
     
-    snp_index_t snp = removedSnps.back();
+    size_t snp = removedSnps.back();
     
     removedSnps.pop_back();
     addSNPtoModel(snp);
@@ -2159,10 +2159,10 @@ bool Model::operator == ( const Model &m ) const {
   if (modelSnps_.size() == 0)
     return true;
 
-  vector<snp_index_t> v1 = modelSnps_;
+  vector<size_t> v1 = modelSnps_;
   sort(v1.begin(), v1.end());
 
-  vector<snp_index_t> v2 = m.modelSnps_;
+  vector<size_t> v2 = m.modelSnps_;
   sort(v2.begin(), v2.end());
 
   unsigned int i = 0;

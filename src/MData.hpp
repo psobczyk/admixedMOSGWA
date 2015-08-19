@@ -238,6 +238,6 @@ public:
   //that should work
 // template<class Vals> void  sortingPermutation(const Vals& values, std::vector<int>& v);
   /** findSNPIndex is here to add many SNP from a list of SNPNames instead of a vector of int's */
-  void findSNPIndex ( vector<string>& SNPNames, vector<snp_index_t>& index ) const;
+  void findSNPIndex ( vector<string>& SNPNames, vector<size_t>& index ) const;
 };
 #endif

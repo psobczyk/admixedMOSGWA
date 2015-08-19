@@ -22,34 +22,34 @@
 using namespace std;
 using namespace lookup;
 
-ModelIndex::ReferenceCountedShared::ReferenceCountedShared ( const size_t size, const snp_index_t *snps )
+ModelIndex::ReferenceCountedShared::ReferenceCountedShared ( const size_t size, const size_t *snps )
 	: referenceCount( 1 ), size( size ), snps( snps ) {}
 
 ModelIndex::ReferenceCountedShared::~ReferenceCountedShared () {
 	assert( 0 == referenceCount );	// Otherwise, why delete?
-	free( const_cast<snp_index_t*>( snps ) );
+	free( const_cast<size_t*>( snps ) );
 	snps = NULL;
 }
 
-void ModelIndex::init ( const set<snp_index_t> &snpSet ) {
+void ModelIndex::init ( const set<size_t> &snpSet ) {
 	const size_t size = snpSet.size();
-	snp_index_t* const snps = static_cast<snp_index_t*>( malloc( size * sizeof( snp_index_t ) ) );
+	size_t* const snps = static_cast<size_t*>( malloc( size * sizeof( size_t ) ) );
 	copy( snpSet.begin(), snpSet.end(), snps );
 	snpStruct = new ReferenceCountedShared( size, snps );
 }
 
 ModelIndex::ModelIndex () {
-	const set<snp_index_t> emptySet;
+	const set<size_t> emptySet;
 	init( emptySet );
 }
 
-ModelIndex::ModelIndex ( const set<snp_index_t> &snpSet ) {
+ModelIndex::ModelIndex ( const set<size_t> &snpSet ) {
 	init( snpSet );
 }
 
-ModelIndex::ModelIndex ( const vector<snp_index_t> &snpVec ) {
+ModelIndex::ModelIndex ( const vector<size_t> &snpVec ) {
 	// Use a set to sort and make unique
-	set<snp_index_t> snpSet;
+	set<size_t> snpSet;
 	copy( snpVec.begin(), snpVec.end(), inserter( snpSet, snpSet.end() ) );
 	init( snpSet );
 }
@@ -68,7 +68,7 @@ ModelIndex& ModelIndex::operator= ( const ModelIndex& original ) {
 	return *this;
 }
 
-ModelIndex::ModelIndex ( const ModelIndex& original, const snp_index_t snp ) {
+ModelIndex::ModelIndex ( const ModelIndex& original, const size_t snp ) {
 	const_iterator splitPoint = lower_bound( original.begin(), original.end(), snp );
 
 	// whether snp is contained in original
@@ -76,10 +76,10 @@ ModelIndex::ModelIndex ( const ModelIndex& original, const snp_index_t snp ) {
 	const size_t size = alreadyContained
 		? original.size() - 1
 		: original.size() + 1;
-	snp_index_t* const snps = static_cast<snp_index_t*>( malloc( size * sizeof( snp_index_t ) ) );
+	size_t* const snps = static_cast<size_t*>( malloc( size * sizeof( size_t ) ) );
 
 	// copy up to before the location for snp
-	snp_index_t* insertionPoint = snps;
+	size_t* insertionPoint = snps;
 	copy( original.begin(), splitPoint, insertionPoint );
 	insertionPoint += splitPoint - original.begin();
 
@@ -176,16 +176,16 @@ ModelIndex::const_iterator ModelIndex::begin () const { return snpStruct->snps; 
 
 ModelIndex::const_iterator ModelIndex::end () const { return snpStruct->snps + snpStruct->size; }
 
-/** Comparison of two <code>snp_index_t</code> locations for {@link bsearch}. */
+/** Comparison of two <code>size_t</code> locations for {@link bsearch}. */
 int snp_pos_cmp ( const void* a, const void* b ) {
-	if ( * static_cast<const snp_index_t*>( a ) < * static_cast<const snp_index_t*>( b ) ) return -1;
-	if ( * static_cast<const snp_index_t*>( a ) > * static_cast<const snp_index_t*>( b ) ) return 1;
-	assert ( * static_cast<const snp_index_t*>( a ) == * static_cast<const snp_index_t*>( b ) );
+	if ( * static_cast<const size_t*>( a ) < * static_cast<const size_t*>( b ) ) return -1;
+	if ( * static_cast<const size_t*>( a ) > * static_cast<const size_t*>( b ) ) return 1;
+	assert ( * static_cast<const size_t*>( a ) == * static_cast<const size_t*>( b ) );
 	return 0;
 }
 
-bool ModelIndex::contains ( const snp_index_t snp ) const {
-	return NULL != bsearch( &snp, snpStruct->snps, snpStruct->size, sizeof( snp_index_t ), &snp_pos_cmp );
+bool ModelIndex::contains ( const size_t snp ) const {
+	return NULL != bsearch( &snp, snpStruct->snps, snpStruct->size, sizeof( size_t ), &snp_pos_cmp );
 }
 
 ostream& lookup::operator<< ( ostream& s, const ModelIndex& m ) {

@@ -19,7 +19,6 @@
 #include <set>
 #include <vector>
 #include <iostream>
-#include "../types.hpp"
 
 namespace lookup {
 
@@ -61,12 +60,12 @@ namespace lookup {
 			/** Ascendingly sorted list of SNP positions.
 			* The array is of size {@link size}.
 			*/
-			const snp_index_t * snps;
+			const size_t * snps;
 
 			/** Construct an instance.
 			* The obvious assumption is that upon construction, the reference count will be 1.
 			*/
-			ReferenceCountedShared ( const size_t size, const snp_index_t *snps );
+			ReferenceCountedShared ( const size_t size, const size_t *snps );
 
 			/** Destruct the instance, when nobody refers to it any more. */
 			~ReferenceCountedShared ();
@@ -79,7 +78,7 @@ namespace lookup {
 		* This factoring out of common constructor code is necessary
 		* because C++ constructors cannot yet delegate to each other.
 		*/
-		void init ( const std::set<snp_index_t> &snpSet );
+		void init ( const std::set<size_t> &snpSet );
 
 		protected:
 
@@ -100,13 +99,13 @@ namespace lookup {
 		public:
 
 		/** Iterator to retrieve the indices present in a multi-index of class ModelIndex. */
-		typedef const snp_index_t* const_iterator;
+		typedef const size_t* const_iterator;
 
 		/** Construct an empty model index. */
 		ModelIndex ();
 
 		/** Construct with the indices from a set. */
-		ModelIndex ( const std::set<snp_index_t> &snpSet );
+		ModelIndex ( const std::set<size_t> &snpSet );
 
 		/** Convenience constructor to get indices from a vector,
 		* sort them and make them unique.
@@ -114,7 +113,7 @@ namespace lookup {
 		* from legacy vectors of SNP-indices
 		* to modern ModelIndex.
 		*/
-		ModelIndex ( const std::vector<snp_index_t> &snpVec );
+		ModelIndex ( const std::vector<size_t> &snpVec );
 
 		/** Copy constructor. */
 		ModelIndex ( const ModelIndex& original );
@@ -127,7 +126,7 @@ namespace lookup {
 		* @param snp to be added or left out when copying,
 		* depending on whether it is not or is contained in the original.
 		*/
-		ModelIndex ( const ModelIndex& original, const snp_index_t snp );
+		ModelIndex ( const ModelIndex& original, const size_t snp );
 
 		/** Destruct and potentially free (depending on reference count) referenced data. */
 		~ModelIndex ();
@@ -191,7 +190,7 @@ namespace lookup {
 		const_iterator end () const;
 
 		/** Tests whether this ModelIndex contains a SNP, represented by its position. */
-		bool contains ( const snp_index_t snp ) const;
+		bool contains ( const size_t snp ) const;
 	};
 
 	/** Ouput a {@link ModelIndex}. */
