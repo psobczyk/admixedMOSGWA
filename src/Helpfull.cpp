@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Erich Dolejsi, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -14,9 +14,15 @@
  ********************************************************************************/
 
 #include "Helpfull.hpp"
+#include "linalg/AutoVector.hpp"
+#include "linalg/AutoMatrix.hpp"
+#include "linalg/AutoPermutation.hpp"
 #include <iostream>
+#include <cassert>
+#include <limits>
 
 using namespace std;
+using namespace linalg;
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // helpful functions
@@ -107,392 +113,194 @@ double log_factorial ( int i ) {
 	return sum;
 }
 
+void calculate_p ( const Matrix& X, const Vector& beta, Vector& p ) {
+	const size_t rows = p.countDimensions();
+	p.gemv( -1.0, X, false, beta, 0.0 );
+	for ( size_t i = 0; i < rows; ++i ) {
+		p.set( i, 1.0 / ( 1.0  + exp( p.get( i ) ) ) );
+	}
+}
+
+void calculate_loglik ( const Vector& p, const Vector& y, double* loglik ) {
+	const size_t rows = p.countDimensions();
+	assert( y.countDimensions() == rows );
+	*loglik = 0.0;
+	for ( size_t i = 0; i < rows; ++i ) {
+		const double
+			yi = y.get( i ),
+			pi = p.get( i );
+		*loglik += yi * log( pi ) + ( 1.0 - yi ) * log( 1.0 - pi );
+	}
+}
+
+void calculate_XW2 ( const Matrix& X, const Vector& p, Matrix& XW2 ) {
+	const size_t rows = X.countRows();
+	assert( p.countDimensions() == rows );
+	assert( XW2.countColumns() == rows );
+	// XW2 = X^T W^(1/2) =	crossprod(x, diag(pi * (1 - pi))^0.5)
+	for ( size_t i = 0; i < rows; ++i ) {
+		Vector xw2col = XW2.columnVector( i );
+		const double pi = p.get( i );
+		xw2col.copy( const_cast<Matrix&>( X ).rowVector( i ) );
+		xw2col.scale( sqrt( pi * ( 1.0 - pi ) ) );
+	}
+}
+
+void calculate_Fisher_LU ( const Matrix& XW2, Matrix& Fisher, Permutation& perm_k ) {
+	// Fisher matrix: X^T * W * X
+	Fisher.gemm( 1.0, XW2, false, XW2, true, 0.0 );
+
+	// to compute determinant or inverse, we need an LU-decompositon
+	Fisher.factorizeLUP( perm_k );
+}
+
 /** computes logistic firth-regression for design matrix x and target 
  plain C code: logistf package for R from Georg Heinze
  All Parameters are needed to be set!!! */
-bool logistffit(
-				// Input
-				// should be k and n 
-				const int		k,		// # of rows of X (# of variables) BB: I'd rather call that "columns"
-				const int		n,		// # of columns of X (# of samples) BB: I'd rather call that "rows"
-				//no need for pointer here
-				//double*
-				const gsl_matrix* X,			// design matrix ( n * k )
-				const int*         y,			// target vector ( n )
-				// Output
-				double*			beta,		// regression coefficients (vector k)
-				double*			pi,		// probabilities for target ( n )
-				double*			H,			// diag of H matrix vector (n)
-				double*			out_loglik, // log-likelihood of the model
-				int*			iter,		// # of main iterations;
-				int*			evals,		// # of evalations of evaluatios
-				double*			lchange,	// the change in the log-likelihood between steps
-				double*			ret_max_U_star,
-				double*			ret_max_delta,
-				// Optional Input
-				const bool		firth,		//  use firth-regression
-				const double*		init,		// initial values for beta
-				const bool		eval_llh,	// only evaluate likelihood
-				// Control Parameters
-				const int		maxit,
-				const int		maxhs,
-				const int		maxstep,
-				const double	lconv,
-				const double	gconv,
-				const double	xconv
-			)
-{
-	int i, j; //Loop variables
-	int s; // needed for computing determinates and inverses of matrices
+bool logistffit (
+	// Input
+	const Matrix&		X,
+	const Vector&		y,
+	// In+Output
+	Vector&			beta,		// coefficients (initial and then result)
+	// Output
+	double*			out_loglik,	// log-likelihood of the model
+	// Control Parameters
+	const int		maxit,
+	const int		maxhs,
+	const int		maxstep,
+	const double	lconv,
+	const double	gconv,
+	const double	xconv
+) {
+	const size_t
+		rows = X.countRows(),	// n … number of individuals
+		cols = X.countColumns();	// k … 1 + number of variables
+	assert( y.countDimensions() == rows );
+	assert( beta.countDimensions() == cols );
 
-	//////////////////////////////////////////////////////////////////////////////
-	//// Initialise Beta
+	AutoMatrix
+		XW2( cols, rows ),
+		Fisher( cols, cols ),
+		covs( cols, cols );
+	AutoVector
+		H( rows ),	// diag of H matrix vector
+		p( rows ),	// probabilities for target
+		helpVn( rows ),
+		helpVk( cols ),
+		UStar( cols ),
+		delta( cols );
+	AutoPermutation perm_k( cols );	// needed for LU_decomp
+	double loglik;
 
-	memcpy(beta, init, sizeof(double)*k);
-	gsl_vector_view betaV = gsl_vector_view_array (beta, k);
+	calculate_p( X, beta, p );
+	calculate_loglik( p, y, &loglik );
+	calculate_XW2( X, p, XW2 );
+	calculate_Fisher_LU( XW2, Fisher, perm_k );
 
-	//////////////////////////////////////////////////////////////////////////////
-	*lchange = 5.0;
-	*iter=0;
-
-	// set pi
-	gsl_vector * helpVn = gsl_vector_alloc( n );
-	gsl_blas_dgemv( CblasNoTrans, -1.0, X, &betaV.vector, 0.0, helpVn );  //helpVn = -X*betaV
-
-	// reviewer-remark<BB>: mind the rather extensive code-duplication between here and the inner for-loop
-	for (i=0; i < n; i++)
-	{
-		pi[i]=1.0/( 1  + exp (gsl_vector_get(helpVn, i) ) ); //0.5
-		//cerr<<"y["<<i<<"]="<<y[i]<<endl;
-	}
-
-	// compute log-likelihood
-	double loglik=0;
-	for (i=0; i< n; i++)
-	{
-		loglik+= y[i]*log(pi[i]) + (1-y[i])*log(1-pi[i]);
-	}
-
-	// Initialise Matrices, Vectors and Permutaitons
-	gsl_matrix * XW2 = gsl_matrix_alloc (k, n);
-	gsl_vector * helpVk = gsl_vector_alloc( k);
-	gsl_matrix * Fisher = gsl_matrix_alloc (k, k);
-	gsl_permutation * perm_k = gsl_permutation_alloc (k); // needed for LU_decomp
-	gsl_matrix * covs = gsl_matrix_alloc (k, k);
-	gsl_vector * UStar = gsl_vector_alloc( k );
-	gsl_vector * delta = gsl_vector_alloc( k );
-
-
-	if ( firth ) {
-		// XW2 = X^T W^(1/2) =	crossprod(x, diag(pi * (1 - pi))^0.5)
-		for (i=0; i<n; i++)
-		{
-			gsl_matrix_get_row(helpVk,X, i);//helpVk= X(i,:)
-			gsl_blas_dscal(sqrt( pi[i]*( 1-pi[i] ) ),helpVk); //y=\sqrt(w[i].*pi[i].*(1-pi[i]))*helpVk
-			gsl_matrix_set_col(XW2, i, helpVk);
-		}
-
-		//Fisher Matrix: X^T W X
-		//es wird Fisher=+1*XW2*XW2'+0*Fisher
-		gsl_blas_dgemm(CblasNoTrans,CblasTrans,1.0, XW2, XW2,0.0, Fisher);
-
-		// to compute determinate, we need an LU-decompositon of Fisher
-		s=0;
-		gsl_linalg_LU_decomp(Fisher, perm_k, &s); //
-		loglik+=  0.5*gsl_linalg_LU_lndet(Fisher);//
-		//cerr<<loglik<<endl;
-
-	}
+	loglik += 0.5 * Fisher.lnAbsDetLU();
 
 	//Loop;
-	*evals = 1;
-	int stop=0;
-	double loglik_old;
+	double
+		lchange = 5.0,
+		loglik_old = numeric_limits<double>::quiet_NaN(),
+		mx;
+	int iter = 0;
+	bool stop = false;
 
-
-	double mx;
-
-	////////////////////////////////////////////////////////////////////////////
-	while (!stop)
-	{
+	while ( !stop ) {
 		loglik_old = loglik;
-		// XW2 = X^T W^(1/2) =	crossprod(x, diag(pi * (1 - pi))^0.5)
-		for (i=0; i<n; i++)
-		{
-			gsl_matrix_get_row(helpVk,X, i);
-			gsl_blas_dscal(sqrt( pi[i]*( 1-pi[i] ) ),helpVk);
-			gsl_matrix_set_col(XW2, i, helpVk);
-		}
-
-		//Fisher Matrix: X^T W X
-		gsl_blas_dgemm(CblasNoTrans,CblasTrans,1, XW2, XW2,0, Fisher);
-
-		int s=0;
-		gsl_linalg_LU_decomp(Fisher, perm_k, &s);
+		calculate_XW2( X, p, XW2 );
+		calculate_Fisher_LU( XW2, Fisher, perm_k );
 
 		// check if matrix is invertible, that is, all diagonal elements are non-zero
-		i=0;
-		while( i < k)
-		{
-			if ( fabs( gsl_matrix_get (Fisher, i, i)) <1e-15)
-			{
-				// Free Memory
-				gsl_vector_free (helpVn);
-				gsl_matrix_free (XW2);
-				gsl_vector_free (helpVk);
-				gsl_matrix_free(Fisher);
-				gsl_permutation_free(perm_k);
-				gsl_matrix_free(covs);
-				gsl_vector_free (UStar);
-				gsl_vector_free (delta);
+		for ( size_t i = 0; i < cols; ++i ) {
+			if ( fabs( Fisher.get( i, i ) ) < 1e-15 ) {
 				cerr << "Fisher Matrix is not invertible" << endl;
 				return false;
 			}
-			i++;
 		}
-		// covs =  (X^T W X)^-1
-		gsl_linalg_LU_invert(Fisher, perm_k, covs);
+		// covs = (X^T W X)^-1
+		covs.invertLUP( Fisher, perm_k );
 
 		// Compute the diagonal-Elements of (XW2)^T * covs * XW2
-		// reviewer-remark<BB>: H is used (unless as return value) only if firth is true. Put in the if below?
-		// reviewer-remark<BB>: Also covs and Fisher are used (unless as return value) only if firth is true.
-		for (i=0; i<n; i++)
-		{
-			H[i]=0;
-
-			for(j=0; j<k; j++)
-			{
-				for ( int l = 0; l < k; ++l ) {
-					H[i]+=gsl_matrix_get(XW2, j, i)*gsl_matrix_get(covs, j, l)*gsl_matrix_get(XW2, l, i);//covs nur hier gebraucht
-				}
-			}
+		for ( size_t i = 0; i < rows; ++i ) {
+			const Vector xw2i = XW2.columnVector( i );
+			helpVk.gemv( 1.0, covs, false, xw2i, 0.0 );
+			const double hi = helpVk.innerProduct( xw2i );
+			H.set( i, hi );
 		}
 
-		if ( firth ) {
-			for(i=0; i< n; i++)
-			{
-				gsl_vector_set(helpVn, i, (y[i] - pi[i])+H[i]*(0.5-pi[i])); //nur hier wird H ausgelesen, also nicht im nicht firth Fall
-			}
+		for ( size_t i = 0; i < rows; ++i ) {
+			const double
+				yi = y.get( i ),
+				pi = p.get( i ),
+				hi = H.get( i );
+			helpVn.set( i, yi - pi + hi * ( 0.5 - pi ) );
 		}
-		else
-		{
-			for(i=0; i< n; i++)
-			{
-				gsl_vector_set(helpVn, i, y[i] - pi[i] );
-			}
-		}
-
-		// Set UStar
-		gsl_blas_dgemv(CblasTrans, 1.0, X, helpVn, 0.0, UStar);
-
-		// allocate XX_covs with 0;
-		gsl_matrix * XX_covs = gsl_matrix_calloc (k, k);
-
-		if ( !eval_llh )
-		{
-			double diag_element;
-			gsl_matrix * XX_XW2 = gsl_matrix_alloc (k, n);
-
-			// XX_XW2 = crossprod(x[, col.fit, drop = FALSE], diag(pi * (1 - pi))^0.5)
-			// reviewer-remark<BB>: the below code transposes the selected columns
-			for (i =0; i < n; i++)
-			{
-				diag_element = sqrt( pi[i]*(1-pi[i]) );
-				for (j = 0; j < k; j++)
-				{
-					//gsl vector mal skalar sollte hier gehen
-					gsl_matrix_set(XX_XW2, j, i,  diag_element * gsl_matrix_get(X, i, j) );
-				}
-			}
-
-			// Allocate local matrices. dependent on eval_llh, so no earlier allocation possible
-			gsl_matrix * XX_Fisher = gsl_matrix_alloc (k, k);
-			gsl_matrix * XX_Fisher_inv = gsl_matrix_alloc (k, k);
-			gsl_permutation * perm_used_col = gsl_permutation_alloc (k); // needed for LU_decomp
-
-			//XX_Fisher = (XX_XW2)^T XX_XW2
-			//reviewer-remark<BB>: below code transposes the other way round: XX_XW2 (XX_XW2)^T = Xsel^T W Xsel
-			gsl_blas_dgemm(CblasNoTrans,CblasTrans,1.0, XX_XW2, XX_XW2,0.0, XX_Fisher);
-
-			// invert XX_Fisher, destroys XX_Fisher
-
-			int s=0;
-			gsl_linalg_LU_decomp(XX_Fisher, perm_used_col, &s); //
-
-
-			// check if matrix is invertible, that is, all diagonal elements are non-zero
-			i=0;
-			while( i < k)
-			{
-				if ( 0.0  == gsl_matrix_get (XX_Fisher, i, i) )
-				{
-
-					// Free Memory
-
-					gsl_vector_free (helpVn);
-					gsl_matrix_free (XW2);
-					gsl_vector_free (helpVk);
-					gsl_matrix_free(Fisher);
-					gsl_permutation_free(perm_k);
-					gsl_matrix_free(covs);
-					gsl_vector_free (UStar);
-					gsl_vector_free (delta);
-					gsl_matrix_free(XX_Fisher);
-					gsl_matrix_free(XX_Fisher_inv);
-					gsl_matrix_free(XX_XW2);
-					gsl_permutation_free(perm_used_col);
-
-					cerr << "error XX_Fish"<<endl;
-					return false;
-				}
-				i++;
-			}
-
-			// XX_Fisher_inv= (X^T W X)^-1
-			gsl_linalg_LU_invert(XX_Fisher, perm_used_col, XX_Fisher_inv);
-
-			for (i=0; i < k; i++)
-			{
-					for (j=0; j < k; j++)
-					{
-						// TODO<BB>: use matrix copy
-						gsl_matrix_set( XX_covs, i, j, gsl_matrix_get(XX_Fisher_inv, i, j ));
-					}
-			}
-
-			// Deallocate Memory
-			gsl_matrix_free(XX_Fisher);
-			gsl_matrix_free(XX_Fisher_inv);
-			gsl_matrix_free(XX_XW2);
-			gsl_permutation_free(perm_used_col);
-		}
-
-
-		gsl_blas_dgemv(CblasNoTrans, 1.0, XX_covs, UStar, 0.0, delta);
-
-		// deallocate XX_covs
-		gsl_matrix_free(XX_covs);
-
+		UStar.gemv( 1.0, X, true, helpVn, 0.0 );
+		delta.gemv( 1.0, covs, false, UStar, 0.0 );
 
 		// set mx = max(abs(delta))/maxstep
-		mx=0;
-		for (i = 0; i < k; i++)
-		{
-			if ( fabs(gsl_vector_get( delta, i ))/maxstep > mx )
-			{
-				mx = fabs(gsl_vector_get( delta, i ))/maxstep;
+		mx = 0.0;
+		for ( size_t i = 0; i < cols; ++i ) {
+			const double mmx = fabs( delta.get( i ) );
+			if ( mx < mmx ) {
+				mx = mmx;
 			}
 		}
+		mx /= maxstep;
 
-
-		if (mx > 1)
-		{
-				gsl_blas_dscal((1.0/mx), delta);
+		if ( 1.0 < mx ) {
+			delta.scale( 1.0/mx );
 		}
-		(*evals)++;
 
 		if ( 0 < maxit ) {
-			++ *iter;
+			++iter;
 
 			// beta= beta + delta
-			gsl_blas_daxpy(1.0, delta, &betaV.vector);
+			beta.axpy( 1.0, delta );
 
 			// Half-Steps
-			for ( int halfs = 1; halfs <= maxhs; halfs++ ) {
+			for ( int halfs = 1; halfs <= maxhs; ++halfs ) {
+				calculate_p( X, beta, p );
+				calculate_loglik( p, y, &loglik );
+				calculate_XW2( X, p, XW2 );
+				calculate_Fisher_LU( XW2, Fisher, perm_k );
 
-				// set pi
-				gsl_blas_dgemv( CblasNoTrans, -1.0, X, &betaV.vector, 0.0, helpVn );	//helpVn = -X*betaV
-				for (i=0; i < n; i++)
-				{
-					pi[i]=1/(1+exp (gsl_vector_get(helpVn, i) ) );//is set to 0.5 in our case
-				}
+				loglik += 0.5 * Fisher.lnAbsDetLU();
 
-				// compute log-likelihood
-				loglik=0;
-				for (i=0; i< n; i++)
-				{
-					loglik+= ( y[i]*log(pi[i]) + (1-y[i])*log(1-pi[i]) );
-				}
+				lchange = loglik - loglik_old;
 
-				if ( firth ) {
-					// XW2 = X^T (W ^ 1/2)
-					for (i=0; i<n; i++)
-					{
-						gsl_matrix_get_row(helpVk, X, i);
-						gsl_blas_dscal(sqrt( pi[i]*( 1-pi[i] ) ),helpVk);
-						gsl_matrix_set_col(XW2, i, helpVk);
-					}
-
-					//Fisher Matrix: X^T W X
-					gsl_blas_dgemm(CblasNoTrans,CblasTrans,1, XW2, XW2,0, Fisher);
-
-					s=0;
-					gsl_linalg_LU_decomp(Fisher, perm_k, &s); //
-					loglik= loglik + 0.5*gsl_linalg_LU_lndet(Fisher);// gsl_linalg_LU_lndet computes ln(|det(A)|)
-				}
-
-				(*evals)++;
-				*lchange = loglik-loglik_old;
-
-
-				if (loglik > loglik_old)
-				{
+				if ( loglik > loglik_old ) {
 					break; //	end Half-Step-loop
 				}
 
-				for (i=0; i < k; i++) // beta = beta - delta*2^(-halfs)
-				{
-					beta[i] = beta[i] - ( gsl_vector_get(delta, i) * pow( 2, -halfs ) );
-					// TODO<BB>: use daxpy and replace pow( 2, . ) by quick table lookup.
-					// and better re-start from original betas than back-correcting beta+t*delta
-				}
-
+				beta.axpy( -pow( 2.0, -halfs ), delta );
+				// TODO<BB>: replace pow( 2, . ) by quick table lookup
+				// and better re-start from original betas than back-correcting beta+t*delta
 			}
 		}
 
 		//////////////////////////////////////////////////////////////////////////////
 		// Stop-Condition:
-		if ( *iter == maxit ) {
-			stop = 1;
-		}
-		else //or convergence-criterias met
-		{
-			i=0; // max(|delta|< xconv => |delta_i| <  xconv for all i AND |UStar_i| < gonv for all i
-			while( i<k && fabs(gsl_vector_get(delta,i))<= xconv && fabs(gsl_vector_get(UStar,i)) < gconv  )
-			{i++;}
-
-			if (i==k && *lchange < lconv)
-			{
-				stop=1;
+		if ( iter >= maxit ) {
+			stop = true;
+		} else if ( lchange < lconv ) {
+			// or convergence criteria are met
+			stop = true;
+			for ( size_t i = 0; stop && i < cols; ++i ) {
+				if (
+					fabs( delta.get( i ) ) >= xconv
+					||
+					fabs( UStar.get( i ) ) >= gconv
+				) {
+					stop = false;
+				}
 			}
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////////
-	// Output-Variables
-
-	*out_loglik=loglik;
-	*ret_max_U_star=fabs(gsl_vector_get(UStar,0));
-	for (i=0; i<k; i++)
-	{
-		if (fabs(gsl_vector_get(UStar,i)) > *ret_max_U_star )
-		{
-			*ret_max_U_star = fabs(gsl_vector_get(UStar,i));
-		}
-	}
-	// ret_max_delta = max(|delta_i|), mx= max(|delta_i|)/maxstep
-	*ret_max_delta = mx * maxstep;
-
-
-	// Deallocate Memory
-	gsl_vector_free (helpVn);
-	gsl_matrix_free (XW2);
-	gsl_vector_free (helpVk);
-	gsl_matrix_free(Fisher);
-	gsl_permutation_free(perm_k);
-	gsl_matrix_free(covs);
-	gsl_vector_free (UStar);
-	gsl_vector_free (delta);
-
+	*out_loglik = loglik;
 	return true;
 }

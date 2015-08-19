@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Erich Dolejsi, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -27,6 +27,9 @@
 #include <gsl/gsl_linalg.h>
 
 #include <bitset> 
+
+#include "linalg/Vector.hpp"
+#include "linalg/Matrix.hpp"
 
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // helpful functions
@@ -66,31 +69,19 @@ double log_factorial( int i );
  All Parameters are needed to be set!!! */
 bool logistffit(
 	// Input
-	const int		k,		// # of rows of x (# of varibles) BB: I'd rather call that "columns"
-	const int		n,		// # of columns of x (# of samples) BB: I'd rather call that "rows"
-	const gsl_matrix *	x,		// design matrix ( n * k )
-	const int*		y,		// target vector ( n )
+	const linalg::Matrix&	X,		// design matrix ( n * k )
+	const linalg::Vector&	y,		// target vector ( n )
+	// In+Output
+	linalg::Vector&		beta,		// regression coefficients (vector k)
 	// Output
-	double*			beta,		// regression coefficients (vector k)
-	double*			pi,		// probabilities for target ( n )
-	double*			H,		// diag of H matrix vector (n)
 	double*			out_loglik,	// log-likelihood of the model
-	int*			iter,		// # of main iterations;
-	int*			evals,		// # of evalations of evaluatios
-	double*			lchange,	// the change in the log-likelihood between steps
-	double*			ret_max_U_star,
-	double*			ret_max_delta,
-	// Optional Input
-	const bool		firth,		// use firth-regression
-	const double*		init,		// initial values for beta
-	const bool		eval_llh,	// only evaluate likelihood
 	// Control Parameters
 	const int		maxit,
 	const int 		maxhs,
 	const int 		maxstep,
-	const double	lconv,
-	const double	gconv,
-	const double	xconv
+	const double		lconv,
+	const double		gconv,
+	const double		xconv
 );
 
 #endif
