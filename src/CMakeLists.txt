@@ -16,6 +16,8 @@ add_subdirectory( io )
 add_subdirectory( io/hdf5 )
 add_subdirectory( linalg )
 add_subdirectory( search )
+add_subdirectory( search/egreedy )
+add_subdirectory( search/genetica )
 add_subdirectory( parser )
 add_subdirectory( valuation )
 add_subdirectory( util )
@@ -35,8 +37,6 @@ set( core_libraries
 	GenotypeFreq.hpp
 	Helpfull.cpp
 	Helpfull.hpp
-	Log.cpp
-	Log.hpp
 	MData.cpp
 	MData.hpp
 	Model.cpp
@@ -52,6 +52,8 @@ set( core_libraries
 	$<TARGET_OBJECTS:io>
 	$<TARGET_OBJECTS:linalg>
 	$<TARGET_OBJECTS:search>
+	$<TARGET_OBJECTS:egreedy>
+	$<TARGET_OBJECTS:genetica>
 	$<TARGET_OBJECTS:parser>
 	$<TARGET_OBJECTS:valuation>
 	$<TARGET_OBJECTS:util>
