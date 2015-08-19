@@ -1,3 +1,7 @@
+Version 1.1.7
+-------------
+Multiple internal code improvements.
+
 Version 1.1.6
 -------------
 Internal code improvements which should simplify and slightly speed up the program.
