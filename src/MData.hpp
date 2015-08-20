@@ -86,7 +86,7 @@ class MData {
 public:
 	// not private anymore because of setting Y values on the fly
 	/** for affection-type targets, stores the log-likelihood of the zero-model */
-	void setLL0M ( const double ll );
+	DEPRECATED( void setLL0M ( const double ll ); );
 
 	/** Default Constructor: reads the input-files in, sets parameters, deals with missing phenotypes.
 	* @param input provides access to input data for the transition of the MOSGWA architecture.
