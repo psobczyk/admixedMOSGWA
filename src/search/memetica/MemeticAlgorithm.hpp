@@ -32,6 +32,12 @@ namespace memetica {
 	*/
 	class MemeticAlgorithm : public search::Search {
 
+		/** Data needed by the model below. */
+		MData data;
+
+		/** The best model yet found. */
+		Model model;
+
 		public:
 
 		/** Set up the search environment. */
@@ -40,6 +46,10 @@ namespace memetica {
 		/** @brief Runs memetic algorithm as a model selection method. */
 		virtual void run ();
 
+		/** Retrieve the winning model.
+		* This should be called only after {@link run}.
+		*/
+		virtual const Model* result ();
 	};
 
 }

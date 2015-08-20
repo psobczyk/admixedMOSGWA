@@ -25,7 +25,11 @@ using namespace logging;
 
 namespace memetica {
 
-	MemeticAlgorithm::MemeticAlgorithm () {}
+	MemeticAlgorithm::MemeticAlgorithm ()
+	: data(), model( data )
+	{
+		logger->info( "Prepared setting for elaborated greedy search" );
+	}
 
 	void MemeticAlgorithm::run () {
 		logger->info( "Start genetic algorithm search" );
@@ -68,6 +72,7 @@ namespace memetica {
 		vector< multiset<long double> > tabCausalPost_b;
 
 		MA ma(
+			data,
 			modelsNo_,
 			maxNoProgressIter_,
 			pCross_,
@@ -138,6 +143,10 @@ namespace memetica {
 			parameter->out_file_name = old_out_file_name;
 		}
 		logger->info( "Finish elaborated greedy search" );
+	}
+
+	const Model* MemeticAlgorithm::result () {
+		return &model;
 	}
 
 }

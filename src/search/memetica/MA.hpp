@@ -139,7 +139,7 @@ private:
   static std::vector< std::vector<size_t> > correlations;
 
   /** Data for models */
-  MData data;
+  MData &data;
 
   /** Models */
   Model **models;
@@ -257,6 +257,7 @@ private:
 public:
 
   MA (
+    MData& data,
     size_t modelsNo_,
     size_t maxNoProgressIter_,
     double pCross_,

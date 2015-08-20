@@ -17,6 +17,8 @@
 #define SEARCH_EGREEDY_PACKAGE_HPP
 
 #include "../Search.hpp"
+#include "../../MData.hpp"
+#include "../../Model.hpp"
 
 /** Elaborated greedy model search.
 * @author Erich Dolejsi, Bernhard Bodenstorfer
@@ -27,6 +29,12 @@ namespace egreedy {
 	*/
 	class ElaboratedGreedy : public search::Search {
 
+		/** Data needed by the model below. */
+		MData data;
+
+		/** The best model yet found. */
+		Model model;
+
 		public:
 
 		/** Set up the search environment. */
@@ -34,6 +42,11 @@ namespace egreedy {
 
 		/** Run the search. */
 		virtual void run ();
+
+		/** Retrieve the winning model.
+		* This should be called only after {@link run}.
+		*/
+		virtual const Model* result ();
 	};
 
 }

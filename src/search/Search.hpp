@@ -18,6 +18,7 @@
 
 #include "../logging/Logger.hpp"
 #include "../Parameter.hpp"
+#include "../Model.hpp"
 
 /** Search algorithms. These try to find optimal {@link Model}s for given {@link io::Input} data.
 * @author Bernhard Bodenstorfer
@@ -36,6 +37,16 @@ namespace search {
 
 		/** Perform the search. */
 		virtual void run () = 0;
+
+		/** Retrieve a pointer to the winning model for copying and then further processing.
+		* This method should be called only after {@link run}.
+		* The returned pointer will most likely point to an internally stored {@link Model}.
+		* It may not be valid after <code>this</code> {@link Search} is destructed.
+		* Since <code>this</code> is responsible,
+		* clients calling this method should not try to deallocate the memory pointed to.
+		* @returns a pointer to the best found model as yet.
+		*/
+		virtual const Model* result () = 0;
 
 		/** Destruct and potentially free resources. */
 		virtual ~Search ();

@@ -224,10 +224,33 @@ ostream &operator<< ( ostream &out, vector<size_t> &v )
  * @param correlationRange - snps for correlation are from range [snp - correlationRange, snp + correlationRange]
  * @param correlationThreshold - correlation threshold which is used in local improvement and mutation function
 */
-MA::MA ( size_t modelsNo_, size_t maxNoProgressIter_, double pCross_, double pMutation_, size_t tournamentSize_,
-       int B_, string fileName, double correlationThreshold_, int correlationRange_, double regionMinCorrelation, bool statisticsOnly )
-:correlationTh(0.5), models(0), modelsNo(modelsNo_), maxNoProgressIter(maxNoProgressIter_), pCross(pCross_), pMutation(pMutation_), 
- tournamentSize(tournamentSize_), correlationThreshold(correlationThreshold_), correlationRange(correlationRange_), regionMinCorrelation(regionMinCorrelation), B(B_), realModel(0)
+MA::MA (
+	MData& data,
+	size_t modelsNo_,
+	size_t maxNoProgressIter_,
+	double pCross_,
+	double pMutation_,
+	size_t tournamentSize_,
+	int B_,
+	string fileName,
+	double correlationThreshold_,
+	int correlationRange_,
+	double regionMinCorrelation,
+	bool statisticsOnly
+) :
+	data( data ),
+	correlationTh( 0.5 ),
+	models( 0 ),
+	modelsNo( modelsNo_ ),
+	maxNoProgressIter( maxNoProgressIter_ ),
+	pCross( pCross_ ),
+	pMutation( pMutation_ ),
+	tournamentSize( tournamentSize_ ),
+	correlationThreshold( correlationThreshold_ ),
+	correlationRange( correlationRange_ ),
+	regionMinCorrelation( regionMinCorrelation ),
+	B( B_ ),
+	realModel( 0 )
 {
 //  char c; cout << "statisticsOnly: " << statisticsOnly << ", press a key.."; cin >> c;
   time_start = time(NULL);

@@ -22,34 +22,38 @@ using namespace logging;
 
 namespace egreedy {
 
-	ElaboratedGreedy::ElaboratedGreedy () {}
+	ElaboratedGreedy::ElaboratedGreedy ()
+	: data(), model( data )
+	{
+		logger->info( "Prepared setting for elaborated greedy search" );
+	}
 
 	void ElaboratedGreedy::run () {
 		logger->info( "Start elaborated greedy search" );
-		MData data;
 
 		// calculate single marker test (need for modelselection)
 		data.calculateIndividualTests();
 
-		Model model0( data );
-		Model firstmodel(data);
-		model0.computeRegression();
-		data.setLL0M( model0.getMJC() );
-		Model *modelin=&model0;
+		model.computeRegression();
+		data.setLL0M( model.getMJC() );
 		data.selectModel(
-			modelin,
+			&model,
 			parameter->PValueBorder,
 			parameter->maximalModelSize,
 			Parameter::selectionCriterium_mBIC_firstRound
 		);
-		modelin->printModel( "First round result" );
+		model.printModel( "First round result" );
 		data.selectModel(
-			modelin,
+			&model,
 			5000,
 			parameter->maximalModelSize,
 			parameter->selectionCriterium
 		);
 		logger->info( "Finish elaborated greedy search" );
+	}
+
+	const Model* ElaboratedGreedy::result () {
+		return &model;
 	}
 
 }
