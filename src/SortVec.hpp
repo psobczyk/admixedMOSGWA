@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Erich Dolejsi, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -16,10 +16,8 @@
 #ifndef SORT_VEC_HPP
 #define SORT_VEC_HPP
 
+#include <cstddef>	// size_t
 #include <vector>
-#include <algorithm>
-
-using namespace std;
 
 /** A sorted list of (size_t id, double value) pairs.
 * Access by index, not by iterators.
@@ -42,10 +40,10 @@ class SortVec {
 	};
 
 	friend bool order_function ( const SortVec::SortItem* i, const SortVec::SortItem* j );
+	friend bool order_function2 ( const SortVec::SortItem* i, const SortVec::SortItem* j );
 
-friend bool order_function2 ( const SortVec::SortItem* i, const SortVec::SortItem* j );
 	/** Vector of sortable pairs */
-	vector <SortItem*> list_;
+	std::vector <SortItem*> list_;
 
 	/** Forbid use of the (default) copy constructor. */
 	SortVec ( const SortVec& original );
@@ -80,6 +78,9 @@ friend bool order_function2 ( const SortVec::SortItem* i, const SortVec::SortIte
 
 	/** Get the k-th smallest value */
 	double getValue ( const size_t k ) const;
+
+	/** Get the size. */
+	size_t size () const;
 };
 
 #endif	/* SORT_VEC_HPP */

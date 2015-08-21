@@ -1,6 +1,6 @@
 /********************************************************************************
  *	This file is part of the MOSGWA program code.				*
- *	Copyright ©2011–2013, Erich Dolejsi, Bernhard Bodenstorfer.		*
+ *	Copyright ©2011–2015, Erich Dolejsi, Bernhard Bodenstorfer.		*
  *										*
  *	This program is free software; you can redistribute it and/or modify	*
  *	it under the terms of the GNU General Public License as published by	*
@@ -14,7 +14,10 @@
  ********************************************************************************/
 
 #include "SortVec.hpp"
+#include <algorithm>
 #include <iostream>
+
+using namespace std;
 
 /** Determines the order between two SortItems:
 * i < j iff the value of i is smaller than the value of j.
@@ -47,11 +50,15 @@ void SortVec::fillVec ( const size_t n, const size_t ids[], const double values[
 	if (bigger)
 	sort( list_.begin(), list_.end(), order_function );
 	else
-        sort( list_.begin(), list_.end(), order_function2 );
+	sort( list_.begin(), list_.end(), order_function2 );
 }
 
 size_t SortVec::getId ( const size_t k ) const {
 	return list_.at(k)->id;
+}
+
+size_t SortVec::size () const {
+	return list_.size();
 }
 
 double SortVec::getValue ( const size_t k ) const {
