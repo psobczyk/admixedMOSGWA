@@ -51,7 +51,7 @@ private:
 	const MData* data_;
 
 	/** the position-no of the SNPs in the Model (for faster access), size is modelSize_ */
-	vector<size_t> modelSnps_;
+	std::vector<size_t> modelSnps_;
 
 	/** the design matrix X for the model (data.getIdvNo() rows, noOfVariables columns) */
 	linalg::AutoMatrix xMat;
@@ -171,14 +171,14 @@ public:
 	bool replaceModelSNPSCORE ( const int selectionCriterium );
 
 	/** outputs for every SNP in the model SNPs with a correlation above const double threshold */
-	void printStronglyCorrelatedSnps ( const double threshold, string extra ="" ) const;
+	void printStronglyCorrelatedSnps ( const double threshold, std::string extra ="" ) const;
 	/* sortSNPsAccordingBetas does exactly what is says*/
 	void sortSNPsAccordingBetas();
 	// change model Size
 	/** add SNP to Model, snp is absolute postion in MData::snps_ */
 	void addSNPtoModel ( const size_t snp );
       bool replaceSNPinModel ( const size_t snp,  const size_t position );
-		void addManySNP ( std::vector<size_t> selected );
+	void addManySNP ( std::vector<size_t> selected );
   
 	/** Continous Y
 	* @deprecated test data generation will be removed from class Model
@@ -204,7 +204,7 @@ public:
 		bool improvement,
 		const size_t PValueBorder,
 		int *startIndex,
-		vector<int> score,
+		std::vector<size_t> score,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 	bool finalizeModelSelection (
@@ -233,8 +233,8 @@ public:
 		double *bestMSC,
 		const size_t PValueBorder,
 		int *startIndex,
-		vector<int> score,
-		int selectionCriterium = Parameter::selectionCriterium_mBIC2
+		std::vector<size_t> score,
+		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 
         bool makeMFFS (
@@ -251,7 +251,7 @@ public:
 	bool makeMFFL (
 		const size_t PValueBorder,
 		int *startIndex,
-		vector<int> score,
+		std::vector<size_t> score,
 		int criterium = 0
 	); //with logistic+score
 
@@ -259,7 +259,7 @@ public:
 		size_t PValueBorder,
 		int selectionCriterium,
 		int* startIndex,
-		vector<int> scores
+		std::vector<size_t> scores
 	);
 
         /** makeMultiForwardStep take the PValueBorder, an selection Criterium, the default Value is 1 for BIC in the initial ForwardStep and an  an exclusivedSNP set,*/ 
@@ -283,7 +283,7 @@ public:
 	bool selectModel (
 		Model &startFromModel,
 		size_t PValueBorder = 100,
-		int maxModel=parameter->maximalModelSize,
+		const int maxModel=parameter->maximalModelSize,
 		const int selectionCriterium = Parameter::selectionCriterium_mBIC2
 	);
 	/** Compute Regression for Model.
@@ -291,9 +291,9 @@ public:
 	bool computeRegression ();
 
         /** scoreTest runs the score tests from Bernhard */
-	void scoreTest ( const string& extra = "" );
+	void scoreTest ( const std::string& extra = "" );
 
-	size_t scoreTestWithOneSNPless ( size_t SNPindex, SortVec &score );
+	void scoreTestWithOneSNPless ( size_t SNPindex, SortVec &score );
         
 	/** computes single marker test for a one-SNP model.
 	* Precondition: <code>this</code> holds exactly one SNP.

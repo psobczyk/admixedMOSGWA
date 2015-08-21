@@ -668,10 +668,11 @@ bool Model::replaceModelSNPSCORE ( const int selectionCriterium ) {
  const int grace=5000;
  double bestMSC=getMSC(); //the msc in the current model is the best one up to now
 	Model model0( *data_ );
- SortVec score(200); //Warning 50+50+1 that should be variable
+	SortVec score;
  	for(int j=getModelSize()-1; j >=0; j--)
 	{//replace
-	int nscores=	scoreTestWithOneSNPless(j, score);
+		scoreTestWithOneSNPless( j, score );
+		const size_t nscores = score.size();
 		for ( size_t i = 0; i < nscores; ++i ) {
 			model0 = *this;
                         model0.replaceSNPinModel (score.getId(i) ,  j );
@@ -801,7 +802,7 @@ bool Model::finalizeModelSelection (
 	bool improvement,
 	const size_t PValueBorder,
 	int *startIndex,
-	vector<int> score,
+	vector<size_t> score,
 	const int selectionCriterium
 ) {
 	if ( !improvement ) {
@@ -923,7 +924,7 @@ bool Model::makeForwardStepLogistic (
 	double* bestMSC,
 	const size_t PValueBorder,
 	int *startIndex,
-	vector<int> score,
+	vector<size_t> score,
 	const int selectionCriterium
 ) {
 	bool improvement = false;
@@ -1007,7 +1008,7 @@ bool Model::makeMFFS (
 bool Model::makeMFFL(
 	const size_t PValueBorder,
 	int* startIndex,
-	vector<int> score,
+	vector<size_t> score,
 	const int selectionCriterium
 ) {       
 //	int selectionCriterium=0;
@@ -1055,7 +1056,7 @@ bool Model::makeMultiForwardStepScore (
 	size_t PValueBorder,
 	const int selectionCriterium,
 	int* startIndex,
-	vector<int> score
+	vector<size_t> score
 ) {
 	const size_t snps = data_->getSnpNo();
 //if(score) 
@@ -1686,16 +1687,17 @@ void Model::scoreTest ( const string& extra ) {
 	const size_t
 		snps = data_->getSnpNo(),
 		vars = getNoOfVariables();
-	SortVec score( snps );
+	SortVec score;
 	ScoreTestShortcut stsc( *data_ );
-	stsc.ScoreTestShortcut::scoreTests( *this, score );
+	stsc.ScoreTestShortcut::scoreTests( *this, 0u, snps, score );
 	stringstream ss;
 	ss << vars;
 	ofstream S;
 	S.exceptions( ofstream::eofbit | ofstream::failbit | ofstream::badbit );
 	try{
 		S.open( ( parameter->out_file_name + "_" + extra + ss.str() + ".score" ).c_str(), fstream::out );
-		for ( size_t i = 0; vars + i <= snps; ++i ) {
+		const size_t nscores = score.size();
+		for ( size_t i = 0; i < nscores; ++i ) {
 			S << score.getId( i ) << " " << score.getValue( i ) << endl;
 		}
 		S.close();
@@ -1705,8 +1707,7 @@ void Model::scoreTest ( const string& extra ) {
 	}
 }
 
-size_t Model::scoreTestWithOneSNPless ( size_t position, SortVec &score )
-{
+void Model::scoreTestWithOneSNPless ( const size_t position, SortVec &score ) {
 //foreach model SNP: remove them (make a  regression) and make scoretest
 //take the result snps and add these snps, when the improve the model 
 //then take the best of these snp in the new model.
@@ -1733,12 +1734,8 @@ size_t Model::scoreTestWithOneSNPless ( size_t position, SortVec &score )
 	const size_t
 		snps = data_->getSnpNo(),
 		start = modelSnps_[position] > fenster ? modelSnps_[position] - fenster : 0u,
-		stop = min( modelSnps_[position] + fenster, snps ),
-		nscore = stsc.scoreTests( intermediateModel, score, start, stop );
-        //then try this snp for replacing
-        return nscore; //does this make sense? 	
-
-//ERICH
+		stop = min( modelSnps_[position] + fenster, snps );
+	stsc.scoreTests( intermediateModel, start, stop - start, score );
 }
 
 bool Model::computeLogRegression () {
@@ -2117,17 +2114,18 @@ bool Model::selectModel (
 	PValueBorder = min( PValueBorder, 400u );	//override to high PValueBorders !!!
  	double bestMSC=getMSC(); //this one is the best up to now!
 
- ScoreTestShortcut stsc( *data_ );
  	const size_t
 		snps = data_->getSnpNo(),
 		vars = getNoOfVariables();
 	bool improvement = true, improvement2 = true, improvement3 = true;
-	SortVec score( snps );
- this->computeRegression();//for SCORE maybe not calculated?
-	stsc.scoreTests ( *this, score );
- vector<int> Score( snps );
-	for ( size_t i = 0; vars + i <= snps; ++i ) {
- 		Score[i]= score.getId( i );
+	computeRegression();
+	ScoreTestShortcut stsc( *data_ );
+	SortVec score;
+	stsc.scoreTests ( *this, 0u, snps, score );
+	const size_t nscores = score.size();
+	vector<size_t> Score( nscores );
+	for ( size_t i = 0; i < nscores; ++i ) {
+ 		Score.at( i ) = score.getId( i );
 	}
 
 	while(
