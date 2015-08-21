@@ -47,12 +47,17 @@ int main ( const int argc, const char *argv[] ) {
 
 	// log start
 	logger->info( " _____ _____ _____ _____ _ _ _ _____ " );
-	logger->info( "|     |     |   __|   __| | | |  _  |\tModel Selection" );
-	logger->info( "| | | |  |  |__   |  |  | | | |     |\tfor Genome-wide" );
-	logger->info( "|_|_|_|_____|_____|_____|_____|__|__|\tAssociations" );
-	logger->info( "release %s, %s, called with arguments:", buildinfo::version, buildinfo::timestamp );
+	logger->info( "|     |	   |   __|   __| | | |	_  |" );
+	logger->info( "| | | |	|  |__	 |  |  | | | |	   |" );
+	logger->info( "|_|_|_|_____|_____|_____|_____|__|__|" );
+	logger->info( "Model Selection for Genom-Wide Associations" );
+	logger->info(
+		"Release %s, %s, called with command & arguments:",
+		buildinfo::version,
+		buildinfo::timestamp
+	);
 	for ( int i = 0; i < argc; ++i ) {
-		logger->info( "%s", argv[i] );
+		logger->info( "\t%s", argv[i] );
 	}
 
 	try {
@@ -66,5 +71,5 @@ int main ( const int argc, const char *argv[] ) {
 	} catch ( const Exception e ) {
 		logger->error( "%s", e.what() );
 	}
-	logger->info( "Close logs." );
+	logger->info( "Finished MOSGWA; close logs." );
 }
