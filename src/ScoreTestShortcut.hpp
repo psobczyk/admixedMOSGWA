@@ -36,11 +36,17 @@ class ScoreTestShortcut : private Firthimizer {
 
 	/** Calculates the absolute values of the score tests for all SNPs not yet in the model.
 	* @param model with regard to which score tests of the other SNPs are performed.
-	* @param sortVec will be updated to contain the SNP indices sorted by test result.
+	* @param start which SNP to start with
+	* @param length how many SNPs including <code>start</code> to test
+	* @param sortVec will be updated to contain the SNP indices, sorted by test result,
+	* but excluding the indices of SNPs already in the model.
 	*/
-	void scoreTests ( const Model& model, SortVec& sortVec );
-	size_t scoreTests ( const Model& model, SortVec& sortVec, size_t, size_t );
-
+	void scoreTests (
+		const Model& model,
+		const size_t start,
+		const size_t length,
+		SortVec& sortVec
+	);
 
 };
 
