@@ -9,7 +9,6 @@ add_library( main OBJECT
 	QRuncher.hpp
 	SNP.cpp
 	SNP.hpp
-	types.hpp
 )
 
 add_subdirectory( io )
