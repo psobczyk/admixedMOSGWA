@@ -180,12 +180,21 @@ void MData::checkData () {
 		{
 			if ( indPheno == parameter->case_value)	{	// was set 1 check affection status
 			} else if ( indPheno == parameter->control_value ) {	//was set 0
-			} else {	// some other number than 0/1 detected, phenotype must be qua
-				logger->error( "i=%u indPheno=%d", idv, indPheno );
+			} else {
+				logger->info(
+					"individual[%u]( \"%s\", \"%s\" ) has phenotype code %f"
+					" which is neither case (%f) nor control (%f)."
+					" Will use linear regression.",
+					idv,
+					getID( idv ).c_str(),
+					getFID( idv ).c_str(),
+					indPheno,
+					parameter->case_value,
+					parameter->control_value
+				);
 				parameter->affection_status_phenotype = false;
 			}
 		}
-	
 	}
 }
 
