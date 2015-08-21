@@ -1,3 +1,10 @@
+Version 1.1.8
+-------------
+Refer to "memetic" instead of "genetic" algorithms.
+Let search algorithms return best model found. (Not yet implemented for memetic algorithm.)
+Fixed a bug in Model which might have led to inspection of fewer models after score tests when covariates were used.
+Internal code improvements.
+
 Version 1.1.7
 -------------
 Multiple internal code improvements.
