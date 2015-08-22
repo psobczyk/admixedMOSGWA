@@ -1117,7 +1117,7 @@ int newSNP=0;
     for (
       int i = *startIndex ;
       getModelSize() </*=*/  startSize+/*parameter.ms_MaximalSNPsMultiForwardStep*/
-	newSNP && i < PValueBorder && i < snps;
+	newSNP && i < PValueBorder && i < score.size();
       ++i
     ) {
       // progress checking
