@@ -62,12 +62,6 @@ class MData {
 	*/
 	linalg::AutoMatrix covMat;
 
-	/** the number of cases (for affection phenotype) */
-	size_t caseNo_;
-
-	/** the number of controls (for affection phenotype) */
-	size_t contNo_;
-
 	/** Holds the single marker tests for all SNPs */
 	vector <double> singleMarkerTestResult;
 
@@ -142,13 +136,6 @@ public:
 
 	/** return the name of the cov-th covaribale */
 	const string& getCovMatElementName( const size_t cov ) const;
-
-	// for affection-type targets
-	/** # of cases in for affection-type target (should not be used for quantitive traits, intialised with 0) */
-	size_t getCaseNo () const;
-
-	/** # of controls in for affection-type target (should not be used for quantitive traits, intialised with 0) */
-	size_t getContNo () const;
 
 	/** returns the log-likelihood for affection-type targets.
 	* @deprecated A {@link search::Search} algorithm should calculate model regressions itself.
