@@ -71,12 +71,6 @@ class MData {
 	/** the log-likelihood of the zero-model (without any SNPs) */
 	double loglikelihood0Model_;
 
-	/** Check input data */
-	void checkData ();
-
-	/** Remove the given individual from the data. */
-	void removeIndividual ( const size_t idv );
-
 public:
 	// not private anymore because of setting Y values on the fly
 	/** for affection-type targets, stores the log-likelihood of the zero-model */

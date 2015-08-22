@@ -63,9 +63,6 @@ MData::MData ( io::Input * const externalInput ) : input( externalInput ), alloc
 	if ( allocateInput ) {
 		if ( parameter->in_file_hdf5.empty() ) {
 			input = new PlinkInput( parameter->in_files_plink.c_str() );
-			if ( 0 == parameter->nSNPKriterium ) {
-				parameter->nSNPKriterium=getSnpNo();
-			}
 		} else {
 			input = new Hdf5Input( parameter->in_file_hdf5.c_str(), parameter->cov_extra_file );
 		}
@@ -76,9 +73,6 @@ MData::MData ( io::Input * const externalInput ) : input( externalInput ), alloc
 		snps = input->countSnps(),
 		idvs = input->countIndividuals(),
 		covs = input->countCovariates();
-	        //ED setting default Value for nSNPKriterium when not set 
-	        if(0==parameter->nSNPKriterium)
-                  parameter->nSNPKriterium=snps;
 	covMat.exactSize( idvs, covs );
 	singleMarkerTestResult.resize( snps, numeric_limits<double>::signaling_NaN() );
 	const std::string * covariates = input->getCovariates();
@@ -89,7 +83,39 @@ MData::MData ( io::Input * const externalInput ) : input( externalInput ), alloc
 	}
 	Y_name_ = input->getTraits()[parameter->in_values_int];
 
-	checkData();
+	// check input data
+	AutoVector yVec( idvs );
+	getY( yVec );
+	for ( size_t idv = 0; idv < idvs; ++idv ) {
+		const double indPheno = yVec.get( idv );
+		if ( indPheno == parameter->missing_phenotype_value ) {
+			logger->warning(
+				"missing phenotype for individual[%u]( \"%s\", \"%s\" )",
+				idv,
+				getID( idv ).c_str(),
+				getFID( idv ).c_str()
+			);
+		} else if (
+			parameter->affection_status_phenotype
+			&&
+			indPheno != parameter->case_value
+			&&
+			indPheno != parameter->control_value
+		) {
+			logger->warning(
+				"Configuration has chosen logistic regression,"
+				" but individual[%u]( \"%s\", \"%s\" ) has phenotype code %f"
+				" which is neither case (%f) nor control (%f)."
+				" Regression results will be dubious.",
+				idv,
+				getID( idv ).c_str(),
+				getFID( idv ).c_str(),
+				indPheno,
+				parameter->case_value,
+				parameter->control_value
+			);
+		}
+	}
 }
 
 MData::~MData () {
@@ -150,44 +176,6 @@ void MData::setSingleMarkerTestAt ( const size_t index, const double value ) {
 
 void MData::fillSnp_order_Vec ( const size_t snpNo, size_t* SNPList, double* TestStat ) {
 	snp_order_.fillVec( snpNo, SNPList, TestStat );
-}
-
-void MData::checkData () {
-	const size_t idvs = getIdvNo();
-	parameter->affection_status_phenotype = true;	// intitial setting, Y-values are tested if the are just (0,1) (or missing)
-	
-	AutoVector yVec( idvs );
-	getY( yVec );
-	for ( size_t idv = 0; idv < idvs; ++idv ) {
-		const double indPheno = yVec.get( idv );
-		// do not consider individuals with missing phenotype
-		if ( indPheno == parameter->missing_phenotype_value ) {
-			logger->warning(
-				"missing individuals' phenotype for individual \"%s %s\"",
-				getID( idv ).c_str(),
-				getFID( idv ).c_str()
-			);
-		}
-		else // no missing phenotype, determine if phenotype is affection (case-control) or quantitative
-		{
-			if ( indPheno == parameter->case_value)	{	// was set 1 check affection status
-			} else if ( indPheno == parameter->control_value ) {	//was set 0
-			} else {
-				logger->info(
-					"individual[%u]( \"%s\", \"%s\" ) has phenotype code %f"
-					" which is neither case (%f) nor control (%f)."
-					" Will use linear regression.",
-					idv,
-					getID( idv ).c_str(),
-					getFID( idv ).c_str(),
-					indPheno,
-					parameter->case_value,
-					parameter->control_value
-				);
-				parameter->affection_status_phenotype = false;
-			}
-		}
-	}
 }
 
 void  MData::findSNPIndex(vector<string>& SNPNames, vector<unsigned int>& index) const
