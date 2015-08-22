@@ -132,14 +132,6 @@ size_t MData::getOrderedSNP ( const size_t snp ) const {
 	return snp_order_.getId( snp );
 }
 
-size_t MData::getCaseNo () const {
-	return caseNo_;
-}
-
-size_t MData::getContNo () const {
-	return contNo_;
-}
-
 double MData::getLL0M () const {
 	return loglikelihood0Model_;
 }
@@ -169,7 +161,7 @@ void MData::checkData () {
 	for ( size_t idv = 0; idv < idvs; ++idv ) {
 		const double indPheno = yVec.get( idv );
 		// do not consider individuals with missing phenotype
-		if ( indPheno == parameter->missing_phenotype_code ) {
+		if ( indPheno == parameter->missing_phenotype_value ) {
 			logger->warning(
 				"missing individuals' phenotype for individual \"%s %s\"",
 				getID( idv ).c_str(),
