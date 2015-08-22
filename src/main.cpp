@@ -26,16 +26,21 @@ using namespace std;
 using namespace logging;
 
 /** Application entry point */
-int main ( const int argc, const char *argv[] ) {
+int main ( const int argn, const char *argv[] ) {
 
 	// initialise primary logging
 	StreamLogger stderrLogger( cerr );
 	logger = &stderrLogger;
 
+	if ( 1 >= argn ) {
+		logger->error( "You need to provide a configuration file to use MOSGWA!" );
+		return 1;
+	}
+
 	// set parameters
 	Parameter mainParameter;
 	parameter = &mainParameter;
-	parameter->setParameters( argc, argv );
+	parameter->setParameters( argn, argv );
 
 	// add file logging
 	const string logFileName( parameter->out_file_name + ".log" );
@@ -67,7 +72,7 @@ int main ( const int argc, const char *argv[] ) {
 		buildinfo::version,
 		buildinfo::timestamp
 	);
-	for ( int i = 0; i < argc; ++i ) {
+	for ( int i = 0; i < argn; ++i ) {
 		logger->info( "\t%s", argv[i] );
 	}
 
@@ -81,6 +86,8 @@ int main ( const int argc, const char *argv[] ) {
 		}
 	} catch ( const Exception e ) {
 		logger->error( "%s", e.what() );
+		return 2;
 	}
-	logger->info( "Finished MOSGWA; close logs." );
+	logger->info( "Finished MOSGWA." );
+	return 0;
 }
