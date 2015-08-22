@@ -1868,7 +1868,7 @@ double Model::computeMSC ( const int selectionCriterium, double mjc ) {
 
 	const size_t
 		n = data_->getIdvNo(),
-		p = parameter->nSNPKriterium,	// data_->getSnpNo(); das ist original
+		p = parameter->nSNPKriterium ? parameter->nSNPKriterium : data_->getSnpNo(),	// Erich's shortcut to search SNP subset
 		q = getModelSize();
 
 	// choose the likelihood part depending if the Data is quantitative or affection
@@ -2113,6 +2113,9 @@ bool Model::selectModel (
 	const int selectionCriterium
 ) {
 	logger->info( "Score select model" );
+
+ 	const size_t snps = data_->getSnpNo();
+
 	if ( getModelSize() > parameter->maximalModelSize ) {
 		return false;
 	}
@@ -2129,9 +2132,6 @@ bool Model::selectModel (
 	PValueBorder = min( PValueBorder, 400u );	//override to high PValueBorders !!!
  	double bestMSC=getMSC(); //this one is the best up to now!
 
- 	const size_t
-		snps = data_->getSnpNo(),
-		vars = getNoOfVariables();
 	bool improvement = true, improvement2 = true, improvement3 = true;
 	computeRegression();
 	ScoreTestShortcut stsc( *data_ );
