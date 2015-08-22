@@ -16,9 +16,8 @@
 #ifndef SEARCH_MEMETICA_MA_HPP
 #define SEARCH_MEMETICA_MA_HPP
 
-#include <iostream>
+#include <fstream>
 #include <vector>
-#include <iostream>
 #include <set>
 #include <string>
 #include <sstream>
