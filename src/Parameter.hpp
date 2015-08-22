@@ -17,8 +17,6 @@
 #define PARAMETER_HPP
 #include <vector>  //for SNPs
 #include <string>
-#include <iostream>
-#include <fstream>
 #include <memory>
 
 #include "parser/ConfigParser.hpp"
@@ -184,6 +182,6 @@ public:
 };
 
 /** To be initialised to point to a globally shared parameter object */
-extern std::auto_ptr<Parameter> parameter;
+extern Parameter * parameter;
 
 #endif

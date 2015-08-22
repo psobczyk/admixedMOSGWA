@@ -18,6 +18,7 @@
 #include <limits>
 #include <cstdlib>
 #include <sstream>  //for stringstream
+#include <fstream>
 
 #include "logging/Logger.hpp"
 
@@ -249,4 +250,4 @@ singlefile=out_file_name; //this is for simulators which need in every run the g
     regionMinCorrelation = 0.01;
 }
 
-auto_ptr<Parameter> parameter;
+Parameter * parameter = NULL;
