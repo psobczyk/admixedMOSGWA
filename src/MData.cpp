@@ -223,20 +223,21 @@ vector< int> tindex(SNPNames.size(),-999); //bring index to final size -999 is t
 	}
 	for ( size_t i = 0; i < tindex.size(); ++i ) {
 		if ( -999 == tindex[i] ) {
-			cout	<< "SNP name "
-				<<SNPNames[i]
-				<< " At position "
-				<< i
-				<< " does not exist nicht in this dataset"
-				<< endl;
+			// TODO<BB>: int should not be used for SNP indices, but size_t
+			logger->warning(
+				"SNP %s at position %d does not exist nicht in this dataset",
+				SNPNames.at( i ).c_str(),
+				i
+			);
 		}
 	}
 vector<int>::iterator iter,nend;
 
 nend=remove(tindex.begin(),tindex.end(),-999);
-for(iter=tindex.begin();iter<nend;++iter)
-{if(false) cout<<"Position:"<<setw(6)<<*iter<<" is "<<allSNPs[*iter]<<endl; //DEBUG
- index.push_back(*iter);}
+	for ( iter = tindex.begin(); iter != nend; ++iter ) {
+		logger->debug( "Position: %d is %s", *iter, allSNPs.at( *iter ).c_str() );
+		index.push_back( *iter );
+	}
 
  //remove duplicates
  //that model works
@@ -276,10 +277,8 @@ void MData::printSelectedSNPsInR ( vector<string> SNPList ) const {
 					SNPL << vec.get( idv );
 				}
 				SNPL<< ")"<< endl;
-			}
-			else
-			{
-				cout << "SNP " << *it_SNPList << "not found";	
+			} else {
+				logger->error( "SNP %s not found", it_SNPList->c_str() );
 			}
 		}
 		
@@ -445,10 +444,8 @@ for (it_SNPList = SNPList.begin(); it_SNPList < SNPList.end(); it_SNPList++)
 					SNPL << vec.get( idv );
 				}
 				SNPL<< ";"<< endl;
-			}
-			else
-			{
-				cout << "SNP " << *it_SNPList << "not found";	
+			} else {
+				logger->error( "SNP %s not found", it_SNPList->c_str() );
 			}
 		}
 			SNPL << "]'"<<endl;
@@ -650,8 +647,8 @@ bool MData::selectModel (
 	//or take the setting from the conf file
 	PValueBorder = min( getSnpNo() - 1, PValueBorder );	// REMARK<BB>: how about 0 SNPs?
 //	 int PValueBorder=parameter.PValueBorder;
-PValueBorder=min(getSnpNo()-1,PValueBorder);
-	cerr<<"PValueBorder"<< PValueBorder<<endl;
+	PValueBorder = min( getSnpNo() - 1, PValueBorder );
+	logger->debug( "PValueBorder", PValueBorder );
 	// compute the log-likelihood of the 0 Model
 	Model model0( *this );
 	
@@ -763,9 +760,7 @@ bool MData::selectModel()
 	size_t PValueBorder = parameter->PValueBorder;
 	size_t eins=1;
 	PValueBorder = max(min( getSnpNo()-1, PValueBorder ),eins);	// REMARK<BB>: how about 0 SNPs?
-//if(getSnpNo()-1>350)
-//PValueBorder=max(350,PValueBorder);
-	cerr<<"PValueBorder"<< PValueBorder<<endl;
+	logger->debug( "PValueBorder", PValueBorder );
 	// compute the log-likelihood of the 0 Model
 	Model model0( *this );
 	

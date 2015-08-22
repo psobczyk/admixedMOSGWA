@@ -19,6 +19,7 @@
 #include "Exception.hpp"
 #include "lookup/package.hpp"
 #include "logging/Logger.hpp"
+#include <fstream>
 #include <cfloat>	// for maximal double
 #include <cmath>	// for isinf
 #include <cstdio>	//getpid rand number init
@@ -133,7 +134,13 @@ double Model::getBeta ( const int i ) const {
 }
 
 string 	Model::getSNPId ( const size_t i ) const {
-		if ( 0 > i || getModelSize() <=i ) { cerr<<"The requested SNP of the model "<<i <<" is outside of [0, getModelSize()-1] Modelsize is actually "<<getModelSize()<<endl<<"you will see an SNP_false instead"<<endl;
+	const size_t size = getModelSize();
+	if ( size <= i ) {
+		logger->error(
+			"Get requested SNP(%u) beyond modelsize %u you will see an SNP_false instead",
+			i,
+			size
+		);
 	//	throw; //simple but bad because this string is only for reporting!
 	return "ERROR SNP";
 	} else {	
@@ -177,13 +184,18 @@ void Model::addSNPtoModel ( const size_t snp ) {
  * */
 
 bool Model::replaceSNPinModel ( const size_t snp, const size_t position ) {
-if ( 0 == getModelSize())
-{       cerr<<"replacing SNPs is not implemented for empty Models"<<endl;
-       	return false;
-}
-if(0>position||getModelSize()<=position)
- {	cerr<< "replaceSNPinModel position is not in Model";
-	return false;}
+	if ( 0 == getModelSize() ) {
+		logger->error(
+			"Cannot replace SNP %u at position %u, since the model is empty",
+			snp,
+			position
+		);
+		return false;
+	}
+	if ( getModelSize() <= position ) {
+		logger->error( "replaceSNPinModel position %u is not in Model", position );
+		return false;
+	}
 	const size_t reset = 1 + data_->getCovNo() + position;		//position 0 is the first 
  //cout<<"reset="<<reset<<endl;
 	modelSnps_.at( position ) = snp;
@@ -285,9 +297,8 @@ void Model::Ycontinous () {
 	AutoVector tVec( idvs );
 	tVec.gemv( 1.0, xMat, false, beta, 0.0 );
 	for ( size_t idv = 0; idv < idvs; ++idv ) {
-		cout << tVec.get( idv ) << " ";
+		logger->debug( "Y[%u] = %f", tVec.get( idv ) );
 	}
-	cout << endl;
 
 //these initialisations are because of the random number generator
   const gsl_rng_type * T; 
@@ -354,9 +365,11 @@ void Model::printYvec () {
 		Y.close();
 	}
 	catch ( ofstream::failure e ) {
-		cerr	<< "Could not write Yvecout file"
-			<< ( parameter->out_file_name + "Yvecout" ).c_str()
-			<< endl;
+		logger->error(
+			"Could not write Yvecout file %s: %s",
+			( parameter->out_file_name + "Yvecout" ).c_str(),
+			e.what()
+		);
 	}
 }
 
@@ -603,7 +616,6 @@ bool Model::replaceModelSNPbyNearFromCAT (
 	gsl_permutation *a =gsl_permutation_alloc (N);
 	gsl_permutation_init(a);
 	//DEBUG gsl_permutation_fprintf(stdout,a," %u"); //DEBUG
-	cerr<<endl; //DEBUG
     //gsl_permutation *q =gsl_permutation_alloc (N);
 	gsl_rng_env_setup();
  T = gsl_rng_default;
@@ -782,7 +794,7 @@ double Model::oraculateOptimalLinearBackwardStep( size_t *snp ) const {
 	
 	for ( size_t col = 0; col < getModelSize(); ++col ) {
 		const double rss = qruncher.calculateSkipColumnRSS( col + colOffset );
-		cerr<<rss<<";";
+		logger->debug( "Oraculate column %u yields rss %f", col, rss );
 		if ( rss < bestRSS ) {
 			bestRSS = rss;
 			bestCOL = col;
@@ -790,10 +802,11 @@ double Model::oraculateOptimalLinearBackwardStep( size_t *snp ) const {
 	}
 	if ( bestRSS < DBL_MAX ) {
 		*snp = modelSnps_.at( bestCOL );
-		cerr <<"bestCol"<<bestCOL<<"modelSnps_.at( bestCOL )"<<*snp<<endl;
+		logger->debug( "Oraculate SNP %u at column %u", *snp, bestCOL );
 	}
 	return bestRSS;
 }
+
 /** finalizeModelSelection()
  *   finalization work call some function and quit
  */
@@ -809,7 +822,7 @@ bool Model::finalizeModelSelection (
 		printModel( "no improvement", selectionCriterium );
 		*startIndex = 0;
 		if ( !parameter->affection_status_phenotype ) {
-			cerr << "finalise with score not implemented for continuous traits" << endl;
+			logger->info( "finalise with score is not implemented for continuous traits" );
 			backwardModel=*this;
 			improvement = saveguardbackwardstep( backwardModel, selectionCriterium);
 			// not use makeMFFL in this case 
@@ -849,7 +862,7 @@ bool Model::finalizeModelSelection (
 		printModel( "no improvement", selectionCriterium );
 		*startIndex = 0;
 		if ( !parameter->affection_status_phenotype ) {
-			cerr << "finalise not implemented for continuous traits" << endl;
+			logger->info( "finalise is not implemented for continuous traits" );
 			backwardModel=*this;
 			improvement = saveguardbackwardstep( backwardModel, selectionCriterium);
 			//not use makeMFFL in this case 
@@ -1019,9 +1032,7 @@ bool Model::makeMFFL(
        
         const int altSize= getModelSize();
 makeMultiForwardStepScore ( PValueBorder,selectionCriterium,startIndex, score  );
-cout<<"MFFL startIndex SCORE"<<*startIndex<<"Model Size="<<altSize<<endl;
-
- //parameter.ms_FastMultipleForwardStep=oldValue;
+	logger->info( "MFFL SCORE startIndex %d model size %u", *startIndex, altSize );
 }
 
 
@@ -1039,9 +1050,7 @@ bool Model::makeMFFL(
        
         const int altSize= getModelSize();
 makeMultiForwardStep ( PValueBorder,selectionCriterium,startIndex  );
-cout<<"MFFL startIndex"<<*startIndex<<"Model Size="<<altSize<<endl;
-
- //parameter.ms_FastMultipleForwardStep=oldValue;
+	logger->info( "MFFL startIndex %d model size %u", *startIndex, altSize );
 }
 
 
@@ -1079,8 +1088,7 @@ if(NULL==startIndex)
 int startSize=getModelSize();
 int newSNP=0;
 
-  cout<<"ModelSize ="<<startSize<<endl;
-
+	logger->debug( "Model start size %u", startSize );
 	if ( Parameter::selectionCriterium_BIC != selectionCriterium && 0 < startSize ) {
 		logger->info( "new usage of Fastforward" );
 		newSNP = parameter->ms_MaximalSNPsMultiForwardStep;
@@ -1113,10 +1121,13 @@ int newSNP=0;
       ++i
     ) {
       // progress checking
-      if (0==i%200 )
-      {printf ("\rDone %3.5f%%...", i / ( snps /100.0 ) );
-      fflush (stdout);}
-	
+		if ( 0 == i % 200 ) {
+			logger->info(
+				"Done %3.5f%%...",
+				i / ( snps / 100.0 )
+			);
+		}
+
       NewModel = *this;
         // To quickly search whether SNP is already "in"
     const ModelIndex modelIndex( modelSnps_ ); 
@@ -1199,8 +1210,7 @@ if(NULL==startIndex)
 int startSize=getModelSize();
 int newSNP=0;
 
-  cout<<"ModelSize before MultiForwardStep="<<startSize<<endl;
-
+	logger->debug( "Model start size %u before MultiForwardStep", startSize );
 	if ( Parameter::selectionCriterium_BIC != selectionCriterium && 0 < startSize) {
 		logger->info( "new usage of Fastforward" );
 		newSNP = parameter->ms_MaximalSNPsMultiForwardStep;
@@ -1251,10 +1261,13 @@ int newSNP=0;
         }     
       }    
       // progress checking
-      if (0==i%20) 
-      {printf("\rDone %3.5f%%...", i / ( snps /100.0 ) );
-      fflush (stdout);}
-	
+		if ( 0 == i % 20 ) {
+			logger->info(
+				"Done %3.5f%%...",
+				i / ( snps / 100.0 )
+			);
+		}
+
       NewModel = *this;
         // To quickly search whether SNP is already "in"
     const ModelIndex modelIndex( modelSnps_ ); 
@@ -1572,11 +1585,15 @@ int Model::makeBackwardStepED ( Model &smallerModel, const int selectionCriteriu
 	
 	if ( useOracle ) {
 		returnVal =oraculateOptimalLinearBackwardStep( &optimalSNP );
-		if (DBL_MAX== returnVal)
-                    cerr<<"oraculateOptimalLinearBackwardStep fails"<<endl;
-	        if (optimalSNP==2000000000UL)
-		cerr<<"Regression failed by searching the optimal SNP -1 SNP"<<endl;
-		cerr<<"optimalSNP="<<optimalSNP<<endl; 
+		if ( DBL_MAX == returnVal ) {
+			logger->debug( "oraculateOptimalLinearBackwardStep did not suggest anything" );
+		}
+	        if ( 2000000000UL == optimalSNP ) {
+			logger->debug(
+				"Regression failed by searching the optimal SNP, so optimalSNP=%u",
+				optimalSNP
+			);
+		}
 	}
 	// if oracle is used, for-loop degenerates to a single run-through with the optimal SNP
 	for (
@@ -1598,11 +1615,9 @@ int Model::makeBackwardStepED ( Model &smallerModel, const int selectionCriteriu
 				removedSNP = i;
 			}
 			//it cannot increase MSC globaly because ist starts with $\infty$
+		} else {
+			logger->error( "Regression failed by removing SNP %u", i );
 		}
-		else
-		 {//false
-		  cerr<<"Regression failed by removing the "<<i<<"SNP"<<endl;
-		 }
 	}
 	
 	// check if a valid model is returned, (0-model stays 0-model)
@@ -1765,8 +1780,10 @@ bool Model::computeLogRegression () {
 		beta.copy( beta_array );
 		upToDateBetas_ = true;
 		return true;	// logistic regression worked, betas are updated
+	} else {
+		logger->info( "Logistic regression cancelled: Fisher matrix not invertible" );
+		return false;	// logistic regression failed
 	}
-	return false;	// logistic regression failed
 }
 
 double Model::computeSingleRegressorTest () {
@@ -1871,7 +1888,7 @@ double Model::computeMSC ( const int selectionCriterium, double mjc ) {
 		LRT = n*log( mjc ) ;  // n * log(RSS)
 	}
 	
-if(DEBUG) cerr<<"LRT="<<LRT<<endl;
+	logger->debug( "LRT=%f", LRT );
 
 	switch ( selectionCriterium ) {
 		case Parameter::selectionCriterium_BIC:
@@ -2011,7 +2028,12 @@ size_t Model::getSNPat ( const size_t pos ) const {
     return modelSnps_[pos];
   else
   {
-    cerr << "getSNPat(...): " << pos << "out of range [0, " << modelSnps_.size() << "]" << endl;
+		logger->error(
+			"getSNPat(%u) out of range [0,%u]",
+			pos,
+			modelSnps_.size()
+		);
+		// TODO<BB>: avoid exit in library code.
     exit(-1);
   }
 }
@@ -2063,7 +2085,7 @@ double Model::computeMSCfalseRegression (
   {
     removedSnps.push_back(modelSnps_[modelSnps_.size() - 1]);
     if (removeSNPfromModel(modelSnps_.size() - 1) == false)
-      cout << "removeSNPfromModel failed!" << endl;
+	logger->warning( "removeSNPfromModel failed!" );
     //cout << "try computeMSC for model (-1): " << *this << endl;
     //char cc; cout << "Press a key... "; cin >> cc;
 		msc = computeMSCfalseRegression( selectionCriterium, removedSnps );
