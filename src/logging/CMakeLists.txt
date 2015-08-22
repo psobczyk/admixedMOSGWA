@@ -5,4 +5,6 @@ add_library( logging OBJECT
 	StreamLogger.cpp
 	FileLogger.hpp
 	FileLogger.cpp
+	MultiLogger.hpp
+	MultiLogger.cpp
 )
