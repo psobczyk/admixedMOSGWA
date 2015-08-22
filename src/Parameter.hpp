@@ -68,11 +68,13 @@ public:
 	/** 1 = Recessive, 2 = Additive, 3 = Dominant */
 	int genetic_model;
 
-	/** which number repressents missing phenotypes */
-	double missing_phenotype_code;
-        /** which number is coding the controls */
-	int control_value; 
-	int case_value;
+	double
+		/** which number repressents missing phenotypes */
+		missing_phenotype_value,
+        	/** which number is coding the controls */
+		control_value,
+        	/** which number is coding the cases */
+		case_value;
 
 //++++++++++++
 // Output:
