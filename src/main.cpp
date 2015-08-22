@@ -33,7 +33,8 @@ int main ( const int argc, const char *argv[] ) {
 	logger = &stderrLogger;
 
 	// set parameters
-	parameter.reset( new Parameter );
+	Parameter mainParameter;
+	parameter = &mainParameter;
 	parameter->setParameters( argc, argv );
 
 	// add file logging
@@ -57,8 +58,8 @@ int main ( const int argc, const char *argv[] ) {
 
 	// log start
 	logger->info( " _____ _____ _____ _____ _ _ _ _____ " );
-	logger->info( "|     |	   |   __|   __| | | |	_  |" );
-	logger->info( "| | | |	|  |__	 |  |  | | | |	   |" );
+	logger->info( "|     |     |   __|   __| | | |  _  |" );
+	logger->info( "| | | |  |  |__   |  |  | | | |     |" );
 	logger->info( "|_|_|_|_____|_____|_____|_____|__|__|" );
 	logger->info( "Model Selection for Genom-Wide Associations" );
 	logger->info(
