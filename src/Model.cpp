@@ -35,19 +35,17 @@
 #include <gsl/gsl_cdf.h>
 
 // for Linear Algebra
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_linalg.h>
 #include <algorithm> //min und max
 #include <sys/time.h> //time
 
 #include <hdf5.h> //for hdf5
 #include "ScoreTestShortcut.hpp" //SortVec scoreTests ( const Model& model, const MData& mData )
+
 using namespace std;
 using namespace linalg;
 using namespace lookup;
 using namespace logging;
-bool DEBUG=false,DEBUG2=false,DEBUG3=false;
+
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //  class Model
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -610,12 +608,10 @@ bool Model::replaceModelSNPbyNearFromCAT (
 /*random permutation
  */
 	const size_t N=getModelSize();
-	//DEBUG cerr<<"N="<<getModelSize()<<endl; //DEBUG
 	const gsl_rng_type *T;
 	gsl_rng *r;
 	gsl_permutation *a =gsl_permutation_alloc (N);
 	gsl_permutation_init(a);
-	//DEBUG gsl_permutation_fprintf(stdout,a," %u"); //DEBUG
     //gsl_permutation *q =gsl_permutation_alloc (N);
 	gsl_rng_env_setup();
  T = gsl_rng_default;
@@ -626,7 +622,6 @@ gsl_ran_shuffle (r, a->data, N, sizeof (size_t));//reference to data!!!
 //	for(int jo=getModelSize()-1; jo >=0; jo--)
 for(int jo=0; jo<getModelSize(); jo++)
 { int j=gsl_permutation_get(a,jo);
-	//DEBUG cerr<<"a["<<jo<<"]="<<j<<endl;
 	for (
 		size_t i = 0;
 		i < min( max( PValueBorder + grace, 1000u ), nSNP );
@@ -1245,7 +1240,6 @@ int newSNP=0;
       newSNP && i < PValueBorder /*data_->getSnpNo()*/;
       ++i
     ) {
-//DEBUG cout<<endl<<"getModelSize() =  startSize+ newSNP"<<getModelSize()<<"="
 //<< startSize+/*parameter.ms_MaximalSNPsMultiForwardStep*/ newSNP;
 
 	if (goodSNPs != 0) {   //  GA
@@ -1732,7 +1726,6 @@ void Model::scoreTestWithOneSNPless ( const size_t position, SortVec &score ) {
 
     	intermediateModel.removeSNPfromModel( position );
 	intermediateModel.computeLogRegression ();
-        //DEBUG intermediateModel.printModel();
 	ScoreTestShortcut stsc( *data_ );
 	//this should only check some
 	//snp around the removed snp
