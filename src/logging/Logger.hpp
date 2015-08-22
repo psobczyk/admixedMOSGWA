@@ -27,6 +27,8 @@ namespace logging {
 	/** Abstract interface to logging. */
 	class Logger {
 
+		friend class MultiLogger;
+
 		public:
 
 		/** Message severity encoding.
@@ -38,14 +40,14 @@ namespace logging {
 		Logger ();
 
 		/** Limit from below the severity of messages to be actually logged.
-		* @see getLimit
+		* @see getThreshold
 		*/
-		void setLimit ( const Severity minimumLevel );
+		void setThreshold ( const Severity threshold );
 
 		/** Query the lower severity limit for messages to be actually logged.
-		* @see setLimit
+		* @see setThreshold
 		*/
-		Severity getLimit () const;
+		Severity getThreshold () const;
 
 		/** Convenience method to {@link log} with severity {@link DEBUG}.
 		* Use in analogy to <code>printf</code>.
@@ -94,7 +96,7 @@ namespace logging {
 		private:
 
 		/** The current minimum log level. */
-		Severity minimumLevel;
+		Severity threshold;
 	};
 
 	/** To be initialised to point to a globally shared logger object */

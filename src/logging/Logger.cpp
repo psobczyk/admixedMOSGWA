@@ -23,19 +23,19 @@ using namespace std;
 
 namespace logging {
 
-	Logger::Logger () : minimumLevel( INFO ) {
+	Logger::Logger () : threshold( INFO ) {
 	}
 
-	void Logger::setLimit ( const Severity minimumLevel ) {
-		this->minimumLevel = minimumLevel;
+	void Logger::setThreshold ( const Severity threshold ) {
+		this->threshold = threshold;
 	}
 
-	Logger::Severity Logger::getLimit () const {
-		return minimumLevel;
+	Logger::Severity Logger::getThreshold () const {
+		return threshold;
 	}
 
 	void Logger::log ( const Severity level, const char * const format, va_list arguments ) {
-		if ( level >= minimumLevel ) {
+		if ( threshold <= level ) {
 			const char* levelText;
 			char
 				buffer[MAX_MSG_SIZE],
