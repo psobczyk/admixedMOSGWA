@@ -15,10 +15,8 @@
 
 #ifndef PARAMETER_HPP
 #define PARAMETER_HPP
-#include <vector>  //for SNPs
-#include <string>
-#include <memory>
 
+#include <string>
 #include "parser/ConfigParser.hpp"
 
 /** Holds relevant additional parameters, which can be read from a file. */
@@ -46,12 +44,12 @@ public:
 	/** true = use extra file for covariables */
 	bool cov_extra_file;
 
-       /** model to read in a filename with first line length
-	* of models 
-	* and then every line a SNP name but nothing else, check 
+	/** model to read in a filename with first line length
+	* of models
+	* and then every line a SNP name but nothing else, check
 	* for errors!!
 	*/
-        std::string models_file;	
+	std::string models_file;
 
 	/** Cache size limit in number of vectors.
 	* It is interpreted as unsigned. Thus, as a side effect, negative means almost limitless.
@@ -65,15 +63,23 @@ public:
 	* setting is determined by MData::checkYValues() */
 	bool affection_status_phenotype;
 
+	/** Helper to set {@link affection_status_phenotype}. */
+	int regressionType;
+
+	/** Codes for regressionType. */
+	static const int
+		regressionType_Linear = 1,
+		regressionType_Logistic = 2;
+
 	/** 1 = Recessive, 2 = Additive, 3 = Dominant */
 	int genetic_model;
 
 	double
 		/** which number repressents missing phenotypes */
 		missing_phenotype_value,
-        	/** which number is coding the controls */
+		/** which number is coding the controls */
 		control_value,
-        	/** which number is coding the cases */
+		/** which number is coding the cases */
 		case_value;
 
 //++++++++++++
@@ -81,7 +87,7 @@ public:
 
 	/** path + name for the output files .log ... */
 	std::string out_file_name;
-        std::string singlefile;
+	std::string singlefile;
 
 	// Logging:
 
@@ -126,16 +132,16 @@ public:
 	int mBIC_expectedCausalSNPs;
 	int mBIC_firstRound_expectedCausalSNPs;
 	int nSNPKriterium;
-        int maximalModelSize;
+	int maximalModelSize;
 	/* *the maximal number of SNPs added in the Multi-Forward-Step */
 	int ms_MaximalSNPsMultiForwardStep;
 
 	/** the threshold below which SNPs with lower p-Values are considered for adding in the Forward Step */
 	double ms_MaximalPValueForwardStep;
-        /** a seperate variable for the new multiforward step */
+	/** a seperate variable for the new multiforward step */
 	int ms_forward_step_max;
 	bool ms_FastMultipleForwardStep;
-	
+
 	size_t PValueBorder;
 	size_t reset;
 	int	jump_back;
@@ -173,8 +179,8 @@ public:
 	int outNo;
 	std::string modelsFilename;
 
-// TEST 
-	int  replications; 
+// TEST
+	int replications;
 
 	/** Constructor */
 	Parameter ();

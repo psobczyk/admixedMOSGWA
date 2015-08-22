@@ -104,6 +104,17 @@ Parameter::Parameter () {
 			choice
 		);
 	}
+	{
+		map< const string, int > choice;
+		choice[ "linear" ] = selectionCriterium_BIC;
+		choice[ "logistic" ] = selectionCriterium_EBIC;
+		declare(
+			"model_selection",
+			"regression_type",
+			regressionType = regressionType_Linear,
+			choice
+		);
+	}
 	declare( "model_selection", "maximalModelSize", maximalModelSize = 3 );
 	declare( "model_selection", "multi_forward_step_max", ms_MaximalSNPsMultiForwardStep = 1 );
 	declare( "model_selection", "multi_forward_pvalue_max", ms_MaximalPValueForwardStep );
@@ -186,6 +197,19 @@ void Parameter::setParameters ( const int argn, const char* argv[] ) {
 		stringstream number;
 		number << in_values_int;
 		out_file_name = out_file_name + number.str();
+	}
+	switch ( regressionType ) {
+		case regressionType_Linear:
+			affection_status_phenotype = false;
+			break;
+		case regressionType_Logistic:
+			affection_status_phenotype = true;
+			break;
+		default:
+			logger->error(
+				"Unknown internal regression type code %d",
+				regressionType
+			);
 	}
 }
 
