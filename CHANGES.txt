@@ -1,3 +1,8 @@
+Version 1.1.9
+-------------
+Fixed phenotype counting bug in MData+GenotypeFrequ introduced in version 1.1.7.
+Fixed score, previously sometimes dereferenced beyond its size.
+
 Version 1.1.8
 -------------
 Refer to "memetic" instead of "genetic" algorithms.
