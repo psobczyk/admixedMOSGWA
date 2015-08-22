@@ -1,3 +1,8 @@
+Version 1.2.0
+-------------
+Explicit configuration "regression_type". Defaults to linear!
+Some further internal code disposal and improvements.
+
 Version 1.1.9
 -------------
 Fixed phenotype counting bug in MData+GenotypeFrequ introduced in version 1.1.7.

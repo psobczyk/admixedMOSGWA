@@ -37,7 +37,7 @@ test = cochran_armitage
 mBIC_expected_causal_SNPs = 25
 [model_selection]
 selection_criterium = mBIC2
-nSNPKriterium = 5000
+regression_type = logistic
 fast_multi_forward = false
 
 You see the sections of the file headed by section headings, which are enclosed in square brackets [].
@@ -99,6 +99,7 @@ test			choice		chi_square, cochran_armitage ... which one to use
 mBIC_expected_causal_SNPs	integer		parameter for first round of model search (with mBIC), which determines the starting point for the actual model search
 
 [model_selection]
+regression_type		choice		linear (default), logistic: to use for calculating the model selection criterium
 selection_criterium	choice		mBIC or mBIC2 (default): criterium to use in second round of model selection
 mBIC_expected_causal_SNPs	integer		parameter for second round of model search, when mBIC is chosen, irrelevant for mBIC2
 EBIC_gamma		double		parameter in the EBIC criterium, defaults to 1 - log( #individuals ) / ( 2 * log( #SNPs ) )
@@ -107,7 +108,7 @@ maximalModelSize	integer		limits the search to models of size up to the given; s
 PValueBorder		size_type	only so many SNPs are considered in multi-forward steps, ranked by p-value
 forward_step_max	integer		bounds the numer of SNPs in the forward step from the empty model
 fast_multi_forward	integer		bounds the numer of SNPs in the forward step from nonempty models
-nSNPKriterium		integer		useful for running with a subset of top-ranking SNPs: the original number #SNPs of SNPs, to be used by the selection criteria
+nSNPKriterium		integer		useful for running with a subset of top-ranking SNPs: the original number #SNPs of SNPs, to be used by the selection criteria; not used if 0, which is the default
 
 Upon successful run, you will find (assuming output filename prefix "random_out") files with the names
 
