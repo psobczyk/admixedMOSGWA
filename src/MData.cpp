@@ -623,6 +623,7 @@ size_t MData::calculatePValueBorder () const {
 	}
 	return PValueBorder;
 }
+
 bool MData::selectModel (
 	Model *currentModel,
 	size_t PValueBorder,
@@ -630,15 +631,14 @@ bool MData::selectModel (
 	const int selectionCriterium
 ) {
 	logger->info( "Model Selection started:" );
+
 	bool 	stop = false;
-//	int     removedSNP=-1;
 	int *startIndex; //start at the begin 
 	int dummy=0;
 	     startIndex=&dummy;
        // int PValueBorder =calculatePValueBorder();
 	//or take the setting from the conf file
 	PValueBorder = min( getSnpNo() - 1, PValueBorder );	// REMARK<BB>: how about 0 SNPs?
-//	 int PValueBorder=parameter.PValueBorder;
 	PValueBorder = min( getSnpNo() - 1, PValueBorder );
 	logger->debug( "PValueBorder", PValueBorder );
 	// compute the log-likelihood of the 0 Model
@@ -665,11 +665,8 @@ bool MData::selectModel (
 
 	currentModel->makeMultiForwardStep( PValueBorder, selectionCriterium, startIndex );
 	currentModel->computeRegression();
-
 	logger->info( "Start stepwise selection" );
 double bestMSC= currentModel->getMSC();
-//currentModel->replaceModelSNPbyNearCorrelated(0);
-//exit(0);
 	bool improvement = false;
 	while ( !stop ) {
 		improvement = currentModel->replaceModelSNPbyNearFromCAT( *startIndex, PValueBorder, selectionCriterium );
@@ -694,13 +691,12 @@ double bestMSC= currentModel->getMSC();
 			selectionCriterium
 		);
 	}
-	size_t reference = 350;		// REMARK<BB>: Where does 350 come from? Also mind 0 SNPs case below.
+	size_t reference = 350;		// REMARK<BB>: Where does 350 come from?
 	if ( parameter->affection_status_phenotype ) {
 		if ( 350 > getSnpNo() - 1 ) {
-			reference = getSnpNo() - 1;
+			reference = getSnpNo() - 1;	// REMARK<BB>: Beware 0 SNPs case.
 		}
-	    
-		while(
+		while (
 			currentModel->selectModel(
 				*backwardModel,
 				max( reference, PValueBorder ),
@@ -720,111 +716,13 @@ double bestMSC= currentModel->getMSC();
 		if ( improvement ) {
 			currentModel->saveguardbackwardstep( *backwardModel, selectionCriterium );
 		}
-
-//when all fails	
-
-//currentModel->replaceModelSNPbyNearCorrelated(); bringt nichts
-//currentModel=backwardModel;
 	currentModel->printStronglyCorrelatedSnps(
 		parameter->correlation_threshold,
 		int2str(parameter->in_values_int) + "the_result"
 	);
 	currentModel->printModel( "finalModel", selectionCriterium );
-	return true ; 
-}
-
-///////////////////////////////////////////////////7
-//selectModel ohne Argument
-bool MData::selectModel()
-{
-	logger->info( "OLD Model Selection started:" );
-
-	Model SelectedModel( *this ); 
-	Model Forward( *this );
-	Model Backward( *this );
-	
-	bool 	stop = false;
-	int *startIndex; //start at the begin 
-	int dummy=0;
-	     startIndex=&dummy;
-       // int PValueBorder =calculatePValueBorder();
-	//or take the setting from the conf file
-	size_t PValueBorder = parameter->PValueBorder;
-	size_t eins=1;
-	PValueBorder = max(min( getSnpNo()-1, PValueBorder ),eins);	// REMARK<BB>: how about 0 SNPs?
-	logger->debug( "PValueBorder", PValueBorder );
-	// compute the log-likelihood of the 0 Model
-	Model model0( *this );
-	
-	model0.computeRegression();
-        model0.printYvec();
-	setLL0M( model0.getMJC() );
-	Model model1( *this ), model2( *this );
-        //Mod
-	// Using pointers to avoid expensive copying of Model objects
-	Model
-		*currentModel = &model0,
-		*forwardModel = &model1,
-		*backwardModel = &model2;
-	currentModel->makeMultiForwardStep(PValueBorder,1,startIndex);
-	currentModel->computeRegression();
-       // best=currentModel;
-	logger->info( "Start stepwise selection:" );
-        currentModel->computeMSC(0);
-        //currentModel->printModel("check1");
-double bestMSC= currentModel->getMSC();
-	bool improvement=false;
-/*  This is the backward step
- *  one take the full model and remove every SNP.
- *  Then one look for that model with  lowest MSC 
- *  then we have a new start model.
- *
- *  We repeat this until the 1 model is selected.
- */
-	while ( !stop ) {
-		improvement = currentModel->replaceModelSNPbyNearFromCAT( *startIndex , PValueBorder );
-		improvement = currentModel->saveguardbackwardstep( *backwardModel );
-	 currentModel=backwardModel; 
-        /* linear case normal forward step
-         */
-		if ( !parameter->affection_status_phenotype ) {
-			improvement = currentModel->makeForwardStepLinear(
-				forwardModel,
-				&bestMSC,
-				PValueBorder,
-				startIndex
-			);
-		} else {
-			improvement = currentModel->makeForwardStepLogistic( &bestMSC, PValueBorder, startIndex );
-		}
-		stop = currentModel->finalizeModelSelection(
-			*backwardModel,
-			improvement,
-			PValueBorder,
-			startIndex
-		);
-	}
-	size_t reference = 350;	// REMARK<BB>: Where does 350 come from?
-	if( parameter->affection_status_phenotype ) {
-		if ( 350 > getSnpNo()-1 ) reference=getSnpNo()-1;	// REMARK<BB>: Beware 0 SNPs case.
-		while (
-			currentModel->getModelSize()
-			&&
-			currentModel->selectModel( *backwardModel, max( reference, PValueBorder ) )
-		) {
-			//minimum 100 or PValueBorder//with 1000 instead 100 it takes 2' on a model with 17 SNPS
-			improvement = currentModel->replaceModelSNPbyNearFromCAT( *startIndex , PValueBorder );
-			currentModel->saveguardbackwardstep( *backwardModel);
-		}
-	}
-	currentModel->printStronglyCorrelatedSnps(
-		parameter->correlation_threshold,
-		int2str(parameter->in_values_int) + "the_result"
-	);
-	currentModel->printModel("finalModel");
 	return true;
 }
-
 
 /** Artur new code:
    * @brief writes ordered snps to file. File name is set up in parameters class.

@@ -174,7 +174,7 @@ public:
 	* maxModel is usefull to limit the mximal modelsize, respect to an older call of selecModel with different
 	*  ExpectedCausalSNPs (this is a variable used with mBIC2
 	*/
-	DEPRECATED( bool selectModel() );
+
 	bool selectModel (
 		Model * inputModel,
 		size_t PValueBorder,
