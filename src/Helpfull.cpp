@@ -28,59 +28,12 @@ using namespace linalg;
 // helpful functions
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-/** computes 3 Vectors for the Regression accounting for Population 1,2,3
-* @param vecPos: which of the 3 Vectors
-* @param individum: the Indivium < Sample number
-*/
-int populationVector ( const int vecPos, const int individum ) {
-	switch ( vecPos ) {
-		case 1:
-			if ( individum < 45 ) return 0; //CHB
-			if ( individum < 90 ) return 0; //JPT
-			if ( individum < 150 ) return -1;	//CEU
-			if ( individum < 210 ) return 1;	//YRI
-			break;
-		case 2:
-			if ( individum < 45 ) return 1; //CHB
-			if ( individum < 90 ) return 0; //JPT
-			if ( individum < 150 ) return -1;	//CEU
-			if ( individum < 210 ) return 0;	//YRI
-			break;
-		case 3:
-			if ( individum < 45 ) return 0; //CHB
-			if ( individum < 90 ) return 1; //JPT
-			if ( individum < 150 ) return -1;	//CEU
-			if ( individum < 210 ) return 0;	//YRI
-			break;
-		default: return 0;	// error
-	}
-	return 0;	// error
-}
-
-/** convert string to interger */
-int str2int ( const string &str ) {
-	stringstream ss(str);
-	int n;
-	ss >> n;	// TODO<BB>: here and in similar spots: this is not fault-tolerant.
-	return n;
-}
-
-
 /** convert interger to string */
 string int2str ( const int n ) {
 	stringstream ss;
 	ss << n;
 	return ss.str();
 }
-
-
-/** convert integer to string */
-string double2str ( const double x ) {
-	stringstream ss;
-	ss << x;
-	return ss.str();
-}
-
 
 /** convert interger to a formated string (of a given width with filling in the character fillwith) */
 string int2strPadWith ( const int n, const int width, const char fillwith = ' ' ) {
@@ -92,17 +45,6 @@ string int2strPadWith ( const int n, const int width, const char fillwith = ' ' 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // mathematical functions
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-int factorial ( int i ) {	// TODO<BB> is integer calculation enough i.e. i less than about 15?
-	if ( 0 > i ) throw;	// TODO<BB> handle exceptions
-	int prod;
-	for ( prod = 1; 1 < i; --i ) {
-		prod *= i;	// TODO<BB> make faster using precalculated table
-	}
-	return prod;
-}
 
 double log_factorial ( int i ) {
 	if ( 0 > i ) throw;	// TODO<BB> handle exceptions
@@ -216,7 +158,6 @@ bool logistffit (
 		// check if matrix is invertible, that is, all diagonal elements are non-zero
 		for ( size_t i = 0; i < cols; ++i ) {
 			if ( fabs( Fisher.get( i, i ) ) < 1e-15 ) {
-				cerr << "Fisher Matrix is not invertible" << endl;
 				return false;
 			}
 		}

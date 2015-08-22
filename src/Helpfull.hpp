@@ -42,14 +42,8 @@ typedef std::bitset<bitsSize> TBitset;  // AG: for an initial population of GA
 /** computes */
 int populationVector ( const int VecPos, const int Individum );
 
-/** convert string to integer */
-int str2int ( const std::string &str );
-
 /** convert integer to string */
 std::string int2str ( const int n );
-
-/** convert double to string */
-std::string double2str ( const double x );
 
 /** convert integer to a formated string (of a given width with filling in the character fillwith) */
 std::string int2strPadWith ( const int n, const int width, const char fillwith );
@@ -57,9 +51,6 @@ std::string int2strPadWith ( const int n, const int width, const char fillwith )
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // mathematical functions
 ////++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-/** computes i! */
-int factorial( int i );
 
 /** computes \f$\ln(i!)\f$ */
 double log_factorial( int i );
