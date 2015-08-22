@@ -281,12 +281,14 @@ namespace io {
 				assert( 0 < sizeof( bedFileMagic ) );
 				char header[sizeof( bedFileMagic )];
 				genotypeFile.read( header, sizeof( header ) );
-				if ( genotypeFile.fail() ) {
+				if ( !genotypeFile ) {
 					throw Exception(
 						"Genotype file \"%s\""
-						" read first %u characters failed: \"%s\".",
+						" trying to read first %u characters failed."
+						" Could only read %u characters: \"%s\".",
 						genotypeFilename.c_str(),
 						sizeof( header ),
+						genotypeFile.gcount(),
 						strerror( errno )	// not perfectly threadsafe
 					);
 				}
@@ -522,6 +524,14 @@ namespace io {
 			idvs = countIndividuals();
 		streampos position( genotypeArrayStart );
 		char byte;
+		if ( snps <= snpIndex ) {
+			throw Exception(
+				"Trying to get genotype for SNP index %u,"
+				" but there are only %u SNPs.",
+				snpIndex,
+				snps
+			);
+		}
 		switch ( genotypeArrayTransposition ) {
 			case IDV_MAJOUR: {
 				const size_t snpsRoundUp = snps + ( 0x3 & -snps );
@@ -537,11 +547,14 @@ namespace io {
 				) {
 					genotypeFile.seekg( position );
 					genotypeFile.read( &byte, sizeof( byte ) );
-					if ( genotypeFile.fail() ) {
+					if ( !genotypeFile ) {
 						throw Exception(
 							"Genotype file \"%s\""
-							" read failed: %s.",
+							" trying to read %u character failed."
+							" Could only read %u: %s.",
 							genotypeFilename.c_str(),
+							sizeof( byte ),
+							genotypeFile.gcount(),
 							strerror( errno )	// not perfectly threadsafe
 						);
 					}
@@ -564,11 +577,14 @@ namespace io {
 				) {
 					if ( 8 <= nextBit ) {
 						genotypeFile.read( &byte, sizeof( byte ) );
-						if ( genotypeFile.fail() ) {
+						if ( !genotypeFile ) {
 							throw Exception(
 								"Genotype file \"%s\""
-								" read failed: %s.",
+								" trying to read %u character failed."
+								" Could only read %u: %s.",
 								genotypeFilename.c_str(),
+								sizeof( byte ),
+								genotypeFile.gcount(),
 								strerror( errno )	// not perfectly threadsafe
 							);
 						}
