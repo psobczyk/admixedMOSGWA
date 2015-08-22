@@ -25,7 +25,7 @@ using namespace unitpp;
 
 namespace test {
 
-	/** Tests the class {@link logging::FileLogger}. */
+	/** Tests the class {@link logging::FileLogger} and thus its superclass {@link logging::StreamLogger}. */
 	class FileLoggerTest : public TestSuite {
 
 		/** Name template for temporary test directory. */
@@ -78,14 +78,14 @@ namespace test {
 		const char * const path = tmpFilepath.c_str();
 		{
 			FileLogger logger( path );
-			logger.setLimit( Logger::WARNING );
+			logger.setThreshold( Logger::WARNING );
 			logger.info( "This goes nowhere: %u", 3u );
 			logger.warning( "This goes to file: %u = %s", 12u, "12" );
 			logger.error( "This goes to file, too: %d = %s", -1, "-1" );
 		}
 		{
 			FileLogger logger( path );
-			logger.setLimit( Logger::ERROR );
+			logger.setThreshold( Logger::ERROR );
 			logger.info( "This goes nowhere again: %u", 3u );
 			logger.warning( "This now goes nowhere: %u = %s", 14u, "14" );
 			logger.error( "This, finally, goes to file: %d = %s", -10, "-10" );
