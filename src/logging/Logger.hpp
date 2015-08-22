@@ -17,7 +17,6 @@
 #define LOG_LOGGER_HPP
 
 #include <cstdarg>
-#include <memory>
 
 /** A very simple abstract logging interface.
 * @author Bernhard Bodenstorfer
@@ -99,8 +98,8 @@ namespace logging {
 		Severity threshold;
 	};
 
-	/** To be initialised to point to a globally shared logger object */
-	extern std::auto_ptr<Logger> logger;
+	/** To be initialised (in {@link main}) to point to a globally shared logger object. */
+	extern Logger* logger;
 
 }
 

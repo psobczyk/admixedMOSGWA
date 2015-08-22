@@ -110,6 +110,6 @@ namespace logging {
 
 	Logger::~Logger () {}
 
-	auto_ptr<Logger> logger( new StreamLogger() );
+	Logger* logger = NULL;
 
 }

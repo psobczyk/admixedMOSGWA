@@ -17,6 +17,7 @@
 #include "Parameter.hpp"
 #include "Exception.hpp"
 #include "logging/FileLogger.hpp"
+#include "logging/MultiLogger.hpp"
 #include "search/egreedy/ElaboratedGreedy.hpp"
 #include "search/memetica/MemeticAlgorithm.hpp"
 #include <string>
@@ -27,21 +28,30 @@ using namespace logging;
 /** Application entry point */
 int main ( const int argc, const char *argv[] ) {
 
+	// initialise primary logging
+	StreamLogger stderrLogger( cerr );
+	logger = &stderrLogger;
+
 	// set parameters
 	parameter.reset( new Parameter );
 	parameter->setParameters( argc, argv );
 
-	// init logging
+	// add file logging
 	const string logFileName( parameter->out_file_name + ".log" );
-	logger.reset( new FileLogger( logFileName.c_str() ) );
+	FileLogger fileLogger( logFileName.c_str() );
+	MultiLogger multiLogger;
+	multiLogger.add( stderrLogger );
+	multiLogger.add( fileLogger );
+	logger = &multiLogger;
+
 	switch( parameter->log_level ) {
-		case 0: logger->setLimit( Logger::DEBUG );
+		case 0: logger->setThreshold( Logger::DEBUG );
 			break;
-		case 1: logger->setLimit( Logger::INFO );
+		case 1: logger->setThreshold( Logger::INFO );
 			break;
-		case 2: logger->setLimit( Logger::WARNING );
+		case 2: logger->setThreshold( Logger::WARNING );
 			break;
-		case 3: logger->setLimit( Logger::ERROR );
+		case 3: logger->setThreshold( Logger::ERROR );
 			break;
 	}
 
