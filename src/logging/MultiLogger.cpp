@@ -20,7 +20,7 @@ using namespace std;
 
 namespace logging {
 
-	void MultiLogger::addLogger ( Logger& logger ) {
+	void MultiLogger::add ( Logger& logger ) {
 		Logger* pointer = &logger;
 		if ( NULL == pointer ) {
 			error( "Attempt to add a null pointer as logger. Ignored." );

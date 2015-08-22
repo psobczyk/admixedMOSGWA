@@ -35,7 +35,7 @@ namespace logging {
 		* @param logger to add,
 		* it must remain valid, i.e. must not be destructed as long as logs are expected.
 		*/
-		void addLogger ( Logger& logger );
+		void add ( Logger& logger );
 
 		/** Set threshold for <code>this</code> and all yet connected destinations.
 		* Note that destination loggers may afterwards be set to a different limit.

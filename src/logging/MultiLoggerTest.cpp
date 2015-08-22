@@ -48,10 +48,10 @@ namespace test {
 		assert_eq( "Initial lb threshold INFO", Logger::INFO, lb.getThreshold() );
 
 		logger.info( "Nothing registered yet" );
-		logger.addLogger( la );
+		logger.add( la );
 		la.setExpected( "INFO\tRegistered A" );
 		logger.info( "Registered A" );
-		logger.addLogger( lb );
+		logger.add( lb );
 		la.setExpected( "INFO\tRegistered A+B" );
 		lb.setExpected( "INFO\tRegistered A+B" );
 		logger.info( "Registered A+B" );
