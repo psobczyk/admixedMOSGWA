@@ -14,51 +14,85 @@
  ********************************************************************************/
 
 #include "GenotypeFreq.hpp"
+#include "logging/Logger.hpp"
 #include <gsl/gsl_cdf.h>	// needed to compute p-values for teststatistics
 
 using namespace linalg;
+using namespace logging;
 
-GenotypeFreq::GenotypeFreq( const MData & mData, const int snp ) {
-	// case
-	r0_=0;
-	r1_=0;
-	r2_=0;
+GenotypeFreq::GenotypeFreq(
+	const MData & mData,
+	const size_t snp
+) : n_( mData.getIdvNo() ) {
+	r0_ = r1_ = r2_ = s0_ = s1_ = s2_ = 0u;
 
-	// control
-	s0_=0;
-	s1_=0;
-	s2_=0;
-
-	n_ = mData.getIdvNo(),
-	r_ = mData.getCaseNo(),		//warning when 0!!
-	s_ = mData.getContNo();		//warning when 0!!
-        if(0==r_){ cerr<<"Warning CaseNo()==0\n";exit (1);}
-        if(0==s_){ cerr<<"Warning ContNo()==0\n"; exit(1);}
-	// every individual is checked whether it is case or control, and the genotype is counted
 	AutoVector
 		genotypes( n_ ),
 		phenotypes( n_ );
+
 	mData.getXcolumn( snp, genotypes );
 	mData.getY( phenotypes );
+
+	if ( parameter->case_value == parameter->control_value ) {
+		logger->error(
+			"Case and control individuals have the same phenotype value %f==%f",
+			parameter->case_value,
+			parameter->control_value
+		);
+	}
+
+	if ( parameter->case_value == parameter->missing_phenotype_value ) {
+		logger->error(
+			"Case individuals have the same value as missing phenotype %f==%f",
+			parameter->case_value,
+			parameter->missing_phenotype_value
+		);
+	}
+
+	if ( parameter->control_value == parameter->missing_phenotype_value ) {
+		logger->error(
+			"Control individuals have the same value as missing phenotype %f==%f",
+			parameter->control_value,
+			parameter->missing_phenotype_value
+		);
+	}
+
+	// TODO<BB>: some values are the same for all SNPs, so do not calculate twice.
 	for ( size_t idv = 0; idv < n_; ++idv ) {
-		if ( parameter->case_value == phenotypes.get( idv ) ) {	// case_value should be 1 normally
+		const double y = phenotypes.get( idv );
+		if ( y == parameter->case_value ) {
 			switch( static_cast<int>( genotypes.get( idv ) ) ) {
 				case -1: ++r0_; break;
 				case 0: ++r1_; break;
 				case 1: ++r2_; break;
 			}
-		} else {	// control
+		} else if ( y == parameter->control_value ) {
 			switch( static_cast<int>( genotypes.get( idv ) ) ) {
 				case -1: ++s0_; break;
 				case 0: ++s1_; break;
 				case 1: ++s2_; break;
 			}
+		} else {
+			logger->error(
+				"Phenotype[%u] %f is neither case nor control. Statistical tests will be inaccurate.",
+				idv,
+				y
+			);
 		}
 	}
 
-	n0_=r0_+s0_;
-	n1_=r1_+s1_;
-	n2_=r2_+s2_;
+	n0_ = r0_ + s0_;
+	n1_ = r1_ + s1_;
+	n2_ = r2_ + s2_;
+	r_ = r0_ + r1_ + r2_;
+	s_ = s0_ + s1_ + s2_;
+
+	if ( 0 == r_ ) {
+		logger->warning( "No individuals in the case group." );
+	}
+	if ( 0 == s_ ) {
+		logger->warning( "No individuals in the control group." );
+	}
 }
 
 /** @see GenotypeFreq::ChiSquare() */
@@ -69,14 +103,8 @@ double GenotypeFreq::chiSquareSummand (
 	const double total
 ) const {
 	if ( 0 < totalRow && 0 < totalCol ) {
-/*		cout<<"obs "<<obs<<endl;
-		cout<<"totalRow "<<totalRow<<endl;
-		cout<<"totalCol "<<totalCol<<endl;
-		cout<<"total "<<total<<endl;*/
 		double numerator = totalRow * totalCol / total;
-//		cout<<"numerator "<<numerator<<endl;
 		double diff = obs - numerator;
-//		cout<<"diff "<<diff<<endl;
 		return
 			diff * diff / numerator;
 	} else {
@@ -97,28 +125,6 @@ double GenotypeFreq::calculateChiSquare () const {
 		+ chiSquareSummand(s1_, s_, n1_, n_)
 		+ chiSquareSummand(r2_, r_, n2_, n_)
 		+ chiSquareSummand(s2_, s_, n2_, n_);
-/*
-	cout<<"r0_ "<<r0_<<endl;
-	cout<<"r1_ "<<r1_<<endl;
-	cout<<"r2_ "<<r2_<<endl;
-	cout<<"s0_ "<<s0_<<endl;
-	cout<<"s1_ "<<s1_<<endl;
-	cout<<"s2_ "<<s2_<<endl;
-	cout<<"n0_ "<<n0_<<endl;
-	cout<<"n1_ "<<n1_<<endl;
-	cout<<"n2_ "<<n2_<<endl;
-	cout<<"r_ "<<r_<<endl;
-	cout<<"s_ "<<s_<<endl;
-	cout<<"n_ "<<n_<<endl;
-
-	cout<<"chiSquareSummand(r0_, r_, n0_, n_) "<<chiSquareSummand(r0_, r_, n0_, n_)<<endl;
-	cout<<"chiSquareSummand(s0_, s_, n0_, n_) "<<chiSquareSummand(s0_, s_, n0_, n_)<<endl;
-	cout<<"chiSquareSummand(r1_, r_, n1_, n_) "<<chiSquareSummand(r1_, r_, n1_, n_)<<endl;
-	cout<<"chiSquareSummand(s1_, s_, n1_, n_) "<<chiSquareSummand(s1_, s_, n1_, n_)<<endl;
-	cout<<"chiSquareSummand(r2_, r_, n2_, n_) "<<chiSquareSummand(r2_, r_, n2_, n_)<<endl;
-	cout<<"chiSquareSummand(s2_, s_, n2_, n_) "<<chiSquareSummand(s2_, s_, n2_, n_)<<endl;
-	cout<<"calculateChiSquare"<<chi2<<endl;
-*/	
 	// return p-value
 	// return gsl_cdf_chisq_Q( chi2, 2 ); // Q(x) = \int_{x}^{+\infty} p(x') dx'
 	return exp( chi2 * -0.5 );	// BB: in case of 2 degrees of freedom, chisquare greatly simplifies
