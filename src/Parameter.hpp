@@ -69,7 +69,7 @@ public:
 	/** Codes for regressionType. */
 	static const int
 		regressionType_Linear = 1,
-		regressionType_Logistic = 2;
+		regressionType_Firth = 3;
 
 	/** 1 = Recessive, 2 = Additive, 3 = Dominant */
 	int genetic_model;

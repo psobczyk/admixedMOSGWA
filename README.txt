@@ -37,7 +37,7 @@ test = cochran_armitage
 mBIC_expected_causal_SNPs = 25
 [model_selection]
 selection_criterium = mBIC2
-regression_type = logistic
+regression_type = firth
 fast_multi_forward = false
 
 You see the sections of the file headed by section headings, which are enclosed in square brackets [].
@@ -99,7 +99,7 @@ test			choice		chi_square, cochran_armitage ... which one to use
 mBIC_expected_causal_SNPs	integer		parameter for first round of model search (with mBIC), which determines the starting point for the actual model search
 
 [model_selection]
-regression_type		choice		linear (default), logistic: to use for calculating the model selection criterium
+regression_type		choice		linear (default), firth: to use for calculating the model selection criterium
 selection_criterium	choice		mBIC or mBIC2 (default): criterium to use in second round of model selection
 mBIC_expected_causal_SNPs	integer		parameter for second round of model search, when mBIC is chosen, irrelevant for mBIC2
 EBIC_gamma		double		parameter in the EBIC criterium, defaults to 1 - log( #individuals ) / ( 2 * log( #SNPs ) )
