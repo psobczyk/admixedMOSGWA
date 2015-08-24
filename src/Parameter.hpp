@@ -165,7 +165,7 @@ public:
 	double logrC_gconv;
 	double logrC_xconv;
 
-// Genetic algorithm
+// Memetic algorithm
   int modelsNo;
   int maxNoProgressIter;
   int B;
@@ -174,10 +174,10 @@ public:
   int tournamentSize;
   double correlationThreshold;
   int correlationRange;
-  std::string causalModelFilename; // a file name where a causal model is written. Only in case of simulations
+  int maxPoolSize;
 	double regionMinCorrelation;
-	int outNo;
-	std::string modelsFilename;
+//	int outNo;
+//	std::string modelsFilename;
 
 // TEST
 	int replications;

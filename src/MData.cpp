@@ -178,7 +178,7 @@ void MData::fillSnp_order_Vec ( const size_t snpNo, size_t* SNPList, double* Tes
 	snp_order_.fillVec( snpNo, SNPList, TestStat );
 }
 
-void  MData::findSNPIndex(vector<string>& SNPNames, vector<unsigned int>& index) const
+void  MData::findSNPIndex(vector<string>& SNPNames, vector<size_t>& index) const
 { //first sort the vector
  sort(SNPNames.begin(),SNPNames.end());	 //ERICH at first sort the input
  //create a vector of strings from
@@ -352,7 +352,7 @@ const char *S[SNPList.size()];
                         S[i]=it_SNPList->c_str();
 				
 		}//that should have done the job
-vector<unsigned int> index;
+vector<size_t> index;
 findSNPIndex(SNPList, index);
 //sortd according the names1
 

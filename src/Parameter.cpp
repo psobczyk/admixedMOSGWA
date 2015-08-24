@@ -145,18 +145,16 @@ Parameter::Parameter () {
 	declare( "log_regression", "x_conv", logrC_xconv = 1e-2 );
 
 	// memetics algorithm settings
-	declare( "memetic_algorithm", "modelsNo", modelsNo = 40 );
-	declare( "memetic_algorithm", "maxNoProgressIter", maxNoProgressIter = 1000 );
-	declare( "memetic_algorithm", "B", B = 3 );
+	declare( "memetic_algorithm", "modelsNo", modelsNo = 10 );
+	declare( "memetic_algorithm", "maxNoProgressIter", maxNoProgressIter = 5000 );
+	declare( "memetic_algorithm", "B", B = 10 );
 	declare( "memetic_algorithm", "pCross", pCross = 0.9 );
 	declare( "memetic_algorithm", "pMutation", pMutation = 0.05 );
 	declare( "memetic_algorithm", "tournamentSize", tournamentSize = 2 );
 	declare( "memetic_algorithm", "correlationThreshold", correlationThreshold = 0.5 );
 	declare( "memetic_algorithm", "correlationRange", correlationRange = 50 );
-	declare( "memetic_algorithm", "causalModelFilename", causalModelFilename = "" );
 	declare( "memetic_algorithm", "regionMinCorrelation", regionMinCorrelation = 0.01 );
-	declare( "memetic_algorithm", "modelsFilename", modelsFilename );
-	declare( "memetic_algorithm", "outNo", outNo );
+ declare( "memetic_algorithm", "maxPoolSize", maxPoolSize = 200000 );
 
 	// Erich's testcase gearatator
 	declare( "TESTING", "replications", replications );	//how many Y vectors should be produced

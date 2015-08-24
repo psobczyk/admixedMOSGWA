@@ -624,7 +624,7 @@ for(int jo=0; jo<getModelSize(); jo++)
 { int j=gsl_permutation_get(a,jo);
 	for (
 		size_t i = 0;
-		i < min( max( PValueBorder + grace, 1000u ), nSNP );
+		i < min( max( PValueBorder + grace, size_t(1000) ), nSNP );
 		++i
 	)	// safeguard against overrun of nSNP and only 500SNP in large Problems, with 1000 in most cases all relevant SNP will found
 	        { //cerr<<(abs(ref-data_-> getOrderedSNP(i))<50)<<",";
@@ -2129,7 +2129,7 @@ bool Model::selectModel (
 	int *startIndex;
  	int dummy=0;
 	startIndex=&dummy;
-	PValueBorder = min( PValueBorder, 400u );	//override to high PValueBorders !!!
+	PValueBorder = min( PValueBorder, size_t(400) );	//override to high PValueBorders !!!
  	double bestMSC=getMSC(); //this one is the best up to now!
 
 	bool improvement = true, improvement2 = true, improvement3 = true;
