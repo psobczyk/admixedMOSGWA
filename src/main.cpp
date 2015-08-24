@@ -21,7 +21,6 @@
 #include "search/egreedy/ElaboratedGreedy.hpp"
 #include "search/memetica/MA.hpp"
 #include <string>
-#include "MData.hpp"
 
 using namespace std;
 using namespace logging;
@@ -81,16 +80,6 @@ int main ( const int argn, const char *argv[] ) {
 		if ( Parameter::searchStrategy_memetic_algorithm == parameter->searchStrategy ) {
 			memetica::MA artur;
 			artur.run();
-
-/** <AG> It is only for testing */
-   MData data;
-   Model model( *(artur.result()) );
-   string out_file_name = parameter->out_file_name;
-   parameter->out_file_name = parameter->out_file_name + "_MA";
-   model.printModel("Memetic Algoritm");
-   parameter->out_file_name = out_file_name;
-/** The end of testing */
-
 		} else {
 			egreedy::ElaboratedGreedy erich;
 			erich.run();
