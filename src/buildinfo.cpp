@@ -15,5 +15,5 @@
 
 #include "buildinfo.hpp"
 
-const char * buildinfo::timestamp = "2015-08-24 15:16:37 CEST";
-const char * buildinfo::version = "1.2.1";
+const char * buildinfo::timestamp = "2015-08-24 15:38:43 CEST";
+const char * buildinfo::version = "1.2.2";
