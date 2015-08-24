@@ -33,7 +33,7 @@ namespace memetica {
 
 	void MemeticAlgorithm::run () {
 		logger->info( "Start genetic algorithm search" );
-
+/*
 		const unsigned int modelsNo_ = parameter->modelsNo;
 		const unsigned int maxNoProgressIter_ = parameter->maxNoProgressIter;
 		const double pCross_ = parameter->pCross;
@@ -143,10 +143,13 @@ namespace memetica {
 			parameter->out_file_name = old_out_file_name;
 		}
 		logger->info( "Finish elaborated greedy search" );
+*/
 	}
 
 	const Model* MemeticAlgorithm::result () {
 		return &model;
-	}
+
+   
+}
 
 }
