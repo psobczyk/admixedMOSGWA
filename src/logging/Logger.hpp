@@ -33,7 +33,13 @@ namespace logging {
 		/** Message severity encoding.
 		* The numeric values may change, only the ascending order is part of the contract.
 		*/
-		typedef enum { DEBUG = 0, INFO = 1, WARNING = 2, ERROR = 3 } Severity;
+		typedef enum {
+			DEBUG = 0,
+			FINE = 1,
+			INFO = 2,
+			WARNING = 3,
+			ERROR = 4
+		} Severity;
 
 		/** Construct with default severity limit <code>INFO</code> */
 		Logger ();
@@ -53,6 +59,12 @@ namespace logging {
 		* @see log regarding security advice
 		*/
 		void debug ( const char * const format, ... );
+
+		/** Convenience method to {@link log} with severity {@link FINE}.
+		* Use in analogy to <code>printf</code>.
+		* @see log regarding security advice
+		*/
+		void fine ( const char * const format, ... );
 
 		/** Convenience method to {@link log} with severity {@link INFO}.
 		* Use in analogy to <code>printf</code>.

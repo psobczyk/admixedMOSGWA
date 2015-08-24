@@ -46,6 +46,8 @@ namespace logging {
 			switch( level ) {
 				case DEBUG: levelText = "DEBUG";
 					break;
+				case FINE: levelText = "FINE";
+					break;
 				case INFO: levelText = "INFO";
 					break;
 				case WARNING: levelText = "WARNING";
@@ -84,6 +86,13 @@ namespace logging {
 		va_list arguments;
 		va_start( arguments, format );
 		log( DEBUG, format, arguments );
+		va_end( arguments );
+	}
+
+	void Logger::fine ( const char * const format, ... ) {
+		va_list arguments;
+		va_start( arguments, format );
+		log( FINE, format, arguments );
 		va_end( arguments );
 	}
 

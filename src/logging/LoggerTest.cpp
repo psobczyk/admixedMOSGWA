@@ -43,6 +43,7 @@ namespace test {
 			*error = "ERROR\tWhorror",
 			*warning = "WARNING\tWhoaning",
 			*info = "INFO\tWhoafo",
+			*fine = "FINE\tWhyfine",
 			*debug = "DEBUG\tWobog";
 		TestLogger logger;
 
@@ -52,6 +53,7 @@ namespace test {
 		assert_eq( "New threshold ERROR", Logger::ERROR, logger.getThreshold() );
 		logger.setExpected( NULL );
 		logger.debug( "0" );
+		logger.fine( "0.5" );
 		logger.info( "1" );
 		logger.warning( "2" );
 		logger.setExpected( error );
@@ -61,6 +63,7 @@ namespace test {
 		assert_eq( "New threshold WARNING", Logger::WARNING, logger.getThreshold() );
 		logger.setExpected( NULL );
 		logger.debug( "3" );
+		logger.fine( "3.5" );
 		logger.info( "4" );
 		logger.setExpected( warning );
 		logger.warning( "Whoaning" );
@@ -69,8 +72,23 @@ namespace test {
 
 		logger.setThreshold( Logger::INFO );
 		assert_eq( "New threshold INFO", Logger::INFO, logger.getThreshold() );
-		logger.setExpected( info );
+		logger.setExpected( NULL );
 		logger.debug( "5" );
+		logger.fine( "6" );
+		logger.setExpected( info );
+		logger.info( "Whoafo" );
+		logger.setExpected( warning );
+		logger.warning( "Whoaning" );
+		logger.setExpected( error );
+		logger.error( "Whorror" );
+
+		logger.setThreshold( Logger::FINE );
+		assert_eq( "New threshold FINE", Logger::FINE, logger.getThreshold() );
+		logger.setExpected( NULL );
+		logger.debug( "7" );
+		logger.setExpected( fine );
+		logger.fine( "Whyfine" );
+		logger.setExpected( info );
 		logger.info( "Whoafo" );
 		logger.setExpected( warning );
 		logger.warning( "Whoaning" );
