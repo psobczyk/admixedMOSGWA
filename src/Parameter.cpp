@@ -106,8 +106,8 @@ Parameter::Parameter () {
 	}
 	{
 		map< const string, int > choice;
-		choice[ "linear" ] = selectionCriterium_BIC;
-		choice[ "logistic" ] = selectionCriterium_EBIC;
+		choice[ "linear" ] = regressionType_Linear;
+		choice[ "firth" ] = regressionType_Firth;
 		declare(
 			"model_selection",
 			"regression_type",
@@ -202,7 +202,7 @@ void Parameter::setParameters ( const int argn, const char* argv[] ) {
 		case regressionType_Linear:
 			affection_status_phenotype = false;
 			break;
-		case regressionType_Logistic:
+		case regressionType_Firth:
 			affection_status_phenotype = true;
 			break;
 		default:
