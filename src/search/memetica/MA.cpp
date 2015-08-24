@@ -773,7 +773,7 @@ void MA::run()
           {
             ss << m << ") " << *models[m] << endl;
           }
-          logger->info("%s", ss.str());
+          logger->info( "%s", ss.str().c_str() );
         }  
         if (rankB < B)
         {
