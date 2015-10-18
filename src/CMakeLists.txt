@@ -26,6 +26,7 @@ add_subdirectory( lookup )
 
 set( core_libraries
 	main.cpp
+	main_admixture.cpp
 	Pool.cpp
 	Pool.hpp
 	buildinfo.cpp
@@ -45,6 +46,10 @@ set( core_libraries
 	SortVec.hpp
 	ScoreTestShortcut.cpp
 	ScoreTestShortcut.hpp
+	AMdata.cpp
+	AMdata.hpp
+	AModel.cpp
+	AModel.hpp
 	$<TARGET_OBJECTS:main>
 	$<TARGET_OBJECTS:io>
 	$<TARGET_OBJECTS:linalg>

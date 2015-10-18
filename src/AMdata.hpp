@@ -27,21 +27,21 @@
 class AMdata {
 
 public:
-	/** Default Constructor: reads the input-files in, sets parameters, deals with missing phenotypes.
-	* @param input provides access to input data for the transition of the MOSGWA architecture.
-	* If given, the pointer must be valid as long as the <code>MData</code> is alive.
-	* Otherwise, input is read according to the preference settings in {@link Parameter}.
-	* @see Parameter
-	*/
-	AMdata ();
-
-	/** Destructor: clean up */
-	~AMdata ();
-
-	/** get the number of individuals in the data (the sample size) */
-	size_t getIdvNo () const;
-
-	/** get the index-th individual */
+  /** Default Constructor: reads the input-files in, sets parameters, deals with missing phenotypes.
+   * @param input provides access to input data for the transition of the MOSGWA architecture.
+   * If given, the pointer must be valid as long as the <code>MData</code> is alive.
+   * Otherwise, input is read according to the preference settings in {@link Parameter}.
+   * @see Parameter
+   */
+  AMdata ();
+  
+  /** Destructor: clean up */
+  ~AMdata ();
+  
+  /** get the number of individuals in the data (the sample size) */
+  size_t getIdvNo () const;
+  
+  /** get the index-th individual */
 	Individual getIndividual ( const size_t index ) const;
 
 	/** get the /number of SNPs in the data (the number of variables) */

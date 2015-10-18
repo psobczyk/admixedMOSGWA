@@ -13,81 +13,37 @@
  *	See the GNU General Public License for more details.			*
  ********************************************************************************/
 
-#include "buildinfo.hpp"
-#include "Parameter.hpp"
-#include "Exception.hpp"
-#include "logging/FileLogger.hpp"
-#include "logging/MultiLogger.hpp"
-#include "search/egreedy/ElaboratedGreedy.hpp"
-#include "search/memetica/MA.hpp"
-#include <string>
+
+// Piotr Sobczyk
+
+#include "AModel.hpp"
+#include <iostream>
+#include "AMdata.hpp"
+#include "linalg/AutoVector.hpp"
 
 using namespace std;
-using namespace logging;
 
 /** Application entry point */
 int main ( const int argn, const char *argv[] ) {
+  std::cout << " _____ _____ _____ _____ _ _ _ _____ \n";
+  std::cout << "|     |     |   __|   __| | | |  _  |\n";
+  std::cout << "| | | |  |  |__   |  |  | | | |     |\n";
+  std::cout << "|_|_|_|_____|_____|_____|_____|__|__|\n";
+  std::cout << "Model Selection for Genom-Wide Associations\n";
 
-	// initialise primary logging
-	StreamLogger stderrLogger( cerr );
-	logger = &stderrLogger;
+  const  AMdata data;
 
-	if ( 1 >= argn ) {
-		logger->error( "You need to provide a configuration file to use MOSGWA!" );
-		return 1;
-	}
+  std::cout << data.getSnpNo ( ) << endl;
+  
+  AModel model ( data );
 
-	// set parameters
-	Parameter mainParameter;
-	parameter = &mainParameter;
-	parameter->setParameters( argn, argv );
+  std::cout <<  model.getBeta( 1 ) << endl;
+  std::cout <<  model.getGamma( 1 ) << endl;
 
-	// add file logging
-	const string logFileName( parameter->out_file_name + ".log" );
-	FileLogger fileLogger( logFileName.c_str() );
-	MultiLogger multiLogger;
-	multiLogger.add( stderrLogger );
-	multiLogger.add( fileLogger );
-	logger = &multiLogger;
+linalg::Vector wektor;
+wektor[0] = 1;
+wektor[1] = 2;
 
-	switch( parameter->log_level ) {
-		case 0: logger->setThreshold( Logger::DEBUG );
-			break;
-		case 1: logger->setThreshold( Logger::INFO );
-			break;
-		case 2: logger->setThreshold( Logger::WARNING );
-			break;
-		case 3: logger->setThreshold( Logger::ERROR );
-			break;
-	}
-
-	// log start
-	logger->info( " _____ _____ _____ _____ _ _ _ _____ " );
-	logger->info( "|     |     |   __|   __| | | |  _  |" );
-	logger->info( "| | | |  |  |__   |  |  | | | |     |" );
-	logger->info( "|_|_|_|_____|_____|_____|_____|__|__|" );
-	logger->info( "Model Selection for Genom-Wide Associations" );
-	logger->info(
-		"Release %s, %s, called with command & arguments:",
-		buildinfo::version,
-		buildinfo::timestamp
-	);
-	for ( int i = 0; i < argn; ++i ) {
-		logger->info( "\t%s", argv[i] );
-	}
-
-	try {
-		if ( Parameter::searchStrategy_memetic_algorithm == parameter->searchStrategy ) {
-			memetica::MA artur;
-			artur.run();
-		} else {
-			egreedy::ElaboratedGreedy erich;
-			erich.run();
-		}
-	} catch ( const Exception e ) {
-		logger->error( "%s", e.what() );
-		return 2;
-	}
-	logger->info( "Finished MOSGWA." );
-	return 0;
+  return 0;
 }
+
